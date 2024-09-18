@@ -1,0 +1,42 @@
+services:
+  data-fetcher:
+    build: 
+      context: .
+      dockerfile: data_fetcher/Dockerfile
+    env_file:
+      - .env
+    environment:
+      API_ENDPOINT_POLARIS: ${API_ENDPOINT_POLARIS}
+
+  data-sender:
+    build: 
+      context: .
+      dockerfile: data_sender/Dockerfile
+    env_file:
+      - .env
+    environment:
+      API_ENDPOINT_POLARIS: ${API_ENDPOINT_POLARIS}
+  
+  rdf-converter:
+    build:
+      context: .
+      dockerfile: rdf_converter/Dockerfile
+   
+  reverse-rdf-converter:
+    build:
+      context: .
+      dockerfile: reverse_rdf_converter/Dockerfile
+  
+  rdfox-db:
+    build:
+      context: .
+      dockerfile: rdfox_db/Dockerfile
+
+  processor:
+    build:
+      context: .
+      dockerfile: processor/Dockerfile
+    depends_on:
+      - data-fetcher
+    env_file:
+      - .env
