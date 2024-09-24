@@ -1,5 +1,5 @@
-from rdflib import Graph, Literal, RDF, URIRef, Namespace
-from rdflib.namespace import XSD, RDFS
+from rdflib import RDF, Graph, Literal, Namespace, URIRef
+from rdflib.namespace import RDFS, XSD
 
 EX = Namespace("http://example.org/")
 DCTERMS = Namespace("http://purl.org/dc/terms/")

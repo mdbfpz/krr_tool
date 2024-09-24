@@ -1,9 +1,9 @@
+import asyncio
 from data_fetcher.data_fetcher import DataFetcher
 from data_sender.data_sender import DataSender
 from rdf_converter.rdf_converter import RDFConverter
-from reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 from rdfox_db.rdfox_db import RDFoxDB
-import asyncio
+from reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 
 
 class DataQueue:

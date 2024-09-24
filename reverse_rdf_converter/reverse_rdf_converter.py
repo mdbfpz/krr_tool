@@ -1,5 +1,5 @@
+from rdflib import Graph, Literal, Namespace, URIRef
 from rdflib.namespace import RDF, RDFS, XSD
-from rdflib import Graph, URIRef, Literal, Namespace
 
 EX = Namespace("http://example.org/")
 

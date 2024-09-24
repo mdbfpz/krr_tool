@@ -1,6 +1,7 @@
 import os
 import httpx
 
+
 class DataFetcher:
     def __init__(self):
         """Initialize the DataFetcher with external API endpoints."""

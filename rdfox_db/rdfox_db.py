@@ -1,8 +1,6 @@
 import os
 from rdflib import Graph, Namespace
 from rdflib.namespace import RDF, RDFS, XSD
-import httpx
-
 
 EX = Namespace("http://example.org/")
 

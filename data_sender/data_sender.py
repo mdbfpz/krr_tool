@@ -1,6 +1,7 @@
 import os
 import httpx
 
+
 class DataSender:
     def __init__(self):
         """Initialize the DataSender with external API endpoints."""
