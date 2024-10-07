@@ -9,8 +9,9 @@ ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /krr_tool
 # Copy the entire krr_tool directory (from the build context) into the container
 COPY . .
-# Install dependencies for both services
+# Install dependencies for other services
 RUN pip install --no-cache-dir -r /krr_tool/data_fetcher/requirements.txt -r /krr_tool/rdf_converter/requirements.txt
+RUN pip install --no-cache-dir -r /krr_tool/rdfox_db/requirements.txt -r /krr_tool/rdfox_db/requirements.txt
 
 # Add krr_tool to PYTHONPATH so that data_fetcher can be imported by processor
 ENV PYTHONPATH=/krr_tool

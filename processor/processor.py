@@ -1,8 +1,10 @@
 import asyncio
+import logging
 from data_fetcher.data_fetcher import DataFetcher
 from data_sender.data_sender import DataSender
 from rdf_converter.rdf_converter import RDFConverter
-from rdfox_db.rdfox_db import RDFoxDB
+from rdfox_db.core import RDFoxDB
+from rdfox_db.queries.queries import RDFoxQuery
 from reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 
 
@@ -37,11 +39,7 @@ class Processor:
         self.reverse_converter_queue = DataQueue()
         self.sender_queue = DataQueue()
 
-        self.data_fetcher = DataFetcher()
-        self.rdf_converter = RDFConverter()
         self.rdfox_db = RDFoxDB()
-        self.reverse_rdf_converter = ReverseRDFConverter()
-        self.data_sender = DataSender()
 
     async def fetch_and_enqueue(self):
         """Fetch data and add it to the converter queue periodically."""
@@ -57,16 +55,26 @@ class Processor:
 
         while True:
             polaris_data = await self.converter_queue.get_from_queue()
-            rdf_graph_data = self.rdf_converter.run(polaris_data)
-            await self.rdfdb_queue.add_to_queue(rdf_graph_data)
-
+            # Sample XML FIXM data for testing
+            dummy_polaris_data = """<xs:complexType name="GeographicalPositionType">
+                                        <xs:sequence>
+                                            <xs:element name="extension" type="fb:GeographicalPositionExtensionType" nillable="true" minOccurs="0" maxOccurs="2000" />
+                                            <xs:element name="pos" type="fb:LatLongPosType" minOccurs="1" maxOccurs="1" />
+                                        </xs:sequence>
+                                        <xs:attribute name="srsName" type="xs:string" use="required" fixed="urn:ogc:def:crs:EPSG::4326" />
+                                    </xs:complexType>"""
+            
+            turtle_data = self.rdf_converter.run(dummy_polaris_data) # TODO: pass actual Polaris data as an argument
+            await self.rdfdb_queue.add_to_queue(turtle_data)
+    
     async def insert_and_enqueue(self):
         """Insert data into the RDFox database asynchronously and add it to the reverse RDF converter queue."""
 
-        while True:
-            rdf_graph_data = await self.rdfdb_queue.get_from_queue()
-            await self.rdfox_db.insert_graph_data(rdf_graph_data)
-            await self.reverse_converter_queue.add_to_queue(rdf_graph_data)
+        # Wait for RDFox to be ready
+        while await self.rdfox_db.rdfox_ready():
+            turtle_data = await self.rdfdb_queue.get_from_queue()
+            await self.rdfox_queries.import_turtle_data(turtle_data)
+            await self.reverse_converter_queue.add_to_queue(turtle_data)
 
     async def reverse_convert_and_enqueue(self):
         """Convert RDF data back to JSON and add it to the data sender queue."""
@@ -86,6 +94,14 @@ class Processor:
     async def run(self):
         """Run the data processing pipeline."""
 
+        await self.rdfox_db.run()
+
+        self.data_fetcher = DataFetcher()
+        self.rdf_converter = RDFConverter()
+        self.reverse_rdf_converter = ReverseRDFConverter()
+        self.data_sender = DataSender()
+        self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
+
         tasks = [
             self.fetch_and_enqueue(),
             self.convert_and_enqueue(),
@@ -96,5 +112,10 @@ class Processor:
         await asyncio.gather(*tasks)
 
 if __name__ == "__main__":
+    """
+    logging.basicConfig(level=logging.DEBUG)
+    httpx_log = logging.getLogger("httpx")
+    httpx_log.setLevel(logging.DEBUG)
+    """
     processor = Processor()
     asyncio.run(processor.run())
