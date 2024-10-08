@@ -8,6 +8,8 @@ class RDFoxQuery(RDFoxDB):
 
         super().__init__()
         self.connection_id = connection_id
+        self.headers_output_turtle = self.headers.copy().update({"Accept": "text/turtle; charset=UTF-8"})
+        self.headers_output_csv = self.headers.copy().update({"Accept": "text/csv; charset=UTF-8"})
 
     async def import_turtle_data(self, ttl_data: str):
         """Import Turtle data into the RDFox database asynchronously."""
@@ -20,10 +22,7 @@ class RDFoxQuery(RDFoxDB):
                     data=ttl_data,
                     headers=self.headers
                 )
-                """print(import_resp)
-                print(import_resp.headers)
-                print(import_resp.content)"""
-                if import_resp.status_code in [200, 204]:
+                if import_resp.status_code in self.valid_responses:
                     print("Turtle data imported successfully.")
                 else:
                     print("Turtle data import failed.")
@@ -44,14 +43,15 @@ class RDFoxQuery(RDFoxDB):
 
         async with httpx.AsyncClient() as client:
             try:
+                # Change query parameters based on select type
                 import_resp = await client.get(
-                    f"{self.endpoint}/datastores/{self.data_store}/content?connection={self.connection_id}",
-                    headers=self.headers
+                    #f"{self.endpoint}/datastores/{self.data_store}/content?connection={self.connection_id}",
+                    #f"{self.endpoint}/datastores/{self.data_store}/content?default",
+                    f"{self.endpoint}/datastores/{self.data_store}/content",
+                    headers=self.headers_output_turtle
                 )
-                print(import_resp)
-                print(import_resp.headers)
-                print(import_resp.content)
-                if import_resp.status_code in [200, 204]:
+                print("Fetched all from the datastore:\n", import_resp.content)
+                if import_resp.status_code in self.valid_responses:
                     print("Query 'select_all' succeeded.")
                 else:
                     print("Query 'select_all' failed.")

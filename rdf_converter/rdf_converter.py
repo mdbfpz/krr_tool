@@ -8,27 +8,24 @@ XS = Namespace("http://www.w3.org/2001/XMLSchema")  # Add the xs namespace
 class RDFConverter:
     def __init__(self):
         """Initialize the RDFConverter."""
-
         self._initialize_graph()
         # Define the namespaces used in the XML data
         self.namespaces = {
-            'xs': XS,
-            'fb': FIXM
+            "xs": "http://www.w3.org/2001/XMLSchema",
+            "fb": "http://www.fixm.aero/fixm/4.2.0"
         }
     
     def _initialize_graph(self):
         """Initialize the RDF graph with basic namespaces."""
-
         self.graph = Graph()
         self.graph.bind("rdf", RDF)
         self.graph.bind("rdfs", RDFS)
         self.graph.bind("xsd", XSD)
-        self.graph.bind("fixm", FIXM)  # Bind FIXM namespace
+        self.graph.bind("fixm", FIXM)
         self.graph.bind("xs", XS)
 
     def _add_triples(self, subject, predicates):
         """Add triples to the RDF graph."""
-        
         for predicate_uri, objects in predicates.items():
             predicate = URIRef(predicate_uri)
             for obj in objects:
@@ -42,12 +39,11 @@ class RDFConverter:
                     obj_uri = URIRef(obj["value"])
                     self.graph.add((subject, predicate, obj_uri))
 
-    def _to_turtle(self):
+    def _rdf_to_turtle(self):
         """Convert the RDF graph into the Turtle format."""
-        
-        self.graph = self.graph.serialize(format="turtle")
+        return self.graph.serialize(format="turtle")
 
-    def _xml_to_rdf(self, xml_data):
+    def _xml_to_rdf(self, xml_data: str):
         """Convert the FIXM XML data to RDF format."""
 
         self._initialize_graph()
@@ -62,41 +58,46 @@ class RDFConverter:
             "<xs:complexType xmlns:xs='http://www.w3.org/2001/XMLSchema' xmlns:fb='http://www.fixm.aero/fixm/4.2.0'"
         )
 
-        # Debug: Print the XML to be parsed
-        print("Parsing XML data:\n", xml_data)
+        # Debugging: Print the XML to be parsed
+        print("Modified XML data:\n", xml_data)
 
-        # Parse the XML data, using the namespaces defined in the class
+        # Parse the XML data
         parser = ET.XMLParser(encoding="utf-8")
         root = ET.fromstring(xml_data, parser=parser)
 
-        # Process the root element and its children
-        for element in root.findall(".//xs:complexType", self.namespaces):  # Use the defined namespaces
-            # Generate a subject based on the element's tag and namespace
-            element_tag = element.attrib.get("name", "UnnamedElement")  # Use 'name' attribute for identification
-            subject = URIRef(f"http://www.fixm.aero/{element_tag}")
+        # Debug: Print the root tag and check namespaces
+        print(f"Root tag: {root.tag}")
+        print(f"Namespaces used: {self.namespaces}")
 
-            predicates = {}
+        # Since root is already a complexType element, process it directly
+        element_tag = root.attrib.get("name", "UnnamedElement")
+        subject = URIRef(f"http://www.fixm.aero/{element_tag}")
 
-            # Handle attributes for the element
-            for attr_name, attr_value in element.attrib.items():
-                attr_uri = f"http://www.w3.org/2001/XMLSchema#{attr_name}"  # Example: mapping to XSD attributes
-                predicates[attr_uri] = [{"value": attr_value, "type": "literal"}]
+        predicates = {}
 
-            # Process child elements within the xs:sequence
-            sequence = element.find("xs:sequence", self.namespaces)
-            if sequence:
-                for sub_elem in sequence:
-                    sub_elem_tag = sub_elem.attrib.get("name", sub_elem.tag.split('}')[-1])
-                    predicate_uri = f"http://fixm.aero/{sub_elem_tag}"
+        # Handle attributes for the root element
+        for attr_name, attr_value in root.attrib.items():
+            attr_uri = XS[attr_name]  # Use XS namespace for attributes
+            predicates[attr_uri] = [{"value": attr_value, "type": "literal"}]
 
-                    # Handle literal or URI values based on the element's content
-                    if sub_elem.text:
-                        predicates[predicate_uri] = [{"value": sub_elem.text, "type": "literal"}]
-                    else:
-                        predicates[predicate_uri] = [{"value": f"http://fixm.aero/{sub_elem_tag}", "type": "uri"}]
+        # Process child elements within the xs:sequence
+        sequence = root.find("xs:sequence", self.namespaces)
+        if sequence:
+            for sub_elem in sequence:
+                sub_elem_tag = sub_elem.attrib.get("name", sub_elem.tag.split('}')[-1])
+                predicate_uri = FIXM[sub_elem_tag]  # Use FIXM namespace for elements
 
-            # Add the triples for the element and its children
-            self._add_triples(subject, predicates)
+                # Instead of using the element name as the object, use the element's type as the URI
+                sub_elem_type = sub_elem.attrib.get("type")
+                if sub_elem_type:
+                    object_uri = URIRef(f"http://fixm.aero/{sub_elem_type.split(':')[-1]}")
+                    predicates[predicate_uri] = [{"value": object_uri, "type": "uri"}]
+                else:
+                    # If no type is specified, use the element name as a literal value
+                    predicates[predicate_uri] = [{"value": sub_elem_tag, "type": "literal"}]
+
+        # Add the triples for the root element and its children
+        self._add_triples(subject, predicates)
 
         print("RDF conversion completed.")
 
@@ -104,6 +105,11 @@ class RDFConverter:
         """Run the XML to RDF conversion."""
 
         self._xml_to_rdf(xml_data)
-        self._to_turtle()
-        
-        return self.graph
+        print(f"Graph contains {len(self.graph)} triples after XML to RDF conversion.")
+        print("Triples in the graph:")
+        for s, p, o in self.graph:
+            print(f"Subject: {s}, Predicate: {p}, Object: {o}")
+
+        print("Turtle format: ", self._rdf_to_turtle())
+
+        return self._rdf_to_turtle()  # Return the serialized graph in Turtle format

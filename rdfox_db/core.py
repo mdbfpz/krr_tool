@@ -19,6 +19,7 @@ class RDFoxDB:
         self.data_store_id = None
         self.connection_id = None
         self.rdfox_ready_flag = False
+        self.valid_responses = [httpx.codes.OK, httpx.codes.NO_CONTENT]
 
     def _create_import_headers(self):
         """Create headers for RDFox API requests."""
@@ -83,7 +84,7 @@ class RDFoxDB:
                             print("Dstore id: ", self.data_store_id)
                             print(f"Data store {dstore_name} was successfully created.")
 
-                            await self.bring_dstore_online()
+                            await self._bring_dstore_online()
 
                             return
                         
@@ -98,7 +99,7 @@ class RDFoxDB:
 
         print("Max retries exceeded, failed to create data store.")
     
-    async def bring_dstore_online(self):
+    async def _bring_dstore_online(self):
         async with httpx.AsyncClient() as client:
             # Bring data store online
             try:
@@ -109,7 +110,7 @@ class RDFoxDB:
                         "Authorization": f"Basic {self._encode_credentials()}"
                     }
                 )
-                if response.status_code in [200, 204]:
+                if response.status_code in self.valid_responses:
                     print("Data store brought online successfully.")
                 else:
                     print("Not able to bring data store online.")
@@ -176,29 +177,6 @@ class RDFoxDB:
                 await asyncio.sleep(delay)
             else:
                 return True
-
-                """async with httpx.AsyncClient() as client:
-                    try:                       
-                        # Check if the connection was established
-                        conn_response = await client.get(
-                            f"{self.endpoint}/datastores/{self.data_store}/connections",
-                            headers={
-                                "Authorization": f"Basic {self._encode_credentials()}"
-                            }
-                        )
-                        if not self.connection_id:
-                            self.connection_id = self.decode_conn_response(conn_response)
-                        return True
-
-                    except httpx.HTTPStatusError as e:
-                        print(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
-                        return False
-                    except httpx.RequestError as e:
-                        print(f"Request error occurred: {e}")
-                        return False
-                    except Exception as e:
-                        print(f"An unexpected error occurred: {e}")
-                        return False"""
         
         print("Max retries exceeded, failed to check connection.")
         return False
