@@ -9,8 +9,6 @@ services:
       dockerfile: data_fetcher/Dockerfile
     env_file:
       - .env
-    environment:
-      API_ENDPOINT_POLARIS: ${API_ENDPOINT_POLARIS}
 
   data-sender:
     build: 
@@ -18,8 +16,6 @@ services:
       dockerfile: data_sender/Dockerfile
     env_file:
       - .env
-    environment:
-      API_ENDPOINT_POLARIS: ${API_ENDPOINT_POLARIS}
   
   rdf-converter:
     build:

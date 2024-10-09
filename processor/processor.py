@@ -15,14 +15,14 @@ class DataQueue:
         self.queue = asyncio.Queue()
         self.condition = asyncio.Condition()
 
-    async def add_to_queue(self, data: dict):
+    async def add_to_queue(self, data: dict): # TODO: rename to 'put'
         """Add data to the queue asynchronously."""
 
         async with self.condition:
             await self.queue.put(data)
             self.condition.notify()  # Notify any waiting tasks
 
-    async def get_from_queue(self) -> dict:
+    async def get_from_queue(self) -> dict:  # TODO: rename to 'get'
         """Retrieve data from the queue asynchronously."""
 
         async with self.condition:
@@ -42,21 +42,17 @@ class Processor:
         self.rdfox_db = RDFoxDB()
 
     async def fetch_and_enqueue(self):
-        """Fetch data and add it to the converter queue periodically."""
+        """Fetch data and add it to the converter queue when the data is received."""
 
-        while True:
-            polaris_data = await self.data_fetcher.run()
-            if polaris_data:
-                await self.converter_queue.add_to_queue(polaris_data)
-            await asyncio.sleep(1)
+        await self.data_fetcher.run()
 
     async def convert_and_enqueue(self):
         """Convert data to RDF and add it to the RDFox database queue."""
 
-        # while True:
-            #polaris_data = await self.converter_queue.get_from_queue() #TODO: uncomment!
+        while True:
+            polaris_data = await self.converter_queue.get_from_queue()
             # Sample XML FIXM data for testing
-        dummy_polaris_data = """<xs:complexType name="GeographicalPositionType">
+            dummy_polaris_data = """<xs:complexType name="GeographicalPositionType">
                                     <xs:sequence>
                                         <xs:element name="extension" type="fb:GeographicalPositionExtensionType" nillable="true" minOccurs="0" maxOccurs="2000" />
                                         <xs:element name="pos" type="fb:LatLongPosType" minOccurs="1" maxOccurs="1" />
@@ -64,8 +60,8 @@ class Processor:
                                     <xs:attribute name="srsName" type="xs:string" use="required" fixed="urn:ogc:def:crs:EPSG::4326" />
                                 </xs:complexType>"""
         
-        turtle_data = self.rdf_converter.run(dummy_polaris_data) # TODO: pass actual Polaris data as an argument
-        await self.rdfdb_queue.add_to_queue(turtle_data)
+            turtle_data = self.rdf_converter.run(dummy_polaris_data) # TODO: pass actual Polaris data as an argument
+            await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):
         """Insert data into the RDFox database asynchronously and add it to the reverse RDF converter queue."""
@@ -105,11 +101,11 @@ class Processor:
         self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
 
         tasks = [
-            #self.fetch_and_enqueue(),
+            self.fetch_and_enqueue(),
             self.convert_and_enqueue(),
-            self.insert_and_enqueue()
-            #self.reverse_convert_and_enqueue(),
-            #self.send_data()
+            self.insert_and_enqueue(),
+            self.reverse_convert_and_enqueue(),
+            self.send_data()
         ]
         await asyncio.gather(*tasks)
 
