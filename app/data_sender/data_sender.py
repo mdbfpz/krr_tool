@@ -21,7 +21,9 @@ class DataSender:
                 response.raise_for_status()
                 print("Data sent back to Polaris API successfully.")
             except httpx.HTTPStatusError as e:
-                print(f"Error sending data to API: {e}")
+                print(f"Error sending data to Polaris API: {e.response.status_code} - {e.response.text}")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
 
     async def run(self, data):
         """Run scheduled tasks."""

@@ -1,11 +1,12 @@
 import asyncio
 import logging
-from data_fetcher.data_fetcher import DataFetcher
-from data_sender.data_sender import DataSender
-from rdf_converter.rdf_converter import RDFConverter
 from rdfox_db.core import RDFoxDB
 from rdfox_db.queries.queries import RDFoxQuery
-from reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
+from app.data_fetcher.router import DataFetcher
+from app.data_sender.data_sender import DataSender
+from app.rdf_converter.rdf_converter import RDFConverter
+from app.reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
+import uvicorn
 
 
 class DataQueue:
@@ -42,15 +43,21 @@ class Processor:
         self.rdfox_db = RDFoxDB()
 
     async def fetch_and_enqueue(self):
-        """Fetch data and add it to the converter queue when the data is received."""
+        """
+        Run the FastAPI server to listen for incoming POST requests.
+        Fetch data and add it to the converter queue when the data is received.
+        """
 
-        await self.data_fetcher.run()
+        config = uvicorn.Config(self.data_fetcher.app, host="0.0.0.0", port=8000)
+        server = uvicorn.Server(config)
+        await server.serve()
 
     async def convert_and_enqueue(self):
         """Convert data to RDF and add it to the RDFox database queue."""
 
         while True:
-            polaris_data = await self.converter_queue.get_from_queue()
+            data = await self.converter_queue.get_from_queue()
+            print("Got from queue: ", data)
             # Sample XML FIXM data for testing
             dummy_polaris_data = """<xs:complexType name="GeographicalPositionType">
                                     <xs:sequence>
@@ -93,8 +100,8 @@ class Processor:
         """Run the data processing pipeline."""
 
         await self.rdfox_db.run()
-
-        self.data_fetcher = DataFetcher()
+        
+        self.data_fetcher = DataFetcher(self.converter_queue)
         self.rdf_converter = RDFConverter()
         self.reverse_rdf_converter = ReverseRDFConverter()
         self.data_sender = DataSender()
@@ -102,10 +109,10 @@ class Processor:
 
         tasks = [
             self.fetch_and_enqueue(),
-            self.convert_and_enqueue(),
-            self.insert_and_enqueue(),
-            self.reverse_convert_and_enqueue(),
-            self.send_data()
+            self.convert_and_enqueue()
+            #self.insert_and_enqueue(),
+            #self.reverse_convert_and_enqueue(),
+            #self.send_data()
         ]
         await asyncio.gather(*tasks)
 
