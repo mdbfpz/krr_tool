@@ -8,8 +8,11 @@ class RDFoxQuery(RDFoxDB):
 
         super().__init__()
         self.connection_id = connection_id
-        self.headers_output_turtle = self.headers.copy().update({"Accept": "text/turtle; charset=UTF-8"})
-        self.headers_output_csv = self.headers.copy().update({"Accept": "text/csv; charset=UTF-8"})
+        
+        self.headers_output_turtle = self.headers.copy()
+        self.headers_output_turtle.update({"Accept": "text/turtle; charset=UTF-8"})
+        self.headers_output_csv = self.headers.copy()
+        self.headers_output_csv.update({"Accept": "text/csv; charset=UTF-8"})
 
     async def import_turtle_data(self, ttl_data: str):
         """Import Turtle data into the RDFox database asynchronously."""

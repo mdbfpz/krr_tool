@@ -56,18 +56,11 @@ class Processor:
         """Convert data to RDF and add it to the RDFox database queue."""
 
         while True:
-            data = await self.converter_queue.get_from_queue()
-            print("Got from queue: ", data)
-            # Sample XML FIXM data for testing
-            dummy_polaris_data = """<xs:complexType name="GeographicalPositionType">
-                                    <xs:sequence>
-                                        <xs:element name="extension" type="fb:GeographicalPositionExtensionType" nillable="true" minOccurs="0" maxOccurs="2000" />
-                                        <xs:element name="pos" type="fb:LatLongPosType" minOccurs="1" maxOccurs="1" />
-                                    </xs:sequence>
-                                    <xs:attribute name="srsName" type="xs:string" use="required" fixed="urn:ogc:def:crs:EPSG::4326" />
-                                </xs:complexType>"""
-        
-            turtle_data = self.rdf_converter.run(dummy_polaris_data) # TODO: pass actual Polaris data as an argument
+            received_data = await self.converter_queue.get_from_queue()
+            print("Got from queue: ", received_data["data_type"], "\n", received_data["data"] )
+            turtle_data = self.rdf_converter.run(
+                received_data["data"].decode("utf-8") # Convert bytes to string using UTF-8 encoding
+            )
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):
@@ -109,9 +102,9 @@ class Processor:
 
         tasks = [
             self.fetch_and_enqueue(),
-            self.convert_and_enqueue()
-            #self.insert_and_enqueue(),
-            #self.reverse_convert_and_enqueue(),
+            self.convert_and_enqueue(),
+            self.insert_and_enqueue(),
+            self.reverse_convert_and_enqueue()
             #self.send_data()
         ]
         await asyncio.gather(*tasks)
