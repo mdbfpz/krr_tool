@@ -3,9 +3,6 @@
 # Exit if any command fails
 set -e
 
-# Declare that RDFox setup is not complete yet
-echo "0" > /var/lib/RDFox/rdf_setup_complete.txt
-
 # Function to check if RDFox is healthy
 check_health() {
     local retries=10
@@ -30,8 +27,16 @@ check_health() {
     return 1  # RDFox is not ready
 }
 
-echo "Initializing RDFox..."
-/opt/RDFox/RDFox -server-directory /var/lib/RDFox -persistence file -role "${RDFOX_ROLE}" -password "${RDFOX_PASSWORD}" init &&
+# Declare that RDFox setup (init + daemon start) is not complete yet
+echo "0" > /var/lib/RDFox/rdf_setup_complete.txt
+
+# Check if RDFox has already been initialized by looking for the 'server.params' file
+if [ -f /var/lib/RDFox/server.params ]; then
+    echo "RDFox already initialized, skipping initialization."
+else
+    echo "Initializing RDFox..."
+    /opt/RDFox/RDFox -server-directory /var/lib/RDFox -persistence file -role "${RDFOX_ROLE}" -password "${RDFOX_PASSWORD}" init
+fi
 
 echo "Starting RDFox daemon..."
 /opt/RDFox/RDFox -server-directory /var/lib/RDFox daemon &
