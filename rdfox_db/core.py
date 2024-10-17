@@ -1,3 +1,5 @@
+import csv
+from io import StringIO
 import os
 import httpx
 import base64
@@ -49,6 +51,34 @@ class RDFoxDB:
             else:
                 return True
         return False
+
+    async def _get_datastores(self):
+        """Fetch the list of available datastores from the RDFox server."""
+
+        async with httpx.AsyncClient() as client:
+            try:
+                # Make a GET request to the /datastores endpoint
+                response = await client.get(
+                    f"{self.endpoint}/datastores", 
+                    headers={
+                    "Authorization": f"Basic {self._encode_credentials()}",
+                    "Accept": "text/csv; charset=UTF-8"
+                })
+
+                # Parse the CSV content from the response
+                csv_content = response.text
+                datastores = []
+
+                # Use csv.reader to parse the CSV string
+                reader = csv.DictReader(StringIO(csv_content))
+                for row in reader:
+                    datastores.append(row)
+
+                return datastores
+
+            except httpx.HTTPStatusError as e:
+                print(f"Failed to fetch datastores: {e}")
+                return None
     
     async def _create_data_store(self, retries: int = 10, delay: int = 1):
         """Create a data store in the RDFox DB."""
@@ -58,37 +88,52 @@ class RDFoxDB:
                 await asyncio.sleep(delay)
             else:
                 async with httpx.AsyncClient() as client:
-                    # Create data store
+                    # Create data store if it already doesn't exist
                     try:
-                        print("Creating data store...")
-                        response = await client.post(
-                            f"{self.endpoint}/datastores/{self.data_store}",
-                            headers={
-                                "Authorization": f"Basic {self._encode_credentials()}"
-                            }
-                        )
-
-                        print("Create DS response: ", response.headers)
-                        dstore_id = response.headers.get("etag").replace('"', "").split("-")[0]
-                        dstore_name = response.headers.get("location").split("/")[-1]
-
-                        if dstore_name == self.data_store:
-                            self.data_store_id = dstore_id
-                            test_resp = await client.get(
-                                f"{self.endpoint}/datastores/{self.data_store}/info?component-info=extended",
+                        available_dstores = await self._get_datastores()
+                        available_dstores_names = [item["Name"] for item in available_dstores if "Name" in item]
+                        print("Available datastores: ", available_dstores_names)
+                        # Check if the data store with the given name exists
+                        if isinstance(available_dstores, list) and self.data_store not in available_dstores_names:
+                            print("Creating a data store...")
+                            response = await client.post(
+                                f"{self.endpoint}/datastores/{self.data_store}",
                                 headers={
                                     "Authorization": f"Basic {self._encode_credentials()}"
                                 }
                             )
 
-                            print("Dstore id: ", self.data_store_id)
-                            print(f"Data store {dstore_name} was successfully created.")
+                            print("Create DS response: ", response.headers)
+                            dstore_id = response.headers.get("etag").replace('"', "").split("-")[0]
+                            dstore_name = response.headers.get("location").split("/")[-1]
 
+                            if dstore_name == self.data_store:
+                                self.data_store_id = dstore_id
+                                # TODO: maybe remove this
+                                test_resp = await client.get(
+                                    f"{self.endpoint}/datastores/{self.data_store}/info?component-info=extended",
+                                    headers={
+                                        "Authorization": f"Basic {self._encode_credentials()}"
+                                    }
+                                )
+
+                                print("Dstore id: ", self.data_store_id)
+                                print(f"Data store {dstore_name} was successfully created.")
+
+                                await self._bring_dstore_online()
+                                return
+                                
+                        elif isinstance(available_dstores, list) and self.data_store in available_dstores_names:
+                            print(f"Data store {self.data_store} already exists. Skipping data store creation...")
+                            dstore_id = next(
+                                (item["UniqueID"] for item in available_dstores if item["Name"] == self.data_store), 
+                                None
+                            )
+                            self.data_store_id = dstore_id
                             await self._bring_dstore_online()
-
                             return
-                        
-                        return 
+                        else:
+                            print(f"Something went wrong. Skipping data store creation...") 
 
                     except httpx.HTTPStatusError as e:
                         print(f"HTTP error occurred: {e.response.status_code} - {e.response.text}")
