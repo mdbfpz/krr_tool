@@ -8,15 +8,43 @@ XS = Namespace("http://www.w3.org/2001/XMLSchema")  # Add the xs namespace
 class RDFConverter:
     def __init__(self):
         """Initialize the RDFConverter."""
+
         self._initialize_graph()
         # Define the namespaces used in the XML data
         self.namespaces = {
             "xs": "http://www.w3.org/2001/XMLSchema",
             "fb": "http://www.fixm.aero/fixm/4.2.0"
         }
+        self.initial_flight_plans = {} # For each flight key, there is a list of points = flight plan
+        self.updated_flight_plans = {} # For each flight key, there is an updated list of points = flight plan
+    
+    def _extract_flight_plans(self, xml_data):
+        """
+        For each flight in received flight plans in FIXM/XML format, save its flight plan as a
+        list of points on the route.
+        """
+
+        plans = {}
+
+        for flight_plan in xml_data:
+            plans[flight_plan] = ...
+                
+        return plans
+    
+    def _update_flight_plans(self, extracted_plans):
+        """
+        Updates the flight plans by setting initial flight plans if they do not exist, 
+        or updated flight plans if initial plans are already present.
+        """
+
+        if not self.initial_flight_plans:
+            self.initial_flight_plans = extracted_plans
+        else:
+            self.updated_flight_plans = extracted_plans
     
     def _initialize_graph(self):
         """Initialize the RDF graph with basic namespaces."""
+
         self.graph = Graph()
         self.graph.bind("rdf", RDF)
         self.graph.bind("rdfs", RDFS)
@@ -26,6 +54,7 @@ class RDFConverter:
 
     def _add_triples(self, subject, predicates):
         """Add triples to the RDF graph."""
+
         for predicate_uri, objects in predicates.items():
             predicate = URIRef(predicate_uri)
             for obj in objects:
@@ -41,6 +70,7 @@ class RDFConverter:
 
     def _rdf_to_turtle(self):
         """Convert the RDF graph into the Turtle format."""
+
         return self.graph.serialize(format="turtle")
 
     def _xml_to_rdf(self, xml_data: str):
@@ -103,6 +133,8 @@ class RDFConverter:
 
     def run(self, xml_data):
         """Run the XML to RDF conversion."""
+
+        #TODO: update flight plans here
 
         self._xml_to_rdf(xml_data)
         print(f"Graph contains {len(self.graph)} triples after XML to RDF conversion.")

@@ -1,0 +1,68 @@
+"""
+Create transitivity closure between different (current, agreed, desired, predicted) 
+route-trajectory elements and flights.
+"""
+[?flight, :currentElement, ?currentElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:current, ?currentRouteTrajectory],
+    [?currentRouteTrajectory, fx:element, ?currentElement].
+
+[?flight, :agreedElement, ?agreedElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:agreed, ?agreedRouteTrajectory],
+    [?agreedRouteTrajectory, fx:element, ?agreedElement].
+
+[?flight, :desiredElement, ?desiredElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:desired, ?desiredRouteTrajectory],
+    [?desiredRouteTrajectory, fx:element, ?desiredElement].
+
+[?flight, :predictedElement, ?predictedElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:predicted, ?predictedRouteTrajectory],
+    [?predictedRouteTrajectory, fx:element, ?predictedElement].
+
+
+# Assign :next predicate to consecutive timestamps
+[?timestamp1, :next, ?timestamp2] :-
+    [?timestamp1, :timestamp, ?time1],
+    [?timestamp2, :timestamp, ?time2],
+    FILTER(?time2 > ?time1),
+    NOT EXISTS {
+        [?timestamp3, :timestamp, ?time3],
+        FILTER(?time3 > ?time1),
+        FILTER(?time3 < ?time2)
+    }.
+
+
+# TODO: ovo ispod možda ne treba, ako plan leta dobijemo svakim FIXM requestom
+# onda možemo programski u varijabli u pipelineu čuvati iduću planiranu točku
+"""
+Before getting the first timestamp, we need to connect the planned (desired) branch to the 
+first point of the plan flight which is predefined as a static subgraph.
+"""
+# Combined Rule: Connect "agreed element" to the first planned point based on the earliest timestamp
+[?agreedElement, :plannedPoint, ?plannedPoint] :-
+    # Match timestamps associated with flights
+    [?timestamp, fx:flight, ?flight],
+
+    # Ensure this timestamp is the earliest for the flight
+    NOT EXISTS {
+        [?otherTimestamp, fx:flight, ?flight],
+        FILTER(?otherTimestamp < ?timestamp)
+    },
+
+    # Traverse the hierarchy in the dynammic subgraph to locate the "agreed" branch
+    [?flight, fx:agreedElement, ?agreedElement],
+
+    # Locate the flight plan subgraph corresponding to the same flight
+    [?flight, :plan, ?plan],
+
+    # Find the first point in the plan
+    [?plan, :1, ?plannedPoint].
+
+
+"""
+When aircraft passes the planned point, we need to update the "agreed" branch to point to new 
+planned position.
+"""

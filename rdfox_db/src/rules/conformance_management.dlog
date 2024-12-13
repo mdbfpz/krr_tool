@@ -1,0 +1,897 @@
+# 5.1.1 Check that aircraft is climbing/descending towards cleared FL
+
+# Climbing:
+# # Rule 1: Check if current level is below cleared level and vertical rate is positive.
+[?flight, :climbingToCFL] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currElement, fx:extension, ?verticalRate],
+    [?flight, fx:agreedElement, ?agreedElement],   
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?clearedLevel],
+    FILTER(?currLevel < ?clearedLevel),
+    FILTER(?verticalRate > 0).
+
+# Rule 2: Bind the result based on climbing check
+[?flight, :isClimbingToCFL, 1] :- [?flight, :climbingToCFL].
+[?flight, :isClimbingToCFL, 0] :- NOT [?flight, :climbingToCFL].
+
+# Descending:
+# # Rule 1: Check if current level is higher than cleared level and vertical rate is negative.
+[?flight, :descendingToCFL] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currElement, fx:extension, ?verticalRate],
+    [?flight, fx:agreedElement, ?agreedElement],   
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?clearedLevel],
+    FILTER(?currLevel > ?clearedLevel),
+    FILTER(?verticalRate < 0).
+
+[?flight, :isDescendingToCFL, 1] :- [?flight, :descendingToCFL].
+[?flight, :isDescendingToCFL, 0] :- NOT [?flight, :descendingToCFL].
+
+#Level bust:
+[?flight2, :flightLevelBust] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, fx:agreedElement, ?agreedElement],   
+    
+    # Extract previous, current and agreed levels and vertical rate
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?clearedLevel],
+    [?prevElement, fx:extension, ?prevVRate]
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currElement, fx:extension, ?currVRate],
+
+    # DeMorgan's law on transforming ORs to ANDs. If too slow, separate into two rules.
+    NOT(
+        NOT(
+            FILTER(?currLevel < ?clearedLevel),
+            FILTER(?prevVRate <= 0),
+            FILTER(?currVRate <= 0)  
+        ),
+        NOT(
+            FILTER(?currLevel > ?clearedLevel),
+            FILTER(?prevVRate >= 0),
+            FILTER(?currVRate >= 0)
+        )
+    ).
+
+[?flight, :isFlightLevelBust, 1] :- [?flight, :flightLevelBust].
+[?flight, :isFlightLevelBust, 0] :- NOT [?flight, :flightLevelBust].
+
+
+# 5.1.2 Check that aircraft is at cleared FL
+
+# U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
+# Rule 1: Check if current level is equal to cleared level
+[?flight, :atCFL] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?level],
+    [?flight, fx:agreedElement, ?agreedElement],   
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?level].
+
+# Rule 2: Bind the result based on level equality check
+[?flight, :isAtCFL, 1] :- [?flight, :atCFL].
+[?flight, :isAtCFL, 0] :- NOT [?flight, :atCFL].
+
+# Passing CFL:
+# Rule 1: Check if aircraft is passing cleared flight level.
+[?flight, :passingCFL] :-
+    [?flight, :isAtCFL, 1],
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currElement, fx:extension, ?currVRate],
+    FILTER(?currVRate != 0).
+
+[?flight, :isPassingCFL, 1] :- [?flight, :passingCFL].
+[?flight, :isPassingCFL, 0] :- NOT [?flight, :passingCFL].
+
+
+# 5.1.3 Check that aircraft is maintaining FL
+[?flight2, :maintainingFL] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+
+    # Extract previous and current levels and vertical rate
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:level, ?level],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?level],
+    [?currElement, fx:extension, ?verticalRate],
+    FILTER(?verticalRate = 0).
+
+[?flight, :isMaintainingFL, 1] :- [?flight, :maintainingFL].
+[?flight, :isMaintainingFL, 0] :- NOT [?flight, :maintainingFL].
+
+
+# 5.1.4 Check that aircraft is turning towards/opposite of cleared heading
+[?flight, :headingClearenceJustReceived] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared times
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:time, ?currPoint4DTime],
+    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
+    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+    FILTER(ABS(?currTime - ?agreedTime) <= 7).
+
+[?flight, :isHeadingClearenceJustReceived, 1] :- [?flight, :headingClearenceJustReceived].
+[?flight, :isHeadingClearenceJustReceived, 0] :- NOT [?flight, :headingClearenceJustReceived].
+
+[?flight, :clearedHeadingAssigned] :-
+    EXISTS ?clearedHading IN(
+        [?flight, :agreedElement, ?agreedElement],
+        [?agreedElement, fx:point4D, ?agreedPoint4D],
+        [?agreedPoint4D, fx:extension, ?clearedPointExtension],
+        [?clearedPointExtension, :heading, ?clearedHeading]
+    ).
+
+[?flight, :isClearedHeadingAssigned, 1] :- [?flight, :clearedHeadingAssigned].
+[?flight, :isClearedHeadingAssigned, 0] :- NOT [?flight, :clearedHeadingAssigned]
+
+# Turning towards:
+"""U javi je krivo implementirano - primjer za towards: prev=20, curr=30, clear=40 i prev=20, curr=50, clear=40. 
+Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH 
+"""
+[?flight, :turningTowardsClearedHeading] :-
+    [?flight, :isClearedHeadingAssigned, 1],
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    # Extract previous, current and cleared elements
+    [?flight, :currentElement, ?prevElement],
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+
+    # Extract previous, current and cleared headings
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:extension, ?prevPointExtension],
+    [?prevPointExtension, :heading: ?prevHeading],
+
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading: ?currHeading],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:extension, ?clearedPointExtension],
+    [?clearedPointExtension, :heading, ?clearedHeading],
+    NOT(
+        NOT(
+            FILTER(?prevHeading < ?currHeading),
+            FILTER(?currHeading < ?clearedHeading)
+        ),
+        NOT(
+            FILTER(?prevHeading > ?currHeading),
+            FILTER(?currHeading > ?clearedHeading)
+        )
+    ).
+
+[?flight, :isTurningTowardsClearedHeading, 1] :- [?flight, :turningTowardsClearedHeading].
+[?flight, :isTurningTowardsClearedHeading, 0] :- NOT [?flight, :turningTowardsClearedHeading].
+
+
+# Turning opposite:
+[?flight, :turningOppositeOfClearedHeading] :-
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    [?flight, :isClearedHeadingAssigned, 1],
+    # Extract previous, current and cleared elements
+    [?flight, :currentElement, ?prevElement],
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+
+    # Extract previous, current and cleared headings
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:extension, ?prevPointExtension],
+    [?prevPointExtension, :heading: ?prevHeading],
+
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading: ?currHeading],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:extension, ?clearedPointExtension],
+    [?clearedPointExtension, :heading, ?clearedHeading],
+    NOT(
+        NOT(
+            FILTER(?clearedHeading < ?prevHeading),
+            FILTER(?prevHeading < ?currHeading)
+        ),
+        NOT(
+            FILTER(?clearedHeading > ?prevHeading),
+            FILTER(?prevHeading > ?currHeading)
+        )
+    ).
+
+[?flight, :isTurningOppositeOfClearedHeading, 1] :- [?flight, :turningOppositeOfClearedHeading].
+[?flight, :isTurningOppositeOfClearedHeading, 0] :- NOT [?flight, :turningOppositeOfClearedHeading].
+
+
+# 5.1.5 Check that aircraft is at cleared heading  
+[?flight, :atClearedHeading,] :-
+    [?flight, :isClearedHeadingAssigned, 1],
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared headings
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading: ?currHeading],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:extension, ?clearedPointExtension],
+    [?clearedPointExtension, :heading, ?clearedHeading],
+    FILTER(ABS(?currHeading - ?clearedHeading) <= 3).		# Why radius=3?
+
+[?flight, :isAtClearedHeading, 1] :- [?flight, :atClearedHeading].
+[?flight, :isAtClearedHeading, 0] :- NOT [?flight, :atClearedHeading].
+
+
+# 5.1.6. Check that aircraft is maintaining current heading (different than cleared heading)
+[?flight2, :maintainingCurrentHeading] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightIdentification],
+    [?flight2, :aircraftIdentification, ?flightIdentification],
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    # Extract previous and current headings
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:extension, ?prevPointExtension],
+    [?prevPointExtension, :heading: ?prevHeading],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading: ?currHeading],
+    FILTER(ABS(?currHeading - ?prevHeading) <= 3).	# Why radius=3?
+
+[?flight, :isMaintainingCurrentHeading, 1] :- [?flight, :maintainingCurrentHeading].
+[?flight, :isMaintainingCurrentHeading, 0] :- NOT [?flight, :maintainingCurrentHeading].
+
+[?flight, :maintainingClearedHeading] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :isMaintainingCurrentHeading, 1],
+    [?flight, :isAtClearedHeading, 1].
+
+[?flight, :isMaintainingClearedHeading, 1] :- [?flight, :maintainingClearedHeading].
+[?flight, :isMaintainingClearedHeading, 0] :- NOT [?flight, :maintainingClearedHeading].
+
+
+# 5.1.7 Check that aircraft is accelerating/decelerating towards cleared speed
+"""U java klasi je povratna vrijednost i "Speed clearance received." (pilot je upravo primio novi cleared speed pa nit ubrzava 
+nit usporava u tom trenutku), a to u pravilima ne moramo naglasiti, obzirom da je dovoljno reći False za ubrzavanje/usporavanje 
+ako je cleared speed instrukcija stigla u trenutnom vremenu.
+"""
+[?flight, :speedClearenceJustReceived] :- 
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared times
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:time, ?currPoint4DTime],
+    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
+    [?agreedPoint4DTime, fx:absoulteTime, ?clearedTime],
+    FILTER(?currTime - ?clearedTime >= 7).	# Check if change/clearence happened up to 7s ago.
+
+[?flight, :isSpeedClearenceJustReceived, 1] :- [?flight, :speedClearenceJustReceived].
+[?flight, :isSpeedClearenceJustReceived, 0] :- NOT [?flight, :speedClearenceJustReceived].
+
+# ATCO cleared speed restriction:
+[?flight, :atcoSpeedRestriction] :-
+    # Extract cleared element for the flight at each timestamp
+    [?flight, :agreedElement, ?agreedElement],
+    # Ensure that cleared speed doesn't exist
+    NOT EXISTS ?clearedSpeed IN(
+        [?agreedElement, fx:point4D, ?agreedPoint4D],
+        [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
+    ).
+
+[?flight, :noATCOSpeedRestriction, 1] :- [?flight, :atcoSpeedRestriction].
+[?flight, :noATCOSpeedRestriction, 0] :- NOT [?flight, :atcoSpeedRestriction].
+
+# Accelerating:
+[?flight2, :acceleratingToClearedSpeed] :-
+    [?flight2, :isSpeedClearenceJustReceived, 0],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared speeds
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    FILTER(?currSpeed < ?clearedSpeed),
+    FILTER(?prevSpeed < ?currSpeed).
+
+[?flight, :isAcceleratingToClearedSpeed, 1] :- [?flight, :acceleratingToClearedSpeed].
+[?flight, :isAcceleratingToClearedSpeed, 0] :- NOT [?flight, :acceleratingToClearedSpeed].
+
+[?flight2, :acceleratingWithinClearedSpeed] :-
+    [?flight2, :isSpeedClearenceJustReceived, 0],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared speeds
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
+    
+    FILTER(?prevSpeed < ?currSpeed),
+    NOT(
+        NOT(
+	        FILTER(?currSpeed >= ?clearedSpeed),
+            FILTER(?boundType = ">=")
+        ),
+        NOT(
+	        FILTER(?currSpeed <= ?clearedSpeed),
+       	    FILTER(?boundType = "<=")
+        )
+    ).
+# TODO: maknuti filter ?boundType = ... i ubaciti to u select (ako je moguće), slično kao kod provjere jednakosti dviju varijabli bez filtera.
+
+[?flight, :isAcceleratingWithinClearedSpeed, 1] :- [?flight, :acceleratingWithinClearedSpeed].
+[?flight, :isAcceleratingWithinClearedSpeed, 0] :- NOT [?flight, :acceleratingWithinClearedSpeed].
+
+# Decelerating:
+[?flight2, :deceleratingToClearedSpeed] :-
+    [?flight, :isSpeedClearenceJustReceived, 0],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightIdentification],
+    [?flight2, :aircraftIdentification, ?flightIdentification],
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared speeds
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    FILTER(?currSpeed > ?clearedSpeed),
+    FILTER(?prevSpeed > ?currSpeed).
+
+[?flight, :isDeceleratingToClearedSpeed, 1] :- [?flight, :deceleratingToClearedSpeed].
+[?flight, :isDeceleratingToClearedSpeed, 0] :- NOT [?flight, :deceleratingToClearedSpeed].
+
+[?flight2, :deceleratingWithinClearedSpeed] :-
+    [?flight2, :isSpeedClearenceJustReceived, 0],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightIdentification],
+    [?flight2, :aircraftIdentification, ?flightIdentification],
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared speeds
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
+
+    FILTER(?prevSpeed > ?currSpeed),
+    NOT(
+        NOT(
+	        FILTER(?currSpeed >= ?clearedSpeed),
+            FILTER(?boundType = ">=")
+        ),
+        NOT(
+	        FILTER(?currSpeed <= ?clearedSpeed),
+       	    FILTER(?boundType = "<=")
+        )
+    ).
+
+[?flight, :isDeceleratingWithinClearedSpeed, 1] :- [?flight, :deceleratingWithinClearedSpeed].
+[?flight, :isDeceleratingWithinClearedSpeed, 0] :- NOT [?flight, :deceleratingWithinClearedSpeed].
+
+
+# 5.1.8 Check that aircraft is flying at cleared speed
+[?flight, :flyingAtClearedSpeed] :-
+    [?flight, :isSpeedClearenceJustReceived, 0],
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared speeds
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
+
+    # DeMorgan's rules on OR condition, whether the bound exists or not.
+    NOT(
+        NOT(FILTER(?currSpeed = ?clearedSpeed)),	# TODO: Ovo ubaciti u atom selekt
+        NOT(
+            FILTER(?boundType = "<="),
+            FILTER(?currSpeed <= ?clearedSpeed)
+        ),
+        NOT(
+            FILTER(?boundType = ">="),
+            FILTER(?currSpeed >= ?clearedSpeed)
+        ) 
+      ).
+
+[?flight, :isFlyingAtClearedSpeed, 1] :- [?flight, :flyingAtClearedSpeed].
+[?flight, :isFlyingArClearedSpeed, 0] :- NOT [?flight, :flyingAtClearedSpeed].
+
+
+# 5.1.9 Check that aircraft is maintaining current speed (different than cleared speed)
+[?flight2, :maintainingCurrentSpeed] :-
+    [?flight, :isSpeedClearenceJustReceived, 0],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightIdentification],
+    [?flight2, :aircraftIdentification, ?flightIdentification],
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    # Extract previous and current speeds
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    FILTER(ABS(?currSpeed - ?prevSpeed) <= 4).	# why 4?
+
+[?flight, :isMaintainingCurrentSpeed, 1] :- [?flight, :maintainingCurrentSpeed].
+[?flight, :isMaintainingCurrentSpeed, 0] :- NOT [?flight, :maintainingCurrentSpeed].
+
+[?flight, :maintainingClearedSpeed] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :isMaintainingCurrentSpeed, 1],
+    [?flight, :isFlyingAtClearedSpeed, 1].
+
+[?flight, :isMaintainingClearedSpeed, 1] :- [?flight, :maintainingClearedSpeed].
+[?flight, :isMaintainingClearedSpeed, 0] :- NOT [?flight, :maintainingClearedSpeed].
+
+
+# 5.1.10  Check that aircraft is flying towards cleared point
+# TODO: Implement this rule!
+
+
+# 5.1.11  Check that aircraft is at cleared point
+[?flight, :atClearedPoint] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared positions
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:lat, ?currLat],
+    [?currPosition, fx:lon, ?currLon],
+    [?agreedElement, fx:point4D, ?agreedPoint4D], 
+    [?agreedPoint4D, fx:position, ?clearedPosition],
+    [?clearedPosition, fx:lat, ?clearedLat],
+    [?clearedPosition, fx:lon, ?clearedLon],
+
+    BIND(2.5 * 1825 AS ?toleranceRadius)		# Tolerance radius in meters
+    BIND(6371 as ?R),		# Radius of the earth in km
+    BIND((?clearedLat - ?currLat) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
+    BIND((?clearedLon - ?currLon) * (math:pi/180) AS ?diffLonInRad),
+    BIND(?currLat * (math:pi/180) AS ?currLatInRad),
+    BIND(?clearedLat * (math:pi/180) AS ?clearedLatInRad),
+
+    BIND(
+        math:pow(math:sin(?diffLatInRad/2), 2) + 
+        math:cos(?currLatInRad) * math:cos(?clearedLatInRad) *
+        math:pow(math:sin(?diffLonInRad/2), 2)
+        AS ?a
+    ),
+    BIND(2 * math:atan2(math:sqrt(?a), math:sqrt(1-?a)) AS ?c),
+    BIND(?R * ?c * 1000 AS ?distance),	# Distance in meters
+    FILTER(?distance <= ?toleranceRadius).
+
+[?flight, :isAtClearedPoint, 1] :- [?flight, :atClearedPoint].
+[?flight, :isAtClearedPoint, 0] :- NOT [?flight, :atClearedPoint].
+
+
+# 5.1.12 Check that aircraft’s current ROC/ROD is lower/higher than cleared
+[?flight, :clearedVerticalRateAssigned] :-
+    EXISTS ?clearedVRate IN(
+        [?flight, :agreedElement, ?agreedElement],
+        [?agreedElement, fx:extension, ?clearedVRate]
+    ).
+
+[?flight, :isClearedVerticalRateAssigned, 1] :- [?flight, :clearedVerticalRateAssigned].
+[?flight, :isClearedVerticalRateAssigned, 0] :- NOT [?flight, :clearedVerticalRateAssigned].
+
+[?flight, :atClearedVerticalRate] :-
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:extension, ?vRate],
+    [?flight, fx:agreedElement, ?agreedElement],
+    [?agreedElement, fx:extension, ?vRate].
+
+[?flight, :isAtClearedVerticalRate, 1] :- [?flight, :atClearedVerticalRate].
+[?flight, :isAtClearedVerticalRate, 0] :- NOT [?flight, :atClearedVerticalRate]
+
+[?flight, :verticalRateHigherThanClearedVerticalRate] :-
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:extension, ?currVRate],
+    [?flight, fx:agreedElement, ?agreedElement],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    FILTER(?currVRate > ?clearedVRate).
+
+[?flight, :isVerticalRateHigherThanClearedVerticalRate, 1] :- [?flight, :verticalRateHigherThanClearedVerticalRate].
+[?flight, :isVerticalRateHigherThanClearedVerticalRate, 0] :- NOT [?flight, :verticalRateHigherThanClearedVerticalRate].
+
+[?flight, :verticalRateLowerThanClearedVerticalRate] :-
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:extension, ?currVRate],
+    [?flight, fx:agreedElement, ?agreedElement],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    FILTER(?currVRate < ?clearedVRate).
+
+[?flight, :isVerticalRateLowerThanClearedVerticalRate, 1] :- [?flight, :verticalRateLowerThanClearedVerticalRate].
+[?flight, :isVerticalRateLowerThanClearedVerticalRate, 0] :- NOT [?flight, :verticalRateLowerThanClearedVerticalRate].
+
+[?flight, :verticalRateWithinClearedVerticalRate] :-
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared vertical rates
+    [?currElement, fx:extension, ?currVRate],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    [?agreedElement, fx:extension, ?clearedVerticalRateExtension],
+    [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],    
+
+    # DeMorgan's rules on OR condition, whether the bound exists or not.
+    NOT(
+        NOT(
+            FILTER(?boundType = "<="),
+            FILTER(?currVRate <= ?clearedVRate)
+        ),
+        NOT(
+            FILTER(?boundType = ">="),
+            FILTER(?currVRate >= ?clearedVRate)
+        ) 
+    ).
+
+[?flight, :isVerticalRateWithinClearedVerticalRate, 1] :- [?flight, :verticalRateWithinClearedVerticalRate].
+[?flight, :isVerticalRateWithinClearedVerticalRate, 0] :- NOT [?flight, :verticalRateWithinClearedVerticalRate].
+
+
+# 5.1.13 Check that aircraft is maintaining cleared ROC/ROD
+[?flight2, :maintainingVerticalRate] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    # Extract previous and current vertical rates
+    [?prevElement, fx:extension, ?prevVRate],
+    [?currElement, fx:extension, ?currVRate],
+    FILTER(ABS(?prevVRate - ?currVRate) <= 30).
+
+[?flight, :isMaintainingVerticalRate, 1] :- [?flight, :maintainingVerticalRate].
+[?flight, :isMaintainingVerticalRate, 0] :- NOT [?flight, :maintainingVerticalRate].
+
+[?flight, :maintainingClearedVerticalRate] :-
+    [?flight, :isMaintainingVerticalRate, 1],
+    [?flight, :isAtClearedVerticalRate, 1].
+
+[?flight, :isMaintainingClearedVerticalRate, 1] :- [?flight, :maintainingClearedVerticalRate].
+[?flight, :isMaintainingClearedVerticalRate, 0] :- NOT [?flight, :maintainingClearedVerticalRate].
+
+
+# 5.1.14 Check that aircraft is increasing/decreasing towards/within cleared ROC/ROD
+[?flight, :verticalRateClearenceJustReceived] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and cleared times
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:time, ?currPoint4DTime],
+    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
+    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+    FILTER(ABS(?currTime - ?agreedTime) <= 7).
+
+[?flight, :isVerticalRateClearenceJustReceived, 1] :- [?flight, :verticalRateClearenceJustReceived].
+[?flight, :isVerticalRateClearenceJustReceived, 0] :- NOT [?flight, :verticalRateClearenceJustReceived].
+
+# Incresing to cleared rate:
+[?flight2, :increasingToVerticalRate] :-
+    [?flight, :isVerticalRateClearenceJustReceived, 0],
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared vertical rates
+    [?prevElement, fx:extension, ?prevVRate],
+    [?currElement, fx:extension, ?currVRate],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    FILTER(ABS(?currVRate) > ABS(?prevVRate)),
+    FILTER(ABS(?currVRate) < ABS(?clearedVRate)).
+    
+[?flight, :isIncreasingToClearedVerticalRate, 1] :- [?flight, :increasingToClearedVerticalRate].
+[?flight, :isIncreasingToClearedVerticalRate, 0] :- NOT [?flight, :increasingToClearedVerticalRate].	
+
+# Decresing to cleared rate:
+[?flight2, :decreasingToClearedVerticalRate] :-
+    [?flight, :isVerticalRateClearenceJustReceived, 0],
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared vertical rates
+    [?prevElement, fx:extension, ?prevVRate],
+    [?currElement, fx:extension, ?currVRate],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    FILTER(ABS(?currVRate) < ABS(?prevVRate)),
+    FILTER(ABS(?currVRate) > ABS(?clearedVRate)).
+    
+[?flight, :isDecreasingToClearedVerticalRate, 1] :- [?flight, :isDecreasingToClearedVerticalRate].
+[?flight, :isDecreasingToVerticalRate, 0] :- NOT [?flight, :decreasingToClearedVerticalRate].
+
+# Incresing within cleared rate:
+[?flight2, :increasingWithinClearedVerticalRate] :-
+    [?flight, :isVerticalRateClearenceJustReceived, 0],
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared vertical rates
+    [?prevElement, fx:extension, ?prevVRate],
+    [?currElement, fx:extension, ?currVRate],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    [?agreedElement, fx:extension, ?clearedVRateExtension],
+    [?clearedVRateExtension, :clearedBoundType, ?boundType],    
+
+    FILTER(ABS(?currVRate) > ABS(?prevVRate)),
+    NOT(
+        NOT(
+            FILTER(?boundType = ">="),
+            FILTER(ABS(?currVRate) > ABS(?clearedVRate))
+        ), 
+        NOT(
+            FILTER(?boundType = "<="),
+            FILTER(ABS(?currVRate) < ABS(?clearedVRate))
+        )
+    ).
+    
+[?flight, :isIncreasingWithinClearedVerticalRate, 1] :- [?flight, :increasingWithinClearedVerticalRate].
+[?flight, :isIncreasingWithinClearedVerticalRate, 0] :- NOT [?flight, :increasingWithinClearedVerticalRate].
+
+# Decreasing within cleared rate:
+[?flight2, :decreasingWithinClearedVerticalRate] :-
+    [?flight, :isVerticalRateClearenceJustReceived, 0],
+    [?flight, :isClearedVerticalRateAssigned, 1],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract previous, current and cleared elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?agreedElement],
+    # Extract previous, current and cleared vertical rates
+    [?prevElement, fx:extension, ?prevVRate],
+    [?currElement, fx:extension, ?currVRate],
+    [?agreedElement, fx:extension, ?clearedVRate],
+    [?agreedElement, fx:extension, ?clearedVRateExtension],
+    [?clearedVRateExtension, :clearedBoundType, ?boundType],    
+
+    FILTER(ABS(?currVRate) < ABS(?prevVRate)),
+    NOT(
+        NOT(
+            FILTER(?boundType = ">="),
+            FILTER(ABS(?currVRate) > ABS(?clearedVRate))
+        ), 
+        NOT(
+            FILTER(?boundType = "<="),
+            FILTER(ABS(?currVRate) < ABS(?clearedVRate))
+        )
+    ).
+    
+[?flight, :isDecreasingWithinClearedVerticalRate, 1] :- [?flight, :decreasingWithinClearedVerticalRate].
+[?flight, :isDecreasingWithinClearedVerticalRate, 0] :- NOT [?flight, :decreasingWithinClearedVerticalRate].
+
+
+# 5.1.15 Check that aircraft is following the 3D trajectory
+"""Won't be implementing this. Instead we always look if the aircraft is following the trajectory within some tolerance."""
+
+
+# 5.1.16 Check if the deviation from 3D trajectory is within tolerance
+"""
+Ovo detaljno provjeriti i istestirati! Računamo udaljenost između točke trenutne pozicije X i segmenta AB, pri čemu su 
+A i B prethodne i iduće cleared točke (ako nisu naznačene, onda se radi i točkama po planu leta). Također, flight level gledamo klasično.
+"""
+# Extract previous - agreed, current - agreed and current, next - cleared elements for the flight
+[?flight, :FLDeviationFrom3DtrajectoryWithinTolerance] :-
+# Extract current and agreed elements for the flight
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    # Extract current and agreed flight levels
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?clearedLevel],
+    FILTER(ABS(?currLevel - ?clearedLevel) <= 100).
+
+[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1] :- [?flight, :FLDeviationFrom3DtrajectoryWithinTolerance].
+[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, 0] :- NOT [?flight, :FLDeviationFrom3DtrajectoryWithinTolerance].
+
+[?flight2, :deviationFrom3DtrajectoryWithinTolerance] :-
+    [?flight2, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1],
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT], 
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    # Extract elements for the flights at each timestamp
+    [?flight1, :agreedElement, ?prevClearedElement],
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?nextClearedElement],	# Cleared in curr timestamp holds information about next cleared position, comparing to current position of the plane
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+
+    [?prevClearedElement, fx:point4D, ?prevClearedPoint4D],
+    [?prevClearedPoint4D, fx:position, ?prevClearedPosition],
+    [?prevClearedPosition, fx:pos, ?prevClearedLatLon],
+    [?prevClearedLatLon, fx:lat, ?prevClearedLat],
+    [?prevClearedLatLon, fx:lon, ?prevClearedLon],   
+
+    [?nextClearedElement, fx:point4D, ?nextClearedPoint4D],
+    [?nextClearedPoint4D, fx:position, ?nextClearedPosition],
+    [?nextClearedPosition, fx:pos, ?nextClearedLatLon],
+    [?nextClearedLatLon, fx:lat, ?nextClearedLat],
+    [?nextClearedLatLon, fx:lon, ?nextClearedLon],
+
+    # Convert (lat, lon) positions to Cartesian coordinates
+    BIND(6371000 AS ?R),	# Earth radius in meters
+    BIND((?prevClearedLat + ?nextClearedLat) / 2 AS ?lat_ref),
+    BIND((?prevClearedLon + ?nextClearedLon) / 2 AS ?lon_ref),
+    BIND(R * (?prevClearedLon - ?lon_ref) * math:cos(?lat_ref)  AS ?x1),
+    BIND(R * (?prevClearedLat - ?lat_ref) AS ?y1),
+    BIND(R * (?nextClearedLon - ?lon_ref) * math:cos(?lat_ref)  AS ?x2),
+    BIND(R * (?nextClearedLat - ?lat_ref) AS ?y2),
+    BIND(R * (?currLon - ?lon_ref) * math:cos(?lat_ref) AS ?x0),
+    BIND(R * (?currLat - ?lat_ref) AS ?y0),
+
+    BIND(2.5*1852 AS ?tolerance),	# Half-margin ("radius") tolerance in meters
+    BIND(
+        ABS((?y2-?y1)*?x0 - (?x2-?x1)*?y0 + ?x2?y1 - ?y2?x1)
+        AS ?a
+    ),
+    BIND(
+        math:sqrt(math:pow(?y2 - ?y1, 2) + math:pow(?x2 - ?x1, 2))
+        AS ?d
+    ),
+    BIND(?a/?d AS ?distance),
+    FILTER(?distance <= ?tolerance).
+
+[?flight, :isDeviationFrom3DtrajectoryWithinTolerance, 1] :- [?flight, :deviationFrom3DtrajectoryWithinTolerance].
+[?flight, :isDeviationFrom3DtrajectoryWithinTolerance, 0] :- NOT [?flight, :deviationFrom3DtrajectoryWithinTolerance].
+
+
+# 5.1.17 Check that aircraft is following the 4D trajectory
+"""
+Ovo vjerojatno ne treba. Ima li smisla da se vrijeme identično poklapa u sekundu (current vs planned)? 
+Ako nema, onda ovaj task ne treba - možemo gledati samo uz toleranciju (i 3D i 4D).
+"""
