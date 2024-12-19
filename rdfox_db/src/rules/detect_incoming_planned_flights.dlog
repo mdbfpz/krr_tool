@@ -1,0 +1,267 @@
+[?flight, :aircraftAlreadyAssumed] :-
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"].
+
+[?flight, :isAircraftAlreadyAssumed, 1] :- [?flight, :aircraftAlreadyAssumed].
+[?flight, :isAircraftAlreadyAssumed, 0] :- NOT [?flight, :aircraftAlreadyAssumed].
+
+[?flight, :aircraftAlreadyTransferred] :-
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "TRANSFERRED"].
+
+[?flight, :isAircraftAlreadyTransferred, 1] :- [?flight, :aircraftAlreadyTransferred].
+[?flight, :isAircraftAlreadyTransferred, 0] :- NOT [?flight, :aircraftAlreadyTransferred].
+
+[?flight, :withinSectorVertically, ?sector]
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    FILTER(?currLevel <= ?upperLimit*100),
+    FILTER(?currLevel >= ?lowerLimit*100).
+
+[?flight, :withinSector, ?sector] :-
+    [?flight, :withinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
+    [?flight, :withinSectorVertically, ?sector].
+
+
+# 5.2.1. Check that aircraft is close to Sector boundary
+[?flight, :aircraftCloseToSectorBoundary, ?sector] :-
+    [?flight, :isAircraftAlreadyAssumed, 0],
+    [?flight, :isAircraftAlreadyTransferred, 0],
+    NOT [?flight, :withinSector, ?sector],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?flight, :distanceToClosestHorizontalBoundary, ?minDist], # Horizontal distance to 2D sector - TODO: iskoristiti gotov kod iz jave i ubaciti u pipeline
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    BIND (
+        ?minDist/(?currSpeed*0.514444444) # Speed in knots, converted to m/s - time is in seconds
+        AS ?timeToReachSector
+    ),
+    BIND(
+        MINFN(ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel))
+        as ?verticalDistanceToSector
+    ),
+    # DeMorgan's Law - disjunction to conjunction
+    NOT(
+        NOT(
+            FILTER(?timeToReachSector <= 5*60), # 5 minutes away
+        ),
+        NOT(
+            FILTER(?verticalDistanceToSector <= 1000)
+        )
+    ).
+
+# When the aircraft is planned:
+[?flight, :plannedAircraftCloseToSectorBoundary, ?sector] :-
+    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output
+    [?flight, :aircraftCloseToSectorBoundary, ?sector].
+
+# When the aircraft is not planned:
+[?flight, :notPlannedAircraftCloseToSectorBoundary, ?sector] :-
+    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output
+    [?flight, :aircraftCloseToSectorBoundary, ?sector].
+
+[?flight, :aircraftNotCloseToSectorBoundary, ?sector] :-
+    NOT [?flight, :plannedAircraftCloseToSectorBoundary, ?sector],
+    NOT [?flight, :notPlannedAircraftCloseToSectorBoundary, ?sector].
+
+
+# 5.2.2. Check that aircraft is approaching Sector boundary
+[?flight2, :aircraftApproachingToSectorBoundary, ?sector] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+
+    [?flight2, :isAircraftAlreadyAssumed, 0],
+    [?flight2, :isAircraftAlreadyTransferred, 0],
+    NOT [?flight2, :withinSector, ?sector],
+    
+    # Extract previous and current positions and flight levels
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:position, ?prevPosition],
+    [?prevPosition, fx:pos, ?prevLatLon],
+    [?prevLatLon, fx:lat, ?prevLat],
+    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPoint4D, fx:level, ?prevLevel],
+    [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    BIND(
+        MINFN(ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel))
+        as ?currVerticalDistanceToSector
+    ),
+
+    BIND(
+        MINFN(ABS(?upperLimit*100 - ?prevLevel), ABS(?lowerLimit*100 - ?prevLevel))
+        as ?prevVerticalDistanceToSector
+    ),
+
+    NOT(
+        NOT(
+            FILTER(?currMinDist < ?prevMinDist)
+        ),
+        NOT(
+            FILTER(?currVerticalDistanceToSector < ?prevVerticalDistanceToSector)
+        )
+    ).
+
+# When the aircraft is planned:
+[?flight, :plannedAircraftApproachingToSectorBoundary, ?sector] :-
+    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output,
+    [?flight, :aircraftApproachingToSectorBoundary, ?sector].
+
+# When the aircraft is not planned:
+[?flight, :notPlannedAircraftApproachingToSectorBoundary, ?sector] :-
+    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output,
+    [?flight, :aircraftApproachingToSectorBoundary, ?sector].
+
+[?flight, :aircraftNotApproacingToSectorBoundary, ?sector] :-
+    NOT [?flight, :plannedAircraftApproachingToSectorBoundary, ?sector],
+    NOT [?flight, :notPlannedAircraftApproachingToSectorBoundary, ?sector].
+
+
+# 5.2.3. Check that aircraft’s altitude is within the altitude band of the Sector
+# When the aircraft is planned:
+[?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-
+    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output,
+    [?flight, :withinSectorVertically, ?sector].
+
+# When the aircraft is not planned:
+[?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-
+    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output,
+    [?flight, :withinSectorVertically, ?sector].
+
+[?flight, :aircraftAltitudeNotWithinSectorBandAltitude, ?sector] :-
+    NOT [?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector],
+    NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
+
+
+# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
+[?flight2, :approachingSectoerAltitude, ?sector] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+   
+    # Extract previous and current positions and flight levels
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:level, ?prevLevel],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    BIND(
+        ABS(?lowerLimit*100 - ?currLevel)
+        AS ?currLowerLevelDiff
+    ),
+    BIND(
+        ABS(?upperLimit*100 - ?currLevel)
+        AS ?currUpperLevelDiff
+    ),
+    BIND(
+        ABS(?lowerLimit*100 - ?prevLevel)
+        AS ?prevLowerLevelDiff
+    ),
+    BIND(
+        ABS(?upperLimit*100 - ?prevLevel)
+        AS ?prevUpperLevelDiff
+    ),
+
+    # DeMorgan's Law
+    NOT(
+        NOT(
+            FILTER(
+                ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
+                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)
+            ),
+            FILTER(?currLowerLevelDiff < ?prevLowerLevelDiff)
+        ), 
+        NOT(
+            NOT(
+                FILTER(
+                    ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
+                    ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)
+                )
+            ),
+            FILTER(?currUpperLevelDiff < ?prevUpperLevelDiff)
+        )
+    ).
+
+[?flight, :aircraftWithinSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:extension, ?currVRate],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector]
+
+    FILTER(?verticalRate = 0),
+    [?flight, :withinSectorVertically].
+
+[?flight, :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:extension, ?currVRate],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector]
+
+    FILTER(?verticalRate = 0),
+    NOT [?flight, :withinSectorVertically].
+
+[?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector] :-
+    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output
+    [?flight, :approachingSectorAltitude, ?sector].
+
+[?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector] :-
+    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output
+    [?flight, :approachingSectorAltitude, ?sector].
+
+"""[?flight, :aircraftIsNotApproachingSectorAltitude, ?sector] :-
+    NOT [?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector],
+    NOT [?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector]."""
