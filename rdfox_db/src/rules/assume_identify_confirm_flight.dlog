@@ -50,7 +50,7 @@
     FILTER(
         ?currLevel > ?upperLimit*100,
         ?currVRate < 0,
-        ABS(?currVRate) >= ABS(?v) # TODO: provjeriti je li u javi ovo dobro!
+        ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
 
 [?flight2, :aircraftIncomingVerticallyFromBelow, ?sector] :-
@@ -102,7 +102,7 @@
     FILTER(
         ?currLevel < ?lowerLimit*100,
         ?currVRate > 0,
-        ABS(?currVRate) >= ABS(?v) # TODO: provjeriti je li u javi ovo dobro!
+        ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
 
 # DeMorgan
@@ -157,14 +157,37 @@
         AS ?timeToReachSector
     ),
     BIND(
+        ABS(((?currLevel - (?upperLimit*100)))/?timeToReachSector)*60 # ft/min
+        AS ?v1   # TODO: provjeriti je li u javi ovo dobro!
+    ),
+    BIND(
         ABS(((?currLevel - (?lowerLimit*100)))/?timeToReachSector)*60 # ft/min
-        AS ?v   # TODO: provjeriti je li u javi ovo dobro!
+        AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
+    # Aircraft is getting closer to the sector boundary
     FILTER(
         ?currMinDist < ?prevMinDist
     ),
-    ...
+    
+    # DeMorgan
+    NOT(
+        NOT(
+            FILTER(
+                ?currVRate > 0,
+                ABS(?currVRate) <= ?v1
+            )
+        ),
+        NOT(
+            FILTER(
+                ?currVRate < 0,
+                ABS(?currVRate) <= ?v2
+            )
+        ),
+        NOT(
+            FILTER(?currVRate = 0)
+        )
+    ).
 
 
 [?flight, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector] :-
@@ -210,11 +233,190 @@
         AS ?timeToReachSector
     ),
     BIND(
+        ABS(((?currLevel - (?upperLimit*100)))/?timeToReachSector)*60 # ft/min
+        AS ?v1   # TODO: provjeriti je li u javi ovo dobro!
+    ),
+    BIND(
         ABS(((?currLevel - (?lowerLimit*100)))/?timeToReachSector)*60 # ft/min
-        AS ?v   # TODO: provjeriti je li u javi ovo dobro!
+        AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
+    # Aircraft is getting closer to the sector boundary
     FILTER(
         ?currMinDist < ?prevMinDist
     ),
-    ...
+
+    # DeMorgan
+    NOT(
+        NOT(
+            FILTER(
+                ?currLevel > ?upperLimit*100,
+                ?currVRate < 0,
+                ABS(?currVRate) >= ?v1
+            )
+        ),
+        NOT(
+            FILTER(
+                ?currLevel < ?lowerLimit*100,
+                ?currVRate > 0,
+                ABS(?currVRate) >= ?v2
+            )
+        )
+    ).
+
+[?flight, :aircraftIncomingHorizontally, ?sector] :-
+    NOT(
+        NOT [?flight, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector],
+        NOT [?flight, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector]
+    ).
+
+# The main rule associated with the task
+[?flight, :aircraftIncoming, ?sector] :-
+    NOT(
+        NOT [?flight, :aircraftIncomingVertically, ?sector],
+        NOT [?flight, :aircraftIncomingHorizontally, ?sector]
+    ).
+
+
+
+# 5.3.2 Check that aircraft is planned
+"""
+The aircraft is planned if any of its planned route points lie within the given sector.
+"""
+"""
+Obzirom da plan leta ubacujemo svake sekunde u graf (iduću planiranu točku), ne možemo odmah u startu tvrditi da je let planiran
+ukoliko tek neka kasnija točka rute leži u sektoru obzirom da još se ne nalazi u grafu. Najbolje za svaku točku rute (plan leta dobijemo cijeli
+prilikom parsiranja) unutar pipelinea provjeriti pripada li sektoru i onda tu informaciju ubaciti u graf, 
+tj. dodati trojku [?flight, :aircraftIsPlanned, ?sector] kad postoji točka na ruti koja se nalazi u danom sektoru ?sector.
+Eventualno, dodati cijeli plan leta u graf i onda napraviti pravilo koje za svaku točku leta provjerava nalazi li se u sektoru. 
+Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je li planiran. Što ako se plan mijenja?
+"""
+
+
+# 5.3.3 Check that aircraft has sent the initial call (via datalink)
+[?flight, :aircrafHasSentInitialCall, 1] :-
+    [?flight, :datalink, ?datalink],
+    [?datalink, :initialCall, "YES"].
+
+[?flight, :aircrafHasSentInitialCall, 0] :- NOT [?flight, :aircrafHasSentInitialCall, 1].
+
+
+# 5.3.4 Confirm that aircraft can be assumed
+[?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector] :-
+    [?flight, :withinSectorHorizontally, ?sector],
+    NOT [?flight, :withinSectorVertically, ?sector]
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currElement, fx:extension, ?currVRate],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+
+    [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
+
+    BIND(
+        IF(
+            ?currLevel > ?upperLimit*100,
+            ?currLevel - ?upperLimit*100,
+            ?lowerLimit*100 - ?currLevel
+        )
+        AS ?distToVerticalLimit
+    ),
+    # TODO: Check in java if the two binds below are ok!
+    BIND(
+        ?currMinDist/(?currSpeed*0.514444444)
+        AS ?timeToReachSector
+    ),
+    BIND(
+        ABS(?distToVerticalLimit/?currVRate) * 60
+        AS ?c
+    ),
+    BIND(
+        2*60 AS ?x
+    ),
+    BIND(
+        500 AS ?y
+    ),
+
+    FILTER(
+        ?distToVerticalLimit <= ?y,
+        ?c <= ?timeToReachSector
+    ).
+
+[?flight, :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally, ?sector] :-
+    NOT [?flight, :withinSectorHorizontally, ?sector],
+    [?flight, :withinSectorVertically, ?sector]
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+
+    [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
+
+    BIND(2*60 AS ?x),
+    BIND(
+        ?currMinDist/(?currSpeed*0.514444444)
+        AS ?timeToReachSector
+    ),
+
+    FILTER(
+        ?timeToReachSector <= ?x
+    ).
+
+[?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector] :-
+    NOT [?flight, :withinSectorHorizontally, ?sector],
+    NOT [?flight, :withinSectorVertically, ?sector]
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+
+    [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
+
+    BIND(2*60 AS ?x),
+    BIND(500 AS ?y),
+    BIND(
+        ?currMinDist/(?currSpeed*0.514444444)
+        AS ?timeToReachSector
+    ),
+    BIND(
+        IF(
+            ?currLevel > ?upperLimit*100,
+            ?currLevel - ?upperLimit*100,
+            ?lowerLimit*100 - ?currLevel
+        )
+        AS ?distToVerticalLimit
+    ),
+    BIND(
+        ?distToVerticalLimit/timeToReachSector
+        AS ?v
+    ),
+
+    FILTER(
+        ?timeToReachSector <= ?x,
+        ?distToVerticalLimit <= ?y,
+        ABS(?currVRate) >= ?v*60 # ft/min
+    ).
+
+[?flight, :aircraftCanBeAssumed, ?sector] :-
+    NOT(
+        NOT [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector],
+        NOT [?flight, :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally, ?sector],
+        NOT [?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector]
+    ).

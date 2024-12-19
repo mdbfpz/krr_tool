@@ -12,6 +12,9 @@
 [?flight, :isAircraftAlreadyTransferred, 1] :- [?flight, :aircraftAlreadyTransferred].
 [?flight, :isAircraftAlreadyTransferred, 0] :- NOT [?flight, :aircraftAlreadyTransferred].
 
+"""
+This checks that the aircraft's current position is within the given sector's upper and lower limit.
+"""
 [?flight, :withinSectorVertically, ?sector]
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -25,9 +28,35 @@
     FILTER(?currLevel <= ?upperLimit*100),
     FILTER(?currLevel >= ?lowerLimit*100).
 
+"""
+This checks that the planned route point is within the given sector's upper and lower limit.
+"""
+"""[?flight, :plannedPointWithinSectorVertically, ?sector]
+    [?flight, :agreedElement, ?plannedElement],
+    [?plannedElement, fx:point4D, ?plannedPoint4D],
+    [?plannedPoint4D, fx:level, ?plannedLevel],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    FILTER(?plannedLevel <= ?upperLimit*100),
+    FILTER(?plannedLevel >= ?lowerLimit*100)."""
+
+"""
+This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
+"""
 [?flight, :withinSector, ?sector] :-
     [?flight, :withinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
     [?flight, :withinSectorVertically, ?sector].
+
+"""
+This checks that the aircraft's planned route point is within the 3D sector - both horizontally and vertically.
+"""
+"""[?flight, :plannedPointWithinSector, ?sector] :-
+    [?flight, :plannedPointWithinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
+    [?flight, :plannedPointWithinSectorVertically, ?sector]."""
 
 
 # 5.2.1. Check that aircraft is close to Sector boundary
