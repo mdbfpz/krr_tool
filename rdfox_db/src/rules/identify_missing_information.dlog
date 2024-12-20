@@ -1,0 +1,116 @@
+#5.10.1  Identify aircraft with possible equipment degradation
+[?flight, :possibleEquipmentDegradation] :-
+    [?flight, :datalink, ?datalink], #valjda je ovako definiran predikat i objekt
+    [?datalink, :equipmentDegradation, "YES"].
+[?flight, :hasEquipmentDegradation, 1] :- [?flight, :possibleEquipmentDegradation].
+[?flight, :hasEquipmentDegradation, 0] :- NOT[?flight, :possibleEquipmentDegradation].
+
+
+#5.10.2 Check situation at destination airport
+
+[?airportHeliport, :normalAirportOpStatus] :-
+    
+    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, :operationalStatus, ?operationalStatus],    
+    FILTER (?operationalStatus = "NORMAL").#TODO:mislim da je brža opcija da taj filter izbacimo i ubacimo to u join uvjet:
+                                            #[?airportHeliportAvailability, :operationalStatus, "NORMAL"]
+[?airportHeliport, :notifyOpStatus, 0] :- [?airportHeliport, :normalAirportOpStatus].
+[?airportHeliport, :notifyOpStatus, 1] :- NOT[?airportHeliport, :normalAirportOpStatus].
+
+[?airportHeliport, :noAirportWarning] :-
+    
+    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, :warning, ?warning],    
+    FILTER (?warning = "NO_WARNING").#TODO: mislim da je brža opcija da taj filter izbacimo i ubacimo to u join uvjet:
+                                    #[?airportHeliportAvailability, :warning, "NO_WARNING"]
+[?airportHeliport, :notifyAirportWarning, 0] :- [?airportHeliport, :noAirportWarning].
+[?airportHeliport, :notifyAirportWarning, 1] :- NOT[?airportHeliport, :noAirportWarning].
+
+#spoji flight s airportheliport
+
+[?flight, :destinationAirportHeliport, ?airportHeliport] :-
+    [?flight, :arrival, ?arrival],
+    [?arrival, :destinationAerodrome, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+[?flight, :departureAirportHeliport, ?airportHeliport] :-
+    [?flight, :departure, ?departure],
+    [?departure, :departureAerodrome, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+#5.10.3 check situation at alternate airport
+
+#spojiti flight/alternateAerodrome s airportHeliport
+[?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-
+    [?flight, :arrival, ?arrival],
+    [?arrival, :destinationAerodromeAlternate, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+[?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-
+    [?flight, :departure, ?departure],
+    [?departure, :departureAerodromeAlternate, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+#5.10.4  Monitor adverse weather areas
+[?flight2, :notChangedWeatherConditions] :-
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:metData, ?currMeteorologicalData],
+    [?currMeteorologicalData, fx:temperature, ?temperature],
+    [?currMeteorologicalData, fx:windSpeed, ?windSpeed],
+    [?currMeteorologicalData, fx:windDirection, ?windDirection],
+    #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
+    [?currMeteorologicalData, fx:extension, ?currMeterologicalDataExtension],
+    [?currMeterologicalDataExtension, :icing, ?icing],
+    [?currMeterologicalDataExtension, :precipitation, ?precipitation],
+    [?currMeterologicalDataExtension, :cloudCoverage, ?cloudCoverage],
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:metData, ?prevMeteorologicalData],
+    [?prevMeteorologicalData, fx:temperature, ?temperature],
+    [?prevMeteorologicalData, fx:windSpeed, ?windSpeed],
+    [?prevMeteorologicalData, fx:windDirection, ?windDirection],
+    #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
+    [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
+    [?prevMeterologicalDataExtension, :icing, ?icing],
+    [?prevMeterologicalDataExtension, :precipitation, ?precipitation],
+    [?prevMeterologicalDataExtension, :cloudCoverage, ?cloudCoverage].
+    
+[?flight, :areWeatherConditionsChanged, 0] :- [?flight, :changedWeatherConditions].
+[?flight, :areWeatherConditionsChanged, 1] :- NOT[?flight, :changedWeatherConditions].
+
+#5.10.5 Monitor restricted airspace 
+[?flight2, :noNewActions] 
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, :withinSector, ?sector1],
+    [?airspace1, ax:geometryComponent, ?sector1],
+    [?airspace1, ax:activation, ?airspaceActivation1],
+    [?airspaceActivation1, ax:status, ?status],
+    [?flight2, :withinSector, ?sector2],
+    [?airspace2, ax:geometryComponent, ?sector2],
+    [?airspace2, ax:activation, ?airspaceActivation2],
+    [?airspaceActivation2, ax:status, ?status],
+
+[?flight, :canNewActionsBeTaken, 1] :- NOT[?flight, :noNewActions].
+[?flight, :canNewActionsBeTaken, 0] :- [?flight, :noNewActions].
