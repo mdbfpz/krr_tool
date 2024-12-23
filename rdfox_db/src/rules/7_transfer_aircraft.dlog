@@ -1,0 +1,135 @@
+[?flight, :aircraftNotYetAssumed, 1] :-
+    [?flight, fx:coordinationStatus, "NOT_ASSUMED"].
+
+[?flight, :aircraftNotYetAssumed, 0] :-
+    [?flight, fx:coordinationStatus, "ASSUMED"].
+
+[?flight, :aircraftAlreadyTransferred, 1] :-
+    [?flight, fx:coordinationStatus, "TRANSFERRED"].
+
+[?flight, :aircraftAlreadyTransferred, 0] :-
+    NOT [?flight, fx:coordinationStatus, "TRANSFERRED"].
+
+
+# 5.7.1 Check which aircraft need to be transferred
+[?flight, :aircraftNeedsToBeTransferred, 1] :-
+    [?flight, :aircraftAlreadyTransferred, 0],
+    [?flight, :aircraftNotYetAssumed, 0],
+    [?flight, :isAtExitFL, 1],
+
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currElement, fx:extension, ?currVRate],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
+
+    BIND(
+        ?distToExitPoint/(?currSpeed * 0.514444444)
+        AS ?timeToExitPoint
+    ),
+    # TODO: why looking only at the lower limit?
+    BIND(
+        (?lowerLimit*100 - ?currLevel)*60 / ABS(?currVRate) # seconds
+        AS ?timeToLowerSectorBoundary
+    ),
+    BIND(2*60 AS ?x),
+    BIND(60 AS ?y),
+
+    FILTER(
+        ?timeToExitPoint <= ?x,
+        NOT(
+            NOT(?currVRate >= 0),
+            NOT(
+                ?currVRate < 0,
+                ?timeToLowerSectorBoundary <= ?y
+            )
+        )
+    ).
+
+[?flight, :warnATCOAboutXFLBeforeTransferringFlight, 1] :-
+    [?flight, :aircraftAlreadyTransferred, 0],
+    [?flight, :aircraftNotYetAssumed, 0],
+    [?flight, :isAtExitFL, 0],  # This is the only difference from the previous rule
+
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currElement, fx:extension, ?currVRate],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
+
+    BIND(
+        ?distToExitPoint/(?currSpeed * 0.514444444)
+        AS ?timeToExitPoint
+    ),
+    # TODO: why looking only at the lower limit?
+    BIND(
+        (?lowerLimit*100 - ?currLevel)*60 / ABS(?currVRate) # seconds
+        AS ?timeToLowerSectorBoundary
+    ),
+    BIND(2*60 AS ?x),
+    BIND(60 AS ?y),
+
+    FILTER(
+        ?timeToExitPoint <= ?x,
+        NOT(
+            NOT(?currVRate >= 0),
+            NOT(
+                ?currVRate < 0,
+                ?timeToLowerSectorBoundary <= ?y
+            )
+        )
+    ).
+
+[?flight, :aircraftDoesNotNeedToBeTransfeered, 1] :-
+    [?flight, :aircraftAlreadyTransferred, 0],
+    [?flight, :aircraftNotYetAssumed, 0],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
+
+    BIND(
+        ?distToExitPoint/(?currSpeed * 0.514444444)
+        AS ?timeToExitPoint
+    ),
+    BIND(2*60 AS ?x),
+
+    # A/C is in the sector, but isn't close to the boundary
+    FILTER(
+        NOT(?timeToExitPoint <= ?x)
+    ).
+
+
+# 5.7.2 Check if change of frequency is issued to A/C (via datalink)
+[?flight, :changeOfFrequencyIssuedToAC, 1] :-
+    [?flight, :datalink, ?frequencyChange].
+    [?frequencyChange, :status, "YES"].
+
+[?flight, :changeOfFrequencyIssuedToAC, 0] :-
+    NOT [?flight, :changeOfFrequencyIssuedToAC, 1].
+
+
+# 5.7.3 Change aircraft status to transferred 
+[?flight, :coordinationStatusCanBeChangedToTransferred, 1] :- 
+    NOT [?flight, fx:coordinationStatus, "TRANSFERRED"].
+
+[?flight, :coordinationStatusCanBeChangedToTransferred, 0] :- 
+    [?flight, fx:coordinationStatus, "TRANSFERRED"].
+# OR
+"""
+[?flight, :coordinationStatusCanBeChangedToTransferred, 0] :- 
+    NOT [?flight, :coordinationStatusCanBeChangedToTransferred, 1].
+"""
