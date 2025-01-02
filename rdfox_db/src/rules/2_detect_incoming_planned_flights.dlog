@@ -25,8 +25,10 @@ This checks that the aircraft's current position is within the given sector's up
     [?sector, ax:lowerLimit, ?lowerLimit],
     [?sector, ax:upperLimit, ?upperLimit],
 
-    FILTER(?currLevel <= ?upperLimit*100),
-    FILTER(?currLevel >= ?lowerLimit*100).
+    FILTER(
+        ?currLevel <= ?upperLimit*100 && 
+        ?currLevel >= ?lowerLimit*100
+    ).
 
 """
 This checks that the planned route point is within the given sector's upper and lower limit.
@@ -84,12 +86,11 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
         as ?verticalDistanceToSector
     ),
     # DeMorgan's Law - disjunction to conjunction
-    NOT(
-        NOT(
-            FILTER(?timeToReachSector <= 5*60), # 5 minutes away
-        ),
-        NOT(
-            FILTER(?verticalDistanceToSector <= 1000)
+    FILTER(
+        !(
+            # 5 minutes away
+            !(?timeToReachSector <= 5 * 60) &&
+            !(?verticalDistanceToSector <= 1000)
         )
     ).
 
@@ -150,21 +151,25 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     [?sector, ax:upperLimit, ?upperLimit],
 
     BIND(
-        MINFN(ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel))
-        as ?currVerticalDistanceToSector
+        MINFN(
+            ABS(?upperLimit*100 - ?currLevel), 
+            ABS(?lowerLimit*100 - ?currLevel)
+        )
+        AS ?currVerticalDistanceToSector
     ),
 
     BIND(
-        MINFN(ABS(?upperLimit*100 - ?prevLevel), ABS(?lowerLimit*100 - ?prevLevel))
-        as ?prevVerticalDistanceToSector
+        MINFN(
+            ABS(?upperLimit*100 - ?prevLevel), 
+            ABS(?lowerLimit*100 - ?prevLevel)
+        )
+        AS ?prevVerticalDistanceToSector
     ),
 
-    NOT(
-        NOT(
-            FILTER(?currMinDist < ?prevMinDist)
-        ),
-        NOT(
-            FILTER(?currVerticalDistanceToSector < ?prevVerticalDistanceToSector)
+    FILTER(
+        !(
+            !(?currMinDist < ?prevMinDist) &&
+            !(?currVerticalDistanceToSector < ?prevVerticalDistanceToSector)
         )
     ).
 
@@ -244,22 +249,20 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     ),
 
     # DeMorgan's Law
-    NOT(
-        NOT(
-            FILTER(
+    FILTER(
+        !(
+            !(
                 ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
-                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)
-            ),
-            FILTER(?currLowerLevelDiff < ?prevLowerLevelDiff)
-        ), 
-        NOT(
-            NOT(
-                FILTER(
+                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) &&
+                ?currLowerLevelDiff < ?prevLowerLevelDiff
+            ) &&
+            !(
+                !(
                     ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
-                    ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)
-                )
-            ),
-            FILTER(?currUpperLevelDiff < ?prevUpperLevelDiff)
+                    ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) 
+                ) &&
+                ?currUpperLevelDiff < ?prevUpperLevelDiff
+            )
         )
     ).
 

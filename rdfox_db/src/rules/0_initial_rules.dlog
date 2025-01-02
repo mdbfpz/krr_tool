@@ -26,6 +26,7 @@ route-trajectory elements and flights.
     [?predictedRouteTrajectory, fx:element, ?predictedElement].
 
 
+# TODO: provjeriti sintaksu za ovo ispod!
 # Assign :next predicate to consecutive timestamps
 [?timestamp1, :next, ?timestamp2] :-
     [?timestamp1, :timestamp, ?time1],
@@ -49,6 +50,7 @@ first point of the plan flight which is predefined as a static subgraph.
     # Match timestamps associated with flights
     [?timestamp, fx:flight, ?flight],
 
+    # TODO: provjeriti sintaksu za ovo ispod!
     # Ensure this timestamp is the earliest for the flight
     NOT EXISTS {
         [?otherTimestamp, fx:flight, ?flight],

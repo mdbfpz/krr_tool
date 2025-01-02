@@ -41,11 +41,11 @@
     BIND(60 AS ?y),
 
     FILTER(
-        ?timeToExitPoint <= ?x,
-        NOT(
-            NOT(?currVRate >= 0),
-            NOT(
-                ?currVRate < 0,
+        ?timeToExitPoint <= ?x &&
+        !(
+            !(?currVRate >= 0) &&
+            !(
+                ?currVRate < 0 &&
                 ?timeToLowerSectorBoundary <= ?y
             )
         )
@@ -80,11 +80,11 @@
     BIND(60 AS ?y),
 
     FILTER(
-        ?timeToExitPoint <= ?x,
-        NOT(
-            NOT(?currVRate >= 0),
-            NOT(
-                ?currVRate < 0,
+        ?timeToExitPoint <= ?x &&
+        !(
+            !(?currVRate >= 0) &&
+            !(
+                ?currVRate < 0 &&
                 ?timeToLowerSectorBoundary <= ?y
             )
         )
@@ -109,7 +109,7 @@
 
     # A/C is in the sector, but isn't close to the boundary
     FILTER(
-        NOT(?timeToExitPoint <= ?x)
+        !(?timeToExitPoint <= ?x)
     ).
 
 

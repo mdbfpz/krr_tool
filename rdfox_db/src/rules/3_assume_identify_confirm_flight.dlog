@@ -48,8 +48,8 @@
         AS ?v   # TODO: provjeriti je li u javi ovo dobro!
     ),
     FILTER(
-        ?currLevel > ?upperLimit*100,
-        ?currVRate < 0,
+        ?currLevel > ?upperLimit*100 &&
+        ?currVRate < 0 &&
         ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
 
@@ -100,12 +100,13 @@
         AS ?v   # TODO: provjeriti je li u javi ovo dobro!
     ),
     FILTER(
-        ?currLevel < ?lowerLimit*100,
-        ?currVRate > 0,
+        ?currLevel < ?lowerLimit*100 &&
+        ?currVRate > 0 &&
         ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
 
 # DeMorgan
+# TODO: check if the syntax is correct!
 [?flight, :aircraftIncomingVertically, ?sector] :-
     NOT(
         NOT [?flight, :aircraftIncomingVerticallyFromAbove, ?sector],
@@ -165,27 +166,20 @@
         AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
-    # Aircraft is getting closer to the sector boundary
     FILTER(
-        ?currMinDist < ?prevMinDist
-    ),
-    
-    # DeMorgan
-    NOT(
-        NOT(
-            FILTER(
-                ?currVRate > 0,
+        # Aircraft is getting closer to the sector boundary
+        ?currMinDist < ?prevMinDist &&
+        # DeMorgan
+        !(
+            !(
+                ?currVRate > 0 &&
                 ABS(?currVRate) <= ?v1
-            )
-        ),
-        NOT(
-            FILTER(
-                ?currVRate < 0,
+            ) &&
+            !(
+                ?currVRate < 0 &&
                 ABS(?currVRate) <= ?v2
-            )
-        ),
-        NOT(
-            FILTER(?currVRate = 0)
+            ) &&
+            ?currVRate != 0
         )
     ).
 
@@ -246,19 +240,19 @@
         ?currMinDist < ?prevMinDist
     ),
 
-    # DeMorgan
-    NOT(
-        NOT(
-            FILTER(
-                ?currLevel > ?upperLimit*100,
-                ?currVRate < 0,
+    FILTER(
+        # Aircraft is getting closer to the sector boundary
+        ?currMinDist < ?prevMinDist &&
+        # DeMorgan
+        !(
+            !(
+                ?currLevel > ?upperLimit * 100 &&
+                ?currVRate < 0 &&
                 ABS(?currVRate) >= ?v1
-            )
-        ),
-        NOT(
-            FILTER(
-                ?currLevel < ?lowerLimit*100,
-                ?currVRate > 0,
+            ) &&
+            !(
+                ?currLevel < ?lowerLimit * 100 &&
+                ?currVRate > 0 &&
                 ABS(?currVRate) >= ?v2
             )
         )
@@ -339,15 +333,11 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
         ABS(?distToVerticalLimit/?currVRate) * 60
         AS ?c
     ),
-    BIND(
-        2*60 AS ?x
-    ),
-    BIND(
-        500 AS ?y
-    ),
+    BIND(2*60 AS ?x),
+    BIND(500 AS ?y),
 
     FILTER(
-        ?distToVerticalLimit <= ?y,
+        ?distToVerticalLimit <= ?y &&
         ?c <= ?timeToReachSector
     ).
 
@@ -371,9 +361,7 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
         AS ?timeToReachSector
     ),
 
-    FILTER(
-        ?timeToReachSector <= ?x
-    ).
+    FILTER(?timeToReachSector <= ?x).
 
 [?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector] :-
     NOT [?flight, :withinSectorHorizontally, ?sector],
@@ -409,11 +397,12 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
     ),
 
     FILTER(
-        ?timeToReachSector <= ?x,
-        ?distToVerticalLimit <= ?y,
+        ?timeToReachSector <= ?x &&
+        ?distToVerticalLimit <= ?y &&
         ABS(?currVRate) >= ?v*60 # ft/min
     ).
 
+# TODO: check syntax!
 [?flight, :aircraftCanBeAssumed, ?sector] :-
     NOT(
         NOT [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector],

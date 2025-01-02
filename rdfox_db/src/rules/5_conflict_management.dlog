@@ -52,9 +52,9 @@ Also those flights will have a connection with the flights in each timestamp.
     
     # TODO: can we check this in the previous step?(flight pairs directly without IDs)?
     FILTER(
-        ?prevFlight1ID = ?currFlight1ID,
-        ?prevFlight2ID = ?currFlight2ID,
-        ?prevFlight1ID != ?prevFlight2ID,
+        ?prevFlight1ID = ?currFlight1ID && 
+        ?prevFlight2ID = ?currFlight2ID && 
+        ?prevFlight1ID != ?prevFlight2ID && 
         ?currFlight1ID != ?currFlight2ID
     ),
 
@@ -66,9 +66,7 @@ Also those flights will have a connection with the flights in each timestamp.
     [?currFlight2, :distanceBetween, ?currFlights12],
     [?currFlights12, :distanceValue, ?currValue],
 
-    FILTER(
-        ?prevValue < ?currValue
-    ).
+    FILTER(?prevValue < ?currValue).
 
 # Make this relation symmetric
 [?flight2, :diverging, ?flight1] :- [?flight1, :diverging, ?flight2].
@@ -91,9 +89,7 @@ query in the pipeline.
     [?flight1, :aircraftIdentification, ?flight1ID],
     [?flight2, :aircraftIdentification, ?flight2ID],
 
-    FILTER(
-        ?flight1ID != ?flight2ID
-    ),
+    FILTER(?flight1ID != ?flight2ID),
 
     [?flight1, :conflict, ?conflict12],
     [?flight2, :conflict, ?conflict12],
@@ -118,10 +114,10 @@ query in the pipeline.
     BIND(5 AS ?distTolerance),
 
     FILTER(
-        NOT(
-            ?dist1 <= ?distToMinDist + ?distTolerance,
-            ?dist1 >= ?distToMinDist - ?distTolerance,
-            ?dist2 <= ?distToMinDist + ?distTolerance,
+        !(
+            ?dist1 <= ?distToMinDist + ?distTolerance && 
+            ?dist1 >= ?distToMinDist - ?distTolerance && 
+            ?dist2 <= ?distToMinDist + ?distTolerance && 
             ?dist2 >= ?distToMinDist - ?distTolerance
         )
     ).
@@ -134,9 +130,7 @@ query in the pipeline.
     [?flight1, :aircraftIdentification, ?flight1ID],
     [?flight2, :aircraftIdentification, ?flight2ID],
 
-    FILTER(
-        ?flight1ID != ?flight2ID
-    ),
+    FILTER(?flight1ID != ?flight2ID),
 
     # Assure there are conflict information
     [?flight1, :conflict, ?conflict12],
@@ -158,7 +152,7 @@ query in the pipeline.
     [?sector, ax:upperLimit, ?upperLimit],
 
     FILTER(
-        ?alt <= ?upperLimit*100, 
+        ?alt <= ?upperLimit*100 && 
         ?alt >= ?lowerLimit*100
     ).
 
@@ -207,11 +201,12 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
+    # TODO: check if this is correct syntax
     EXISTS [?flightStats, :altStd, ?altStd],
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - ?altStDev) mod 360,
+        ?currLevel >= (?altMean - ?altStDev) mod 360 && 
         ?currLevel <= (?altMean + ?altStDev) mod 360
     ).
 
@@ -228,7 +223,7 @@ applying datalog rule:
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - 2*?altStDev) mod 360,
+        ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
         ?currLevel <= (?altMean + 2*?altStDev) mod 360
     ).
 
@@ -245,7 +240,7 @@ applying datalog rule:
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - 3*?altStDev) mod 360,
+        ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
         ?currLevel <= (?altMean + 3*?altStDev) mod 360
     ).
 
@@ -274,7 +269,7 @@ applying datalog rule:
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - ?altStDev),
+        ?currLevel >= (?altMean - ?altStDev) && 
         ?currLevel <= (?altMean + ?altStDev)
     ).
 
@@ -291,7 +286,7 @@ applying datalog rule:
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - 2*?altStDev),
+        ?currLevel >= (?altMean - 2*?altStDev) && 
         ?currLevel <= (?altMean + 2*?altStDev)
     ).
 
@@ -308,7 +303,7 @@ applying datalog rule:
     EXISTS [?flightStats, :altMean, ?altMean],
 
     FILTER (
-        ?currLevel >= (?altMean - 3*?altStDev),
+        ?currLevel >= (?altMean - 3*?altStDev) && 
         ?currLevel <= (?altMean + 3*?altStDev)
     ).
 

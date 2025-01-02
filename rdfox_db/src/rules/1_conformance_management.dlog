@@ -10,8 +10,9 @@
     [?flight, fx:agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-    FILTER(?currLevel < ?clearedLevel),
-    FILTER(?verticalRate > 0).
+    FILTER(
+        ?currLevel < ?clearedLevel && ?verticalRate > 0
+    ).
 
 # Rule 2: Bind the result based on climbing check
 [?flight, :isClimbingToCFL, 1] :- [?flight, :climbingToCFL].
@@ -27,8 +28,9 @@
     [?flight, fx:agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-    FILTER(?currLevel > ?clearedLevel),
-    FILTER(?verticalRate < 0).
+    FILTER(
+        ?currLevel > ?clearedLevel && ?verticalRate < 0
+    ).
 
 [?flight, :isDescendingToCFL, 1] :- [?flight, :descendingToCFL].
 [?flight, :isDescendingToCFL, 0] :- NOT [?flight, :descendingToCFL].
@@ -58,16 +60,18 @@
     [?currElement, fx:extension, ?currVRate],
 
     # DeMorgan's law on transforming ORs to ANDs. If too slow, separate into two rules.
-    NOT(
-        NOT(
-            FILTER(?currLevel < ?clearedLevel),
-            FILTER(?prevVRate <= 0),
-            FILTER(?currVRate <= 0)  
-        ),
-        NOT(
-            FILTER(?currLevel > ?clearedLevel),
-            FILTER(?prevVRate >= 0),
-            FILTER(?currVRate >= 0)
+    FILTER(
+        !(
+            !(
+                ?currLevel < ?clearedLevel && 
+                ?prevVRate <= 0 && 
+                ?currVRate <= 0
+            ) &&
+            !(
+                ?currLevel > ?clearedLevel &&
+                ?prevVRate >= 0 &&
+                ?currVRate >= 0
+            )
         )
     ).
 
@@ -189,14 +193,17 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
-    NOT(
-        NOT(
-            FILTER(?prevHeading < ?currHeading),
-            FILTER(?currHeading < ?clearedHeading)
-        ),
-        NOT(
-            FILTER(?prevHeading > ?currHeading),
-            FILTER(?currHeading > ?clearedHeading)
+
+    FILTER(
+        !(
+            !(
+                ?prevHeading < ?currHeading &&
+                ?currHeading < ?clearedHeading
+            ) &&
+            !(
+                ?prevHeading > ?currHeading &&
+                ?currHeading > ?clearedHeading
+            )
         )
     ).
 
@@ -224,16 +231,19 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
-    NOT(
-        NOT(
-            FILTER(?clearedHeading < ?prevHeading),
-            FILTER(?prevHeading < ?currHeading)
-        ),
-        NOT(
-            FILTER(?clearedHeading > ?prevHeading),
-            FILTER(?prevHeading > ?currHeading)
+
+    FILTER(
+    !(
+        !(
+            ?clearedHeading < ?prevHeading && 
+            ?prevHeading < ?currHeading
+        ) &&
+        !(
+            ?clearedHeading > ?prevHeading && 
+            ?prevHeading > ?currHeading
         )
-    ).
+    )
+).
 
 [?flight, :isTurningOppositeOfClearedHeading, 1] :- [?flight, :turningOppositeOfClearedHeading].
 [?flight, :isTurningOppositeOfClearedHeading, 0] :- NOT [?flight, :turningOppositeOfClearedHeading].
@@ -350,9 +360,11 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
-    FILTER(?currSpeed < ?clearedSpeed),
-    FILTER(?prevSpeed < ?currSpeed).
-
+    FILTER(
+        ?currSpeed < ?clearedSpeed && 
+        ?prevSpeed < ?currSpeed
+    ).
+    
 [?flight, :isAcceleratingToClearedSpeed, 1] :- [?flight, :acceleratingToClearedSpeed].
 [?flight, :isAcceleratingToClearedSpeed, 0] :- NOT [?flight, :acceleratingToClearedSpeed].
 
@@ -381,17 +393,20 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],    
     
-    FILTER(?prevSpeed < ?currSpeed),
-    NOT(
-        NOT(
-	        FILTER(?currSpeed >= ?clearedSpeed),
-            FILTER(?boundType = ">=")
-        ),
-        NOT(
-	        FILTER(?currSpeed <= ?clearedSpeed),
-       	    FILTER(?boundType = "<=")
+    FILTER(
+        ?prevSpeed < ?currSpeed &&
+        !(
+            !(
+                ?currSpeed >= ?clearedSpeed && 
+                ?boundType = ">="
+            ) &&
+            !(
+                ?currSpeed <= ?clearedSpeed && 
+                ?boundType = "<="
+            )
         )
     ).
+
 # TODO: maknuti filter ?boundType = ... i ubaciti to u select (ako je moguće), slično kao kod provjere jednakosti dviju varijabli bez filtera.
 
 [?flight, :isAcceleratingWithinClearedSpeed, 1] :- [?flight, :acceleratingWithinClearedSpeed].
@@ -419,8 +434,10 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
-    FILTER(?currSpeed > ?clearedSpeed),
-    FILTER(?prevSpeed > ?currSpeed).
+    FILTER(
+        ?currSpeed > ?clearedSpeed &&
+        ?prevSpeed > ?currSpeed
+    ).
 
 [?flight, :isDeceleratingToClearedSpeed, 1] :- [?flight, :deceleratingToClearedSpeed].
 [?flight, :isDeceleratingToClearedSpeed, 0] :- NOT [?flight, :deceleratingToClearedSpeed].
@@ -447,17 +464,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
-    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
-    FILTER(?prevSpeed > ?currSpeed),
-    NOT(
-        NOT(
-	        FILTER(?currSpeed >= ?clearedSpeed),
-            FILTER(?boundType = ">=")
-        ),
-        NOT(
-	        FILTER(?currSpeed <= ?clearedSpeed),
-       	    FILTER(?boundType = "<=")
+    FILTER(
+        ?prevSpeed > ?currSpeed &&
+        !(
+            !(
+                ?currSpeed >= ?clearedSpeed && 
+                ?boundType = ">="
+            ) &&
+            !(
+                ?currSpeed <= ?clearedSpeed && 
+                ?boundType = "<="
+            )
         )
     ).
 
@@ -480,17 +499,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?clearedSpeedBound, :clearedBoundType, ?boundType],    
 
     # DeMorgan's rules on OR condition, whether the bound exists or not.
-    NOT(
-        NOT(FILTER(?currSpeed = ?clearedSpeed)),	# TODO: Ovo ubaciti u atom selekt
-        NOT(
-            FILTER(?boundType = "<="),
-            FILTER(?currSpeed <= ?clearedSpeed)
-        ),
-        NOT(
-            FILTER(?boundType = ">="),
-            FILTER(?currSpeed >= ?clearedSpeed)
-        ) 
-      ).
+    FILTER(
+        !(
+            !(?currSpeed = ?clearedSpeed) &&
+            !(
+                ?boundType = "<=" && 
+                ?currSpeed <= ?clearedSpeed
+            ) &&
+            !(
+                ?boundType = ">=" && 
+                ?currSpeed >= ?clearedSpeed
+            )
+        )
+    ).
 
 [?flight, :isFlyingAtClearedSpeed, 1] :- [?flight, :flyingAtClearedSpeed].
 [?flight, :isFlyingArClearedSpeed, 0] :- NOT [?flight, :flyingAtClearedSpeed].
@@ -569,6 +590,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?clearedLatLon, fx:lon, ?clearedLon],
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
+    ...
     
 
 # 5.1.11  Check that aircraft is at cleared point
@@ -661,15 +683,17 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],    
 
     # DeMorgan's rules on OR condition, whether the bound exists or not.
-    NOT(
-        NOT(
-            FILTER(?boundType = "<="),
-            FILTER(?currVRate <= ?clearedVRate)
-        ),
-        NOT(
-            FILTER(?boundType = ">="),
-            FILTER(?currVRate >= ?clearedVRate)
-        ) 
+    FILTER(
+        !(
+            !(
+                ?boundType = "<=" && 
+                ?currVRate <= ?clearedVRate
+            ) &&
+            !(
+                ?boundType = ">=" && 
+                ?currVRate >= ?clearedVRate
+            )
+        )
     ).
 
 [?flight, :isVerticalRateWithinClearedVerticalRate, 1] :- [?flight, :verticalRateWithinClearedVerticalRate].
@@ -742,8 +766,10 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(ABS(?currVRate) > ABS(?prevVRate)),
-    FILTER(ABS(?currVRate) < ABS(?clearedVRate)).
+    FILTER(
+        ABS(?currVRate) > ABS(?prevVRate) &&
+        ABS(?currVRate) < ABS(?clearedVRate)
+    ).
     
 [?flight, :isIncreasingToClearedVerticalRate, 1] :- [?flight, :increasingToClearedVerticalRate].
 [?flight, :isIncreasingToClearedVerticalRate, 0] :- NOT [?flight, :increasingToClearedVerticalRate].	
@@ -768,8 +794,10 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(ABS(?currVRate) < ABS(?prevVRate)),
-    FILTER(ABS(?currVRate) > ABS(?clearedVRate)).
+    FILTER(
+        ABS(?currVRate) < ABS(?prevVRate) &&
+        ABS(?currVRate) > ABS(?clearedVRate)
+    ).
     
 [?flight, :isDecreasingToClearedVerticalRate, 1] :- [?flight, :isDecreasingToClearedVerticalRate].
 [?flight, :isDecreasingToVerticalRate, 0] :- NOT [?flight, :decreasingToClearedVerticalRate].
@@ -795,17 +823,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
     [?agreedElement, fx:extension, ?clearedVRateExtension],
-    [?clearedVRateExtension, :clearedBoundType, ?boundType],    
+    [?clearedVRateExtension, :clearedBoundType, ?boundType],
 
-    FILTER(ABS(?currVRate) > ABS(?prevVRate)),
-    NOT(
-        NOT(
-            FILTER(?boundType = ">="),
-            FILTER(ABS(?currVRate) > ABS(?clearedVRate))
-        ), 
-        NOT(
-            FILTER(?boundType = "<="),
-            FILTER(ABS(?currVRate) < ABS(?clearedVRate))
+    FILTER(
+        ABS(?currVRate) > ABS(?prevVRate) &&
+        !(
+            !(
+                ?boundType = ">=" && 
+                ABS(?currVRate) > ABS(?clearedVRate)
+            ) && 
+            !(
+                ?boundType = "<=" && 
+                ABS(?currVRate) < ABS(?clearedVRate)
+            )
         )
     ).
     
@@ -833,17 +863,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
     [?agreedElement, fx:extension, ?clearedVRateExtension],
-    [?clearedVRateExtension, :clearedBoundType, ?boundType],    
+    [?clearedVRateExtension, :clearedBoundType, ?boundType],
 
-    FILTER(ABS(?currVRate) < ABS(?prevVRate)),
-    NOT(
-        NOT(
-            FILTER(?boundType = ">="),
-            FILTER(ABS(?currVRate) > ABS(?clearedVRate))
-        ), 
-        NOT(
-            FILTER(?boundType = "<="),
-            FILTER(ABS(?currVRate) < ABS(?clearedVRate))
+    FILTER(
+        ABS(?currVRate) < ABS(?prevVRate) &&
+        !(
+            !(
+                ?boundType = ">=" && 
+                ABS(?currVRate) > ABS(?clearedVRate)
+            ) && 
+            !(
+                ?boundType = "<=" && 
+                ABS(?currVRate) < ABS(?clearedVRate)
+            )
         )
     ).
     

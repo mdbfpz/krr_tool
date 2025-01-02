@@ -76,16 +76,16 @@ inside desired or agreed branch (in case there is a change of exit point during 
 
     # DeMorgan
     FILTER(
-        NOT(
-            NOT(
-                ?calculatedVRate > 0,
+        !(
+            !(
+                ?calculatedVRate > 0 &&
                 ?calculatedVRate < 800
-            ), 
-            NOT(
-                ?calculatedVRate < 0,
+            ) &&
+            !(
+                ?calculatedVRate < 0 &&
                 ?calculatedVRate > -1400
-            ), 
-            NOT(?calculatedVRate = 0)
+            ) &&
+            ?calculatedVRate != 0
         )
     ).
 
@@ -134,7 +134,7 @@ inside desired or agreed branch (in case there is a change of exit point during 
     ),
 
     FILTER(
-        ?calculatedVRate >= 800,
+        ?calculatedVRate >= 800 && 
         ?calculatedVRate <= 1200
     ).
 
@@ -229,7 +229,7 @@ inside desired or agreed branch (in case there is a change of exit point during 
     ),
 
     FILTER(
-        ?calculatedVRate >= -3000,
+        ?calculatedVRate >= -3000 && 
         ?calculatedVRate <= -1400
     ).
 
