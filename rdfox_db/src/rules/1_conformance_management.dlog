@@ -59,19 +59,16 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currElement, fx:extension, ?currVRate],
 
-    # DeMorgan's law on transforming ORs to ANDs. If too slow, separate into two rules.
     FILTER(
-        !(
-            !(
-                ?currLevel < ?clearedLevel && 
-                ?prevVRate <= 0 && 
-                ?currVRate <= 0
-            ) &&
-            !(
-                ?currLevel > ?clearedLevel &&
-                ?prevVRate >= 0 &&
-                ?currVRate >= 0
-            )
+        (
+            ?currLevel < ?clearedLevel && 
+            ?prevVRate <= 0 && 
+            ?currVRate <= 0
+        ) ||
+        (
+            ?currLevel > ?clearedLevel &&
+            ?prevVRate >= 0 &&
+            ?currVRate >= 0
         )
     ).
 
@@ -195,15 +192,13 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?clearedPointExtension, :heading, ?clearedHeading],
 
     FILTER(
-        !(
-            !(
-                ?prevHeading < ?currHeading &&
-                ?currHeading < ?clearedHeading
-            ) &&
-            !(
-                ?prevHeading > ?currHeading &&
-                ?currHeading > ?clearedHeading
-            )
+        (
+            ?prevHeading < ?currHeading &&
+            ?currHeading < ?clearedHeading
+        ) ||
+        (
+            ?prevHeading > ?currHeading &&
+            ?currHeading > ?clearedHeading
         )
     ).
 
@@ -233,17 +228,15 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?clearedPointExtension, :heading, ?clearedHeading],
 
     FILTER(
-    !(
-        !(
+        (
             ?clearedHeading < ?prevHeading && 
             ?prevHeading < ?currHeading
-        ) &&
-        !(
+        ) ||
+        (
             ?clearedHeading > ?prevHeading && 
             ?prevHeading > ?currHeading
         )
-    )
-).
+    ).
 
 [?flight, :isTurningOppositeOfClearedHeading, 1] :- [?flight, :turningOppositeOfClearedHeading].
 [?flight, :isTurningOppositeOfClearedHeading, 0] :- NOT [?flight, :turningOppositeOfClearedHeading].
@@ -395,12 +388,12 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     
     FILTER(
         ?prevSpeed < ?currSpeed &&
-        !(
-            !(
+        (
+            (
                 ?currSpeed >= ?clearedSpeed && 
                 ?boundType = ">="
-            ) &&
-            !(
+            ) ||
+            (
                 ?currSpeed <= ?clearedSpeed && 
                 ?boundType = "<="
             )
@@ -468,12 +461,12 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
     FILTER(
         ?prevSpeed > ?currSpeed &&
-        !(
-            !(
+        (
+            (
                 ?currSpeed >= ?clearedSpeed && 
                 ?boundType = ">="
-            ) &&
-            !(
+            ) ||
+            (
                 ?currSpeed <= ?clearedSpeed && 
                 ?boundType = "<="
             )
@@ -498,18 +491,15 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],    
 
-    # DeMorgan's rules on OR condition, whether the bound exists or not.
     FILTER(
-        !(
-            !(?currSpeed = ?clearedSpeed) &&
-            !(
-                ?boundType = "<=" && 
-                ?currSpeed <= ?clearedSpeed
-            ) &&
-            !(
-                ?boundType = ">=" && 
-                ?currSpeed >= ?clearedSpeed
-            )
+        ?currSpeed = ?clearedSpeed ||
+        (
+            ?boundType = "<=" && 
+            ?currSpeed <= ?clearedSpeed
+        ) ||
+        (
+            ?boundType = ">=" && 
+            ?currSpeed >= ?clearedSpeed
         )
     ).
 
@@ -682,17 +672,14 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:extension, ?clearedVerticalRateExtension],
     [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],    
 
-    # DeMorgan's rules on OR condition, whether the bound exists or not.
     FILTER(
-        !(
-            !(
-                ?boundType = "<=" && 
-                ?currVRate <= ?clearedVRate
-            ) &&
-            !(
-                ?boundType = ">=" && 
-                ?currVRate >= ?clearedVRate
-            )
+        (
+            ?boundType = "<=" && 
+            ?currVRate <= ?clearedVRate
+        ) ||
+        (
+            ?boundType = ">=" && 
+            ?currVRate >= ?clearedVRate
         )
     ).
 
@@ -827,12 +814,12 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
     FILTER(
         ABS(?currVRate) > ABS(?prevVRate) &&
-        !(
-            !(
+        (
+            (
                 ?boundType = ">=" && 
                 ABS(?currVRate) > ABS(?clearedVRate)
-            ) && 
-            !(
+            ) ||
+            (
                 ?boundType = "<=" && 
                 ABS(?currVRate) < ABS(?clearedVRate)
             )
@@ -867,12 +854,12 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
     FILTER(
         ABS(?currVRate) < ABS(?prevVRate) &&
-        !(
-            !(
+        (
+            (
                 ?boundType = ">=" && 
                 ABS(?currVRate) > ABS(?clearedVRate)
-            ) && 
-            !(
+            ) ||
+            (
                 ?boundType = "<=" && 
                 ABS(?currVRate) < ABS(?clearedVRate)
             )

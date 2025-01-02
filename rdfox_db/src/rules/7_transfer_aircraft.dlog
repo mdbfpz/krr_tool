@@ -42,9 +42,9 @@
 
     FILTER(
         ?timeToExitPoint <= ?x &&
-        !(
-            !(?currVRate >= 0) &&
-            !(
+        (
+            ?currVRate >= 0 ||
+            (
                 ?currVRate < 0 &&
                 ?timeToLowerSectorBoundary <= ?y
             )
@@ -81,9 +81,9 @@
 
     FILTER(
         ?timeToExitPoint <= ?x &&
-        !(
-            !(?currVRate >= 0) &&
-            !(
+        (
+            ?currVRate >= 0 ||
+            (
                 ?currVRate < 0 &&
                 ?timeToLowerSectorBoundary <= ?y
             )

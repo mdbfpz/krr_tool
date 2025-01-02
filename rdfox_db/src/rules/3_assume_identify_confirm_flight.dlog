@@ -169,17 +169,16 @@
     FILTER(
         # Aircraft is getting closer to the sector boundary
         ?currMinDist < ?prevMinDist &&
-        # DeMorgan
-        !(
-            !(
+        (
+            (
                 ?currVRate > 0 &&
                 ABS(?currVRate) <= ?v1
-            ) &&
-            !(
+            ) ||
+            (
                 ?currVRate < 0 &&
                 ABS(?currVRate) <= ?v2
-            ) &&
-            ?currVRate != 0
+            ) ||
+            ?currVRate = 0
         )
     ).
 
@@ -235,22 +234,16 @@
         AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
-    # Aircraft is getting closer to the sector boundary
-    FILTER(
-        ?currMinDist < ?prevMinDist
-    ),
-
     FILTER(
         # Aircraft is getting closer to the sector boundary
         ?currMinDist < ?prevMinDist &&
-        # DeMorgan
-        !(
-            !(
+        (
+            (
                 ?currLevel > ?upperLimit * 100 &&
                 ?currVRate < 0 &&
                 ABS(?currVRate) >= ?v1
-            ) &&
-            !(
+            ) ||
+            (
                 ?currLevel < ?lowerLimit * 100 &&
                 ?currVRate > 0 &&
                 ABS(?currVRate) >= ?v2

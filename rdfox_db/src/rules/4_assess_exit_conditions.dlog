@@ -74,19 +74,16 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    # DeMorgan
     FILTER(
-        !(
-            !(
-                ?calculatedVRate > 0 &&
-                ?calculatedVRate < 800
-            ) &&
-            !(
-                ?calculatedVRate < 0 &&
-                ?calculatedVRate > -1400
-            ) &&
-            ?calculatedVRate != 0
-        )
+        (
+            ?calculatedVRate > 0 &&
+            ?calculatedVRate < 800
+        ) ||
+        (
+            ?calculatedVRate < 0 &&
+            ?calculatedVRate > -1400
+        ) ||
+        ?calculatedVRate = 0
     ).
 
 [?flight, :climbToExitFL] :-

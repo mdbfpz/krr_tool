@@ -82,16 +82,15 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
         AS ?timeToReachSector
     ),
     BIND(
-        MINFN(ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel))
-        as ?verticalDistanceToSector
-    ),
-    # DeMorgan's Law - disjunction to conjunction
-    FILTER(
-        !(
-            # 5 minutes away
-            !(?timeToReachSector <= 5 * 60) &&
-            !(?verticalDistanceToSector <= 1000)
+        MINFN(
+            ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel)
         )
+        AS ?verticalDistanceToSector
+    ),
+    FILTER(
+        # 5 minutes away
+        ?timeToReachSector <= 5*60 ||
+        ?verticalDistanceToSector <= 1000
     ).
 
 # When the aircraft is planned:
@@ -167,10 +166,8 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     ),
 
     FILTER(
-        !(
-            !(?currMinDist < ?prevMinDist) &&
-            !(?currVerticalDistanceToSector < ?prevVerticalDistanceToSector)
-        )
+        ?currMinDist < ?prevMinDist ||
+        ?currVerticalDistanceToSector < ?prevVerticalDistanceToSector
     ).
 
 # When the aircraft is planned:
@@ -248,21 +245,17 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
         AS ?prevUpperLevelDiff
     ),
 
-    # DeMorgan's Law
     FILTER(
-        !(
+        (
+            (ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)) &&
+            ?currLowerLevelDiff < ?prevLowerLevelDiff
+        ) ||
+        (
             !(
                 ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
-                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) &&
-                ?currLowerLevelDiff < ?prevLowerLevelDiff
+                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) 
             ) &&
-            !(
-                !(
-                    ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
-                    ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) 
-                ) &&
-                ?currUpperLevelDiff < ?prevUpperLevelDiff
-            )
+            ?currUpperLevelDiff < ?prevUpperLevelDiff
         )
     ).
 
