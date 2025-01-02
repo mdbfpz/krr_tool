@@ -1,3 +1,6 @@
+# TODO: možda se unutar FILTER funkcije trebaju uvjeti odvajati sa log. operatorima (&&, ||)
+# umjesto zarezima kao do sad...
+
 """
 Create transitivity closure between different (current, agreed, desired, predicted) 
 route-trajectory elements and flights.
