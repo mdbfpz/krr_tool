@@ -48,7 +48,7 @@ Also those flights will have a connection with the flights in each timestamp.
 
     # Avoid creation of symmetric relations within this rule. To avoid unnecessary computation, 
     # we create symmetric relations below this rule.
-    NOT EXISTS [?currFlight2, :diverging, ?currFlight1], 
+    NOT [?currFlight2, :diverging, ?currFlight1], 
     
     # TODO: can we check this in the previous step?(flight pairs directly without IDs)?
     FILTER(
@@ -138,7 +138,7 @@ query in the pipeline.
     [?conflict12, :distanceToMD, ?distToMinDist],
     [?conflict12, :timeToMD, ?timeToMinDist],
 
-    NOT EXISTS [?flight1, :conflictPredictionImplausible, ?flight2].
+    NOT [?flight1, :conflictPredictionImplausible, ?flight2].
 
 
 # 5.5.3. Check which conflicts are to occur within the sector
@@ -201,9 +201,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    # TODO: check if this is correct syntax
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+    
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - ?altStDev) mod 360 && 
@@ -219,8 +219,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
@@ -236,8 +237,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
@@ -250,8 +252,8 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     NOT [?flight, :headingWithinSigmaBand, 3].
 
@@ -265,8 +267,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - ?altStDev) && 
@@ -282,8 +285,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - 2*?altStDev) && 
@@ -299,8 +303,9 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     FILTER (
         ?currLevel >= (?altMean - 3*?altStDev) && 
@@ -313,8 +318,8 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS [?flightStats, :altStd, ?altStd],
-    EXISTS [?flightStats, :altMean, ?altMean],
+    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
+    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
     NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3].
 
@@ -330,10 +335,11 @@ applying datalog rule:
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
-    EXISTS [?flightStats, :latMax, ?latMax],
-    EXISTS [?flightStats, :latMin, ?latMin],
-    EXISTS [?flightStats, :lonMax, ?lonMax],
-    EXISTS [?flightStats, :lonMin, ?lonMin],
+    
+    EXISTS ?latMax IN [?flightStats, :latMax, ?latMax],
+    EXISTS ?latMin IN [?flightStats, :latMin, ?latMin],
+    EXISTS ?lonMax IN [?flightStats, :lonMax, ?lonMax],
+    EXISTS ?lonMin IN [?flightStats, :lonMin, ?lonMin],
 
     BIND(
         IF(
