@@ -1,6 +1,3 @@
-# TODO: možda se unutar FILTER funkcije trebaju uvjeti odvajati sa log. operatorima (&&, ||)
-# umjesto zarezima kao do sad...
-
 """
 Create transitivity closure between different (current, agreed, desired, predicted) 
 route-trajectory elements and flights.
@@ -32,11 +29,12 @@ route-trajectory elements and flights.
     [?timestamp1, :timestamp, ?time1],
     [?timestamp2, :timestamp, ?time2],
     FILTER(?time2 > ?time1),
-    NOT EXISTS {
+    NOT EXISTS ?time3 IN(
         [?timestamp3, :timestamp, ?time3],
-        FILTER(?time3 > ?time1),
-        FILTER(?time3 < ?time2)
-    }.
+        FILTER(
+            ?time3 > ?time1 && ?time3 < ?time2
+        )
+    ).
 
 
 # TODO: ovo ispod možda ne treba, ako plan leta dobijemo svakim FIXM requestom
@@ -44,7 +42,7 @@ route-trajectory elements and flights.
 """
 Before getting the first timestamp, we need to connect the planned (desired) branch to the 
 first point of the plan flight which is predefined as a static subgraph.
-"""
+
 # Combined Rule: Connect "agreed element" to the first planned point based on the earliest timestamp
 [?agreedElement, :plannedPoint, ?plannedPoint] :-
     # Match timestamps associated with flights
@@ -64,7 +62,7 @@ first point of the plan flight which is predefined as a static subgraph.
     [?flight, :plan, ?plan],
 
     # Find the first point in the plan
-    [?plan, :1, ?plannedPoint].
+    [?plan, :1, ?plannedPoint]."""
 
 
 """

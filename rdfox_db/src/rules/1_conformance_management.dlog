@@ -1,8 +1,7 @@
 # 5.1.1 Check that aircraft is climbing/descending towards cleared FL
 
 # Climbing:
-# # Rule 1: Check if current level is below cleared level and vertical rate is positive.
-[?flight, :climbingToCFL] :-
+[?flight, :isClimbingToCFL, ?indicator] :-
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
@@ -10,17 +9,18 @@
     [?flight, fx:agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-    FILTER(
-        ?currLevel < ?clearedLevel && ?verticalRate > 0
-    ).
 
-# Rule 2: Bind the result based on climbing check
-[?flight, :isClimbingToCFL, 1] :- [?flight, :climbingToCFL].
-[?flight, :isClimbingToCFL, 0] :- NOT [?flight, :climbingToCFL].
+    BIND(
+        IF(
+            ?currLevel < ?clearedLevel && ?verticalRate > 0,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 # Descending:
-# # Rule 1: Check if current level is higher than cleared level and vertical rate is negative.
-[?flight, :descendingToCFL] :-
+[?flight, :isDescendingToCFL, ?indicator] :-
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
@@ -28,15 +28,18 @@
     [?flight, fx:agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-    FILTER(
-        ?currLevel > ?clearedLevel && ?verticalRate < 0
+
+    BIND(
+        IF(
+            ?currLevel > ?clearedLevel && ?verticalRate < 0,
+            1,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :isDescendingToCFL, 1] :- [?flight, :descendingToCFL].
-[?flight, :isDescendingToCFL, 0] :- NOT [?flight, :descendingToCFL].
-
 #Level bust:
-[?flight2, :flightLevelBust] :-
+[?flight2, :isFlightLevelBust, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -59,27 +62,30 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currElement, fx:extension, ?currVRate],
 
-    FILTER(
-        (
-            ?currLevel < ?clearedLevel && 
-            ?prevVRate <= 0 && 
-            ?currVRate <= 0
-        ) ||
-        (
-            ?currLevel > ?clearedLevel &&
-            ?prevVRate >= 0 &&
-            ?currVRate >= 0
+    BIND(
+        IF(
+            (
+                ?currLevel < ?clearedLevel && 
+                ?prevVRate <= 0 && 
+                ?currVRate <= 0
+            ) ||
+            (
+                ?currLevel > ?clearedLevel &&
+                ?prevVRate >= 0 &&
+                ?currVRate >= 0
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isFlightLevelBust, 1] :- [?flight, :flightLevelBust].
-[?flight, :isFlightLevelBust, 0] :- NOT [?flight, :flightLevelBust]. # Should we replace NOT with NOT EXISTS? (everywhere)
 
 
 # 5.1.2 Check that aircraft is at cleared FL
 
 # U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
 # Rule 1: Check if current level is equal to cleared level
+# TODO: add ?indicator here as well?
 [?flight, :atCFL] :-
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -93,20 +99,23 @@
 
 # Passing CFL:
 # Rule 1: Check if aircraft is passing cleared flight level.
-[?flight, :passingCFL] :-
+[?flight, :isPassingCFL, ?indicator] :-
     [?flight, :isAtCFL, 1],
     [?flight, fx:currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
     [?currElement, fx:extension, ?currVRate],
-    FILTER(?currVRate != 0).
 
-[?flight, :isPassingCFL, 1] :- [?flight, :passingCFL].
-[?flight, :isPassingCFL, 0] :- NOT [?flight, :passingCFL].
+    BIND(
+        IF(
+            ?currVRate != 0,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 
 # 5.1.3 Check that aircraft is maintaining FL
-[?flight2, :maintainingFL] :-
+[?flight2, :isMaintainingFL, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -126,10 +135,15 @@
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?level],
     [?currElement, fx:extension, ?verticalRate],
-    FILTER(?verticalRate = 0).
 
-[?flight, :isMaintainingFL, 1] :- [?flight, :maintainingFL].
-[?flight, :isMaintainingFL, 0] :- NOT [?flight, :maintainingFL].
+    BIND(
+        IF(
+            ?verticalRate = 0,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 
 # 5.1.4 Check that aircraft is turning towards/opposite of cleared heading
@@ -139,6 +153,7 @@
 # ---> ne treba ovo iznad mijenjati! Jer letovi će imati oblik Flight_BA001_i, gdje je "i" timestamp, a BA001 je 
 # aircraft ID. Dakle, svi ?flight su međusobno različiti unutar timestampa i između različitih timestampova!  
 
+# TODO: add ?indicator here as well?
 [?flight, :clearedHeadingAssigned] :-
     EXISTS ?clearedHading IN(
         [?flight, :agreedElement, ?agreedElement],
@@ -150,7 +165,7 @@
 [?flight, :isClearedHeadingAssigned, 1] :- [?flight, :clearedHeadingAssigned].
 [?flight, :isClearedHeadingAssigned, 0] :- NOT [?flight, :clearedHeadingAssigned].
 
-[?flight, :headingClearenceJustReceived] :-
+[?flight, :isHeadingClearenceJustReceived, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
@@ -162,16 +177,21 @@
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
     [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
-    FILTER(ABS(?currTime - ?agreedTime) <= 7).
 
-[?flight, :isHeadingClearenceJustReceived, 1] :- [?flight, :headingClearenceJustReceived].
-[?flight, :isHeadingClearenceJustReceived, 0] :- NOT [?flight, :headingClearenceJustReceived].
+    BIND(
+        IF(
+            ABS(?currTime - ?agreedTime) <= 7,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 # Turning towards:
 """U javi je krivo implementirano - primjer za towards: prev=20, curr=30, clear=40 i prev=20, curr=50, clear=40. 
 Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH 
 """
-[?flight, :turningTowardsClearedHeading] :-
+[?flight, :isTurningTowardsClearedHeading, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     [?flight, :isHeadingClearenceJustReceived, 0],
     # Extract previous, current and cleared elements
@@ -191,23 +211,25 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?agreedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    FILTER(
-        (
-            ?prevHeading < ?currHeading &&
-            ?currHeading < ?clearedHeading
-        ) ||
-        (
-            ?prevHeading > ?currHeading &&
-            ?currHeading > ?clearedHeading
+    BIND(
+        IF(
+            (
+                ?prevHeading < ?currHeading &&
+                ?currHeading < ?clearedHeading
+            ) ||
+            (
+                ?prevHeading > ?currHeading &&
+                ?currHeading > ?clearedHeading
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isTurningTowardsClearedHeading, 1] :- [?flight, :turningTowardsClearedHeading].
-[?flight, :isTurningTowardsClearedHeading, 0] :- NOT [?flight, :turningTowardsClearedHeading].
 
 
 # Turning opposite:
-[?flight, :turningOppositeOfClearedHeading] :-
+[?flight, :isTurningOppositeOfClearedHeading, ?indicator] :-
     [?flight, :isHeadingClearenceJustReceived, 0],
     [?flight, :isClearedHeadingAssigned, 1],
     # Extract previous, current and cleared elements
@@ -227,23 +249,25 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?agreedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    FILTER(
-        (
-            ?clearedHeading < ?prevHeading && 
-            ?prevHeading < ?currHeading
-        ) ||
-        (
-            ?clearedHeading > ?prevHeading && 
-            ?prevHeading > ?currHeading
+    BIND(
+        IF(
+            (
+                ?clearedHeading < ?prevHeading && 
+                ?prevHeading < ?currHeading
+            ) ||
+            (
+                ?clearedHeading > ?prevHeading && 
+                ?prevHeading > ?currHeading
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isTurningOppositeOfClearedHeading, 1] :- [?flight, :turningOppositeOfClearedHeading].
-[?flight, :isTurningOppositeOfClearedHeading, 0] :- NOT [?flight, :turningOppositeOfClearedHeading].
 
 
 # 5.1.5 Check that aircraft is at cleared heading  
-[?flight, :atClearedHeading,] :-
+[?flight, :isAtClearedHeading, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     [?flight, :isHeadingClearenceJustReceived, 0],
     # Extract current and cleared elements for the flight at each timestamp
@@ -256,10 +280,15 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
-    FILTER(ABS(?currHeading - ?clearedHeading) <= 3).		# Why radius=3?
 
-[?flight, :isAtClearedHeading, 1] :- [?flight, :atClearedHeading].
-[?flight, :isAtClearedHeading, 0] :- NOT [?flight, :atClearedHeading].
+    BIND(
+        IF(
+            ABS(?currHeading - ?clearedHeading) <= 3,   # Why radius=3?
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 
 # 5.1.6. Check that aircraft is maintaining current heading (different than cleared heading)
@@ -282,11 +311,17 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:extension, ?currPointExtension],
     [?currPointExtension, :heading: ?currHeading],
-    FILTER(ABS(?currHeading - ?prevHeading) <= 3).	# Why radius=3?
 
-[?flight, :isMaintainingCurrentHeading, 1] :- [?flight, :maintainingCurrentHeading].
-[?flight, :isMaintainingCurrentHeading, 0] :- NOT [?flight, :maintainingCurrentHeading].
+    BIND(
+        IF(
+            ABS(?currHeading - ?prevHeading) <= 3,	# Why radius=3?
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
+# TODO: add ?indicator here as well?
 [?flight, :maintainingClearedHeading] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :isMaintainingCurrentHeading, 1],
@@ -301,7 +336,7 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
 nit usporava u tom trenutku), a to u pravilima ne moramo naglasiti, obzirom da je dovoljno reći False za ubrzavanje/usporavanje 
 ako je cleared speed instrukcija stigla u trenutnom vremenu.
 """
-[?flight, :speedClearenceJustReceived] :- 
+[?flight, :isSpeedClearenceJustReceived, ?indicator] :- 
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -312,12 +347,18 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
     [?agreedPoint4DTime, fx:absoulteTime, ?clearedTime],
-    FILTER(?currTime - ?clearedTime >= 7).	# Check if change/clearence happened up to 7s ago.
 
-[?flight, :isSpeedClearenceJustReceived, 1] :- [?flight, :speedClearenceJustReceived].
-[?flight, :isSpeedClearenceJustReceived, 0] :- NOT [?flight, :speedClearenceJustReceived].
+    BIND(
+        IF(
+            ABS(?currTime - ?clearedTime) <= 7,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 # ATCO cleared speed restriction:
+# TODO: add ?indicator here as well?
 [?flight, :atcoSpeedRestriction] :-
     # Extract cleared element for the flight at each timestamp
     [?flight, :agreedElement, ?agreedElement],
@@ -331,7 +372,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 [?flight, :noATCOSpeedRestriction, 0] :- NOT [?flight, :atcoSpeedRestriction].
 
 # Accelerating:
-[?flight2, :acceleratingToClearedSpeed] :-
+[?flight2, :isAcceleratingToClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -353,15 +394,18 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
-    FILTER(
-        ?currSpeed < ?clearedSpeed && 
-        ?prevSpeed < ?currSpeed
+
+    BIND(
+        IF(
+            ?currSpeed < ?clearedSpeed && 
+            ?prevSpeed < ?currSpeed,
+            1,
+            0
+        )
+        AS ?indicator
     ).
     
-[?flight, :isAcceleratingToClearedSpeed, 1] :- [?flight, :acceleratingToClearedSpeed].
-[?flight, :isAcceleratingToClearedSpeed, 0] :- NOT [?flight, :acceleratingToClearedSpeed].
-
-[?flight2, :acceleratingWithinClearedSpeed] :-
+[?flight2, :isAcceleratingWithinClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -384,29 +428,30 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
-    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
-    
-    FILTER(
-        ?prevSpeed < ?currSpeed &&
-        (
-            (
-                ?currSpeed >= ?clearedSpeed && 
-                ?boundType = ">="
-            ) ||
-            (
-                ?currSpeed <= ?clearedSpeed && 
-                ?boundType = "<="
-            )
-        )
-    ).
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
+    BIND(
+        IF(
+            ?prevSpeed < ?currSpeed &&
+            (
+                (
+                    ?currSpeed >= ?clearedSpeed && 
+                    ?boundType = ">="
+                ) ||
+                (
+                    ?currSpeed <= ?clearedSpeed && 
+                    ?boundType = "<="
+                )
+            ),
+            1,
+            0
+        )
+        AS ?indicator
+    ).  
 # TODO: maknuti filter ?boundType = ... i ubaciti to u select (ako je moguće), slično kao kod provjere jednakosti dviju varijabli bez filtera.
 
-[?flight, :isAcceleratingWithinClearedSpeed, 1] :- [?flight, :acceleratingWithinClearedSpeed].
-[?flight, :isAcceleratingWithinClearedSpeed, 0] :- NOT [?flight, :acceleratingWithinClearedSpeed].
-
 # Decelerating:
-[?flight2, :deceleratingToClearedSpeed] :-
+[?flight2, :isDeceleratingToClearedSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -427,15 +472,18 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
-    FILTER(
-        ?currSpeed > ?clearedSpeed &&
-        ?prevSpeed > ?currSpeed
+
+    BIND(
+        IF(
+            ?currSpeed > ?clearedSpeed && 
+            ?prevSpeed > ?currSpeed,
+            1,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :isDeceleratingToClearedSpeed, 1] :- [?flight, :deceleratingToClearedSpeed].
-[?flight, :isDeceleratingToClearedSpeed, 0] :- NOT [?flight, :deceleratingToClearedSpeed].
-
-[?flight2, :deceleratingWithinClearedSpeed] :-
+[?flight2, :isDeceleratingWithinClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -459,26 +507,28 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
-    FILTER(
-        ?prevSpeed > ?currSpeed &&
-        (
+    BIND(
+        IF(
+            ?prevSpeed > ?currSpeed &&
             (
-                ?currSpeed >= ?clearedSpeed && 
-                ?boundType = ">="
-            ) ||
-            (
-                ?currSpeed <= ?clearedSpeed && 
-                ?boundType = "<="
-            )
+                (
+                    ?currSpeed >= ?clearedSpeed && 
+                    ?boundType = ">="
+                ) ||
+                (
+                    ?currSpeed <= ?clearedSpeed && 
+                    ?boundType = "<="
+                )
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isDeceleratingWithinClearedSpeed, 1] :- [?flight, :deceleratingWithinClearedSpeed].
-[?flight, :isDeceleratingWithinClearedSpeed, 0] :- NOT [?flight, :deceleratingWithinClearedSpeed].
 
 
 # 5.1.8 Check that aircraft is flying at cleared speed
-[?flight, :flyingAtClearedSpeed] :-
+[?flight, :isFlyingAtClearedSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
@@ -489,26 +539,28 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
-    [?clearedSpeedBound, :clearedBoundType, ?boundType],    
+    [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
-    FILTER(
-        ?currSpeed = ?clearedSpeed ||
-        (
-            ?boundType = "<=" && 
-            ?currSpeed <= ?clearedSpeed
-        ) ||
-        (
-            ?boundType = ">=" && 
-            ?currSpeed >= ?clearedSpeed
+    BIND(
+        IF(
+            ?currSpeed = ?clearedSpeed ||
+            (
+                ?boundType = "<=" && 
+                ?currSpeed <= ?clearedSpeed
+            ) ||
+            (
+                ?boundType = ">=" && 
+                ?currSpeed >= ?clearedSpeed
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isFlyingAtClearedSpeed, 1] :- [?flight, :flyingAtClearedSpeed].
-[?flight, :isFlyingArClearedSpeed, 0] :- NOT [?flight, :flyingAtClearedSpeed].
 
 
 # 5.1.9 Check that aircraft is maintaining current speed (different than cleared speed)
-[?flight2, :maintainingCurrentSpeed] :-
+[?flight2, :isMaintainingCurrentSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -526,11 +578,17 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    FILTER(ABS(?currSpeed - ?prevSpeed) <= 4).	# why 4?
 
-[?flight, :isMaintainingCurrentSpeed, 1] :- [?flight, :maintainingCurrentSpeed].
-[?flight, :isMaintainingCurrentSpeed, 0] :- NOT [?flight, :maintainingCurrentSpeed].
+    BIND(
+        IF(
+            ABS(?currSpeed - ?prevSpeed) <= 4,	# Why 4?
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
+# TODO: add ?indicator here as well?
 [?flight, :maintainingClearedSpeed] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :isMaintainingCurrentSpeed, 1],
@@ -755,7 +813,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     
 
 # 5.1.11  Check that aircraft is at cleared point
-[?flight, :atClearedPoint] :-
+[?flight, :isAtClearedPoint, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -775,7 +833,6 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     BIND((?clearedLon - ?currLon) * (math:pi/180) AS ?diffLonInRad),
     BIND(?currLat * (math:pi/180) AS ?currLatInRad),
     BIND(?clearedLat * (math:pi/180) AS ?clearedLatInRad),
-
     BIND(
         math:pow(math:sin(?diffLatInRad/2), 2) + 
         math:cos(?currLatInRad) * math:cos(?clearedLatInRad) *
@@ -784,13 +841,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     ),
     BIND(2 * math:atan2(math:sqrt(?a), math:sqrt(1-?a)) AS ?c),
     BIND(?R * ?c * 1000 AS ?distance),	# Distance in meters
-    FILTER(?distance <= ?toleranceRadius).
 
-[?flight, :isAtClearedPoint, 1] :- [?flight, :atClearedPoint].
-[?flight, :isAtClearedPoint, 0] :- NOT [?flight, :atClearedPoint].
+    BIND(
+        IF(
+            ?distance <= ?toleranceRadius,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 
 # 5.1.12 Check that aircraft’s current ROC/ROD is lower/higher than cleared
+# TODO: add ?indicator here as well?
 [?flight, :clearedVerticalRateAssigned] :-
     EXISTS ?clearedVRate IN(
         [?flight, :agreedElement, ?agreedElement],
@@ -800,6 +863,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 [?flight, :isClearedVerticalRateAssigned, 1] :- [?flight, :clearedVerticalRateAssigned].
 [?flight, :isClearedVerticalRateAssigned, 0] :- NOT [?flight, :clearedVerticalRateAssigned].
 
+# TODO: add ?indicator here as well?
 [?flight, :atClearedVerticalRate] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, fx:currentElement, ?currElement],
@@ -810,29 +874,39 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 [?flight, :isAtClearedVerticalRate, 1] :- [?flight, :atClearedVerticalRate].
 [?flight, :isAtClearedVerticalRate, 0] :- NOT [?flight, :atClearedVerticalRate]
 
-[?flight, :verticalRateHigherThanClearedVerticalRate] :-
+[?flight, :isVerticalRateHigherThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
     [?flight, fx:agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(?currVRate > ?clearedVRate).
 
-[?flight, :isVerticalRateHigherThanClearedVerticalRate, 1] :- [?flight, :verticalRateHigherThanClearedVerticalRate].
-[?flight, :isVerticalRateHigherThanClearedVerticalRate, 0] :- NOT [?flight, :verticalRateHigherThanClearedVerticalRate].
+    BIND(
+        IF(
+            ?currVRate > ?clearedVRate,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :verticalRateLowerThanClearedVerticalRate] :-
+[?flight, :isVerticalRateLowerThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
     [?flight, fx:agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(?currVRate < ?clearedVRate).
 
-[?flight, :isVerticalRateLowerThanClearedVerticalRate, 1] :- [?flight, :verticalRateLowerThanClearedVerticalRate].
-[?flight, :isVerticalRateLowerThanClearedVerticalRate, 0] :- NOT [?flight, :verticalRateLowerThanClearedVerticalRate].
+    BIND(
+        IF(
+            ?currVRate < ?clearedVRate,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :verticalRateWithinClearedVerticalRate] :-
+[?flight, :isVerticalRateWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
@@ -841,25 +915,27 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
     [?agreedElement, fx:extension, ?clearedVerticalRateExtension],
-    [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],    
+    [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],
 
-    FILTER(
-        (
-            ?boundType = "<=" && 
-            ?currVRate <= ?clearedVRate
-        ) ||
-        (
-            ?boundType = ">=" && 
-            ?currVRate >= ?clearedVRate
+    BIND(
+        IF(
+            (
+                ?boundType = "<=" && 
+                ?currVRate <= ?clearedVRate
+            ) ||
+            (
+                ?boundType = ">=" && 
+                ?currVRate >= ?clearedVRate
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-
-[?flight, :isVerticalRateWithinClearedVerticalRate, 1] :- [?flight, :verticalRateWithinClearedVerticalRate].
-[?flight, :isVerticalRateWithinClearedVerticalRate, 0] :- NOT [?flight, :verticalRateWithinClearedVerticalRate].
 
 
 # 5.1.13 Check that aircraft is maintaining cleared ROC/ROD
-[?flight2, :maintainingVerticalRate] :-
+[?flight2, :isMaintainingVerticalRate, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -874,11 +950,17 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     # Extract previous and current vertical rates
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:extension, ?currVRate],
-    FILTER(ABS(?prevVRate - ?currVRate) <= 30).
 
-[?flight, :isMaintainingVerticalRate, 1] :- [?flight, :maintainingVerticalRate].
-[?flight, :isMaintainingVerticalRate, 0] :- NOT [?flight, :maintainingVerticalRate].
+    BIND(
+        IF(
+            ABS(?prevVRate - ?currVRate) <= 30,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
+# TODO: add ?indicator here as well?
 [?flight, :maintainingClearedVerticalRate] :-
     [?flight, :isMaintainingVerticalRate, 1],
     [?flight, :isAtClearedVerticalRate, 1].
@@ -888,7 +970,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
 
 # 5.1.14 Check that aircraft is increasing/decreasing towards/within cleared ROC/ROD
-[?flight, :verticalRateClearenceJustReceived] :-
+[?flight, :isVerticalRateClearenceJustReceived, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -899,13 +981,18 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
     [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
-    FILTER(ABS(?currTime - ?agreedTime) <= 7).
 
-[?flight, :isVerticalRateClearenceJustReceived, 1] :- [?flight, :verticalRateClearenceJustReceived].
-[?flight, :isVerticalRateClearenceJustReceived, 0] :- NOT [?flight, :verticalRateClearenceJustReceived].
+    BIND(
+        IF(
+            ABS(?currTime - ?agreedTime) <= 7,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 # Incresing to cleared rate:
-[?flight2, :increasingToVerticalRate] :-
+[?flight2, :isIncreasingToVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
@@ -924,16 +1011,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(
-        ABS(?currVRate) > ABS(?prevVRate) &&
-        ABS(?currVRate) < ABS(?clearedVRate)
-    ).
-    
-[?flight, :isIncreasingToClearedVerticalRate, 1] :- [?flight, :increasingToClearedVerticalRate].
-[?flight, :isIncreasingToClearedVerticalRate, 0] :- NOT [?flight, :increasingToClearedVerticalRate].	
+
+    BIND(
+        IF(
+            ABS(?currVRate) > ABS(?prevVRate) &&
+            ABS(?currVRate) < ABS(?clearedVRate),
+            1,
+            0
+        )
+        AS ?indicator
+    ).	
 
 # Decresing to cleared rate:
-[?flight2, :decreasingToClearedVerticalRate] :-
+[?flight2, :isDecreasingToClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
@@ -952,16 +1042,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:extension, ?currVRate],
     [?agreedElement, fx:extension, ?clearedVRate],
-    FILTER(
-        ABS(?currVRate) < ABS(?prevVRate) &&
-        ABS(?currVRate) > ABS(?clearedVRate)
+
+    BIND(
+        IF(
+            ABS(?currVRate) < ABS(?prevVRate) &&
+            ABS(?currVRate) > ABS(?clearedVRate),
+            1,
+            0
+        )
+        AS ?indicator
     ).
-    
-[?flight, :isDecreasingToClearedVerticalRate, 1] :- [?flight, :isDecreasingToClearedVerticalRate].
-[?flight, :isDecreasingToVerticalRate, 0] :- NOT [?flight, :decreasingToClearedVerticalRate].
 
 # Incresing within cleared rate:
-[?flight2, :increasingWithinClearedVerticalRate] :-
+[?flight2, :isIncreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
@@ -983,25 +1076,27 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:extension, ?clearedVRateExtension],
     [?clearedVRateExtension, :clearedBoundType, ?boundType],
 
-    FILTER(
-        ABS(?currVRate) > ABS(?prevVRate) &&
-        (
+    BIND(
+        IF(
+            ABS(?currVRate) > ABS(?prevVRate) &&
             (
-                ?boundType = ">=" && 
-                ABS(?currVRate) > ABS(?clearedVRate)
-            ) ||
-            (
-                ?boundType = "<=" && 
-                ABS(?currVRate) < ABS(?clearedVRate)
-            )
+                (
+                    ?boundType = ">=" && 
+                    ABS(?currVRate) > ABS(?clearedVRate)
+                ) ||
+                (
+                    ?boundType = "<=" && 
+                    ABS(?currVRate) < ABS(?clearedVRate)
+                )
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-    
-[?flight, :isIncreasingWithinClearedVerticalRate, 1] :- [?flight, :increasingWithinClearedVerticalRate].
-[?flight, :isIncreasingWithinClearedVerticalRate, 0] :- NOT [?flight, :increasingWithinClearedVerticalRate].
 
 # Decreasing within cleared rate:
-[?flight2, :decreasingWithinClearedVerticalRate] :-
+[?flight2, :isDecreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
@@ -1023,22 +1118,24 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?agreedElement, fx:extension, ?clearedVRateExtension],
     [?clearedVRateExtension, :clearedBoundType, ?boundType],
 
-    FILTER(
-        ABS(?currVRate) < ABS(?prevVRate) &&
-        (
+    BIND(
+        IF(
+            ABS(?currVRate) < ABS(?prevVRate) &&
             (
-                ?boundType = ">=" && 
-                ABS(?currVRate) > ABS(?clearedVRate)
-            ) ||
-            (
-                ?boundType = "<=" && 
-                ABS(?currVRate) < ABS(?clearedVRate)
-            )
+                (
+                    ?boundType = ">=" && 
+                    ABS(?currVRate) > ABS(?clearedVRate)
+                ) ||
+                (
+                    ?boundType = "<=" && 
+                    ABS(?currVRate) < ABS(?clearedVRate)
+                )
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
-    
-[?flight, :isDecreasingWithinClearedVerticalRate, 1] :- [?flight, :decreasingWithinClearedVerticalRate].
-[?flight, :isDecreasingWithinClearedVerticalRate, 0] :- NOT [?flight, :decreasingWithinClearedVerticalRate].
 
 
 # 5.1.15 Check that aircraft is following the 3D trajectory
@@ -1051,7 +1148,7 @@ Ovo detaljno provjeriti i istestirati! Računamo udaljenost između točke trenu
 A i B prethodne i iduće cleared točke (ako nisu naznačene, onda se radi i točkama po planu leta). Također, flight level gledamo klasično.
 """
 # Extract previous - agreed, current - agreed and current, next - cleared elements for the flight
-[?flight, :FLDeviationFrom3DtrajectoryWithinTolerance] :-
+[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
 # Extract current and agreed elements for the flight
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -1060,12 +1157,17 @@ A i B prethodne i iduće cleared točke (ako nisu naznačene, onda se radi i to�
     [?currPoint4D, fx:level, ?currLevel],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-    FILTER(ABS(?currLevel - ?clearedLevel) <= 100).
 
-[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1] :- [?flight, :FLDeviationFrom3DtrajectoryWithinTolerance].
-[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, 0] :- NOT [?flight, :FLDeviationFrom3DtrajectoryWithinTolerance].
+    BIND(
+        IF(
+            ABS(?currLevel - ?clearedLevel) <= 100,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight2, :deviationFrom3DtrajectoryWithinTolerance] :-
+[?flight2, :isDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
     [?flight2, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT], 
@@ -1118,10 +1220,15 @@ A i B prethodne i iduće cleared točke (ako nisu naznačene, onda se radi i to�
         AS ?d
     ),
     BIND(?a/?d AS ?distance),
-    FILTER(?distance <= ?tolerance).
 
-[?flight, :isDeviationFrom3DtrajectoryWithinTolerance, 1] :- [?flight, :deviationFrom3DtrajectoryWithinTolerance].
-[?flight, :isDeviationFrom3DtrajectoryWithinTolerance, 0] :- NOT [?flight, :deviationFrom3DtrajectoryWithinTolerance].
+    BIND(
+        IF(
+            ?distance <= ?tolerance,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 
 # 5.1.17 Check that aircraft is following the 4D trajectory

@@ -1,3 +1,4 @@
+# TODO: add ?indicator to all helper rules?
 [?flight, :aircraftAlreadyAssumed] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
     [?coordStatus, fx:status, "ASSUMED"].

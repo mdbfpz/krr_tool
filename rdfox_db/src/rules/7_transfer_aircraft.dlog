@@ -12,7 +12,7 @@
 
 
 # 5.7.1 Check which aircraft need to be transferred
-[?flight, :aircraftNeedsToBeTransferred, 1] :-
+[?flight, :aircraftNeedsToBeTransferred, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :isAtExitFL, 1],
@@ -39,19 +39,24 @@
     ),
     BIND(2*60 AS ?x),
     BIND(60 AS ?y),
-
-    FILTER(
-        ?timeToExitPoint <= ?x &&
-        (
-            ?currVRate >= 0 ||
+    
+    BIND(
+        IF(
+            ?timeToExitPoint <= ?x &&
             (
-                ?currVRate < 0 &&
-                ?timeToLowerSectorBoundary <= ?y
-            )
+                ?currVRate >= 0 ||
+                (
+                    ?currVRate < 0 &&
+                    ?timeToLowerSectorBoundary <= ?y
+                )
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
 
-[?flight, :warnATCOAboutXFLBeforeTransferringFlight, 1] :-
+[?flight, :warnATCOAboutXFLBeforeTransferringFlight, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :isAtExitFL, 0],  # This is the only difference from the previous rule
@@ -79,18 +84,23 @@
     BIND(2*60 AS ?x),
     BIND(60 AS ?y),
 
-    FILTER(
-        ?timeToExitPoint <= ?x &&
-        (
-            ?currVRate >= 0 ||
+    BIND(
+        IF(
+            ?timeToExitPoint <= ?x &&
             (
-                ?currVRate < 0 &&
-                ?timeToLowerSectorBoundary <= ?y
-            )
+                ?currVRate >= 0 ||
+                (
+                    ?currVRate < 0 &&
+                    ?timeToLowerSectorBoundary <= ?y
+                )
+            ),
+            1,
+            0
         )
+        AS ?indicator
     ).
 
-[?flight, :aircraftDoesNotNeedToBeTransfeered, 1] :-
+[?flight, :aircraftDoesNotNeedToBeTransfeered, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :withinSector, ?sector],
@@ -108,11 +118,17 @@
     BIND(2*60 AS ?x),
 
     # A/C is in the sector, but isn't close to the boundary
-    FILTER(
-        !(?timeToExitPoint <= ?x)
+    BIND(
+        IF(
+            ?timeToExitPoint > ?x,
+            1,
+            0
+        )
+        AS ?indicator
     ).
 
 
+# TODO: add ?indicator to the rules below?
 # 5.7.2 Check if change of frequency is issued to A/C (via datalink)
 [?flight, :changeOfFrequencyIssuedToAC, 1] :-
     [?flight, :datalink, ?frequencyChange].

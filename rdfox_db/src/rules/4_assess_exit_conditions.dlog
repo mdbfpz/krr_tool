@@ -7,6 +7,7 @@ TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the
 This point is the last point in the desired branch of the given flight plan. ?point will be a node 
 inside desired or agreed branch (in case there is a change of exit point during the flight)
 """
+# TODO: add ?indicator here as well?
 [?flight, :flyingTowardsExitPoint] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
