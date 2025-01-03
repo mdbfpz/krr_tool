@@ -541,7 +541,73 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
 
 # 5.1.10  Check that aircraft is flying towards cleared point
-[?flight2, :flyingToClearedPoint] :-
+
+# TODO: Implement the following in the pipeline:
+# When direct-to point is received, check if this point is on the route and it is not the next point on the route.
+# This means that the a/c can skip the next point on the route and go directly to some other point.
+# Add a triple that indicates that the received point is direct-to point:
+# [?agreedElement, :isDirectTo, 1].
+
+[?flight, :isDirectToClearenceJustReceived, ?indicator] :-
+    # Extract current and cleared elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?agreedElement],
+    
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:time, ?currPoint4DTime],
+    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedElement, :isDirectTo, 1],
+    [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
+    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+
+    BIND(
+        IF(
+            ABS(?currTime - ?agreedTime) <= 7,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :flyingOnClearedHeading, ?indicator] :-
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    [?flight, :isDirectToClearenceJustReceived, 0],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight, :currentElement, ?currElement],
+    [?flight, :agreedElement, ?clearedElement],
+
+    EXISTS ?currHeading IN(
+        [?currElement, fx:point4D, ?currPoint4D],
+        [?currPoint4D, fx:extension, ?currPointExtension],
+        [?currPointExtension, :heading, ?currHeading]
+    ),
+    EXISTS ?clearedHeading IN(
+        [?clearedElement, fx:point4D, ?clearedPoint4D],
+        [?clearedPoint4D, fx:extension, ?clearedPointExtension],
+        [?clearedPointExtension, :heading, ?clearedHeading]
+    ),
+
+    # TODO: add toleranceAzimuth through the pipeline
+    [?flight, :toleranceAzimuth, ?toleranceAziValue],
+
+    BIND(
+        IF(
+            # TODO: convert to Double if initial type is String?
+            ?currHeading <= ?clearedHeading + ?toleranceAziValue &&
+            ?currHeading >= ?clearedHeading - ?toleranceAziValue,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+# TODO: add directTime/headingTime check!
+[?flight2, :flyingToClearedPoint, ?indicator] :-
+    [?flight2, :isHeadingClearenceJustReceived, 0],
+    [?flight2, :isDirectToClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -551,36 +617,141 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
 
-    # Extract previous and current elements for the flight at each timestamp
+    [?flight2, :currentElement, ?currElement],
+    [?flight2, :agreedElement, ?clearedElement],
+
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading, ?currHeading],
+
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:extension, ?clearedPointExtension],
+    [?clearedPointExtension, :heading, ?clearedHeading],
+
+    # TODO: Calculate cleared heading if it doesn't exist through the pipeline
+    # This should be present in the Cleared branch if ?clearedHeading doesn't exist 
+    [?clearedPointExtension, :calculatedHeading, ?calculatedHeading],
+
+    BIND(
+        COALESCE(?clearedHeading, ?calculatedHeading) 
+        AS ?clrHeadingTemp
+    ),
+    # geographiclib uses <-180,180> range for azimuth --> transform to <0,360> range
+    BIND(
+        IF(
+            ?clrHeadingTemp < 0,
+            ?clrHeadingTemp + 360,
+            ?clrHeadingTemp
+        )
+        AS ?clrHeading
+    ),
+    
+    # TODO: add this through the pipeline (dist between curr and clear point)
+    [?flight2, :distanceToClearedPoint, ?currDistToClearedPoint],
+    [?flight1, :distanceToClearedPoint, ?prevDistToClearedPoint],
+    # TODO: add toleranceAzimuth through the pipeline
+    [?flight2, :toleranceAzimuth, ?toleranceAziValue],
+    BIND(
+        IF(
+            # TODO: convert to Double if initial type is String?
+            ?currHeading <= ?clrHeading + ?toleranceAziValue &&
+            ?currHeading >= ?clrHeading - ?toleranceAziValue &&
+            ?currDistToClearedPoint < ?prevDistToClearedPoint,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight2, :turningToClearedPoint, ?indicator] :-
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    [?flight, :isDirectToClearenceJustReceived, 0],
+
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
+
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?clearedElement],
 
-    # Extract previous, current and cleared positions and headings
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
-    [?currPoint4D, fx:extension, ?currPointExtension],
-    [?currPointExtension, :heading, ?currHeading],
-
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
     [?prevPoint4D, fx:extension, ?prevPointExtension],
     [?prevPointExtension, :heading, ?prevHeading],
 
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:extension, ?currPointExtension],
+    [?currPointExtension, :heading, ?currHeading],
+
     [?clearedElement, fx:point4D, ?clearedPoint4D],
-    [?clearedPoint4D, fx:position, ?clearedPosition],
-    [?clearedPosition, fx:pos, ?clearedLatLon],
-    [?clearedLatLon, fx:lat, ?clearedLat],
-    [?clearedLatLon, fx:lon, ?clearedLon],
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
-    ...
+
+    # TODO: Calculate cleared heading if it doesn't exist through the pipeline
+    # This should be present in the Cleared branch if ?clearedHeading doesn't exist 
+    [?clearedPointExtension, :calculatedHeading, ?calculatedHeading],
+
+    [?flight2, :turningToClearedPoint, 0],
+
+    BIND(
+        COALESCE(?clearedHeading, ?calculatedHeading) 
+        AS ?clrHeadingTemp
+    ),
+    # geographiclib uses <-180,180> range for azimuth --> transform to <0,360> range
+    BIND(
+        IF(
+            ?clrHeadingTemp < 0,
+            ?clrHeadingTemp + 360,
+            ?clrHeadingTemp
+        )
+        AS ?clrHeading
+    ),
+    
+    BIND(
+        IF(
+            (
+                ?clrHeading > ?currHeading &&
+                (
+                    ?currHeading > ?prevHeading ||
+                    (
+                        (?prevHeading > 270 && ?clrHeading < 90) ||
+                        (?prevHeading < 90 && ?clrHeading > 270)
+                    )
+                )
+            ) || 
+            (
+                ?clrHeading < ?currHeading &&
+                (
+                    ?currHeading < ?prevHeading ||
+                    (
+                        (?prevHeading > 270 && ?clrHeading < 90) ||
+                        (?prevHeading < 90 && ?clrHeading > 270)
+                    )
+                )
+            )
+        )
+        AS ?indicator
+    ).
+
+[?flight, :notFlyingToClearPoint, ?indicator] :-
+    [?flight, :isHeadingClearenceJustReceived, 0],
+    [?flight, :isDirectToClearenceJustReceived, 0],
+    
+    [?flight, :flyingToClearedPoint, ?indicator1],
+    [?flight, :turningToClearedPoint, ?indicator2],
+    BIND(
+        IF(
+            ?indicator1 = 1 || ?indicator2 = 1,
+            0,
+            1
+        )
+        AS ?indicator
+    ).
     
 
 # 5.1.11  Check that aircraft is at cleared point
