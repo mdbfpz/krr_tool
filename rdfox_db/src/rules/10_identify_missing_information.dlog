@@ -94,6 +94,7 @@
     [?currMeterologicalDataExtension, :icing, ?currIcing],
     [?currMeterologicalDataExtension, :precipitation, ?currPrecipitation],
     [?currMeterologicalDataExtension, :cloudCoverage, ?currCloudCoverage],
+    [?currMeterologicalDataExtension, :thunder, ?currThunder],
 
 
     [?prevElement, fx:point4D, ?prevPoint4D],
@@ -106,10 +107,11 @@
     [?prevMeterologicalDataExtension, :icing, ?prevIcing],
     [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
     [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
+    [?prevMeterologicalDataExtension, :thunder, ?prevThunder],
     BIND(
         IF(
             ?currTemperature = ?prevTemperature && ?currWindSpeed && ?prevWindSpeed && ?currWindDirection = ?prevWindDirection && 
-            ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage,
+            ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage && ?currThunder = ?prevThunder,
             0,
             1
         )
@@ -136,7 +138,7 @@
     [?airspaceActivation2, ax:status, ?status2],
     BIND(
         IF(
-            ?status1 = ?status2,
+            ?airspace1 = ?airspace2 && ?airspaceActivation1 = ?airspaceActivation2 && ?sector1 = ?sector2 && ?status1 = ?status2,
             0,
             1
         )
