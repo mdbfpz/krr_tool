@@ -58,7 +58,7 @@
 
 #5.9.5 Determine plausibility of traffic complexity assessment 
 
-[?timestamp2, :highPlausability] :-
+[?timestamp2, :hasHighPlausibilty, ?highPlausibilityIndicator] :-
     [?timestamp1, :next, ?timestamp2],
     [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
     [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft],#curr
@@ -72,8 +72,25 @@
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
-    #demorgan
-    """referenca je 5.4.2 za ovaj nacin pisanja filtera"""
+    
+    BIND(
+        IF(
+            (?currComplexity > ?prevComplexity) && (?currN > ?prevN) ||
+            (?currComplexity < ?prevComplexity) && (?currN < ?prevN) ||
+            (?currN = ?prevN) && ABS(?currComplexity - ?prevComplexity) <= 0.5,
+            1,
+            0
+        )
+        AS ?plausibilityIndicator
+    ).
+    """
+    FILTER(
+        (?currComplexity > ?prevComplexity) && (?currN > ?prevN) ||
+        (?currComplexity < ?prevComplexity) && (?currN < ?prevN) ||
+        (?currN = ?prevN) && ABS(?currComplexity - ?prevComplexity) <= 0.5 #ovo provjeriti, u AISAi ima complexity tolerance +- 0.5
+    ).
+
+    referenca je 5.4.2 za ovaj nacin pisanja filtera
     FILTER(
 
         !(
@@ -92,10 +109,9 @@
 
         )
     ).
-[?timestamp, :hasHighPlausibilty, 1] :- [?timestamp, :highPlausability].
-[?timestamp, :hasHighPlausibilty, 0] :- NOT[?timestamp, :highPlausability].
+    """
 
-[?timestamp2, :mediumPlausability] :-
+[?timestamp2, :hasMediumPlausibilty, ?mediumPlausabilityIndicator] :-
     [?timestamp2, :hasHighPlausibilty, 0],
     [?timestamp1, :next, ?timestamp2],
     [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
@@ -110,8 +126,19 @@
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
-    #demorgan
-    """referenca je 5.4.2 za ovaj nacin pisanja filtera"""
+    
+    BIND(
+        IF(
+            (?currComplexity > ?prevComplexity) && (?currN = ?prevN) ||      
+            (?currComplexity < ?prevComplexity) && (?currN = ?prevN) ||
+            ABS(?currComplexity - ?prevComplexity) <= 0.5 && (?currN > ?prevN) ||
+            ABS(?currComplexity - ?prevComplexity) <= 0.5 && (?currN < ?prevN),
+            1,
+            0
+        )
+        AS ?mediumPlausabilityIndicator
+    ).
+    """    deMorgan
     FILTER(
 
         !(
@@ -134,10 +161,9 @@
             )
         )
     ).
-[?timestamp, :hasMediumPlausibilty, 1] :- [?timestamp, :mediumPlausability].
-[?timestamp, :hasMediumPlausibilty, 0] :- NOT[?timestamp, :mediumPlausability].
+    """
 
-[?timestamp2, :lowPlausability] :-
+[?timestamp2, :hasLowPlausibilty, ?lowPlausabilityIndicator] :-
     [?timestamp2, :hasMediumPlausibilty, 0],
     [?timestamp1, :next, ?timestamp2],
     [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
@@ -152,9 +178,18 @@
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
-    #demorgan
+    BIND(
+        IF(
+            (?currComplexity > ?prevComplexity) && (?currN < ?prevN) || 
+            (?currComplexity < ?prevComplexity) && (?currN > ?prevN),
+            1,
+            0
+        )
+        AS ?lowPlausabilityIndicator
+    ).
+    
     """referenca je 5.4.2 za ovaj nacin pisanja filtera"""
-    FILTER(
+    """FILTER(
 
         !(
             !(
@@ -167,7 +202,6 @@
             )
            
         )
-    ).
-[?timestamp, :hasLowPlausibilty, 1] :- [?timestamp, :lowPlausability].
-[?timestamp, :hasLowPlausibilty, 0] :- NOT[?timestamp, :lowPlausability].
+    )."""
+
 

@@ -9,7 +9,7 @@ need output from module (let's say we have a node in graph representing module's
 need distance between two flights' positions - pretend we have function implemented in python put in a graph
 
 """
-[?conflictModul, :satisfactoryConflictModel]:-
+[?conflictModul, :isSatisfactoryConflictModel, ?satisfactoryConflictModelIndicator]:-
     # prev and curr for flight 1
     [?prevT1, :next, ?currT1],  
     # Bind flights at each timestamp
@@ -98,28 +98,43 @@ need distance between two flights' positions - pretend we have function implemen
     [?conflictModul, :firstInputFlight, ?flightID1],
     [?conflictModul, :secondInputFlight, ?flightID2],
     [?conflictModul, :calculateDistance, ?modulDistance],
-    FILTER(?currDistance > ?prevDistance).
+    
+    BIND(
+        IF(
+            ?currDistance > ?prevDistance,
+            0,
+            1
+        )
+        AS ?satisfactoryConflictModelIndicator
+    ).
+"""
 [?conflictModul, :isSatisfactoryConflictModel, 1] :- NOT[?conflictModul, :satisfactoryConflictModel].
 [?conflictModul, :isSatisfactoryConflictModel, 0] :- [?conflictModul, :satisfactoryConflictModel].
-"""ovo treba još pogledati kaj bi se točno trebalo returnati- ako treba dodati varijable
+ovo treba još pogledati kaj bi se točno trebalo returnati- ako treba dodati varijable
  koje budu predstavljale output iz jave https://github.com/Tukaric/FPZ-AISA-WP4-clone/blob/main/java/moduli/Taskovi11/Task11_1.java - linija 78"""
 
 #5.11.2  Monitor performance of complexity assessment module  
 """treba dodati cvor za complexityModule i povezati ga s timestampom"""
-[?complexityModule, :satisfactoryComplexityModule] :-
+[?complexityModule, :isSatisfactoryComplexityModel, ?satisfactoryComplexityModuleIndicator] :-
     [?timestamp, :complexityModule, ?complexityModule],
-    NOT(
-        NOT([?timestamp, :hasHighPlausibilty, 1]),
-        NOT([?timestamp, :hasMediumPlausibilty, 1])
+    [?timestamp, :hasHighPlausibilty, ?highPlausibilityIndicator],
+    [?timestamp, :hasMediumPlausibilty, ?mediumPlausabilityIndicator],
+    
+    BIND(
+        IF(
+            ?highPlausibilityIndicator = 1 || ?mediumPlausabilityIndicator = 1,
+            1,
+            0
+        )
+        AS ?satisfactoryComplexityModuleIndicator
     ).
-[?complexityModule, :isSatisfactoryComplexityModel, 1] :- [?complexityModule, :satisfactoryComplexityModule].
-[?complexityModule, :isSatisfactoryComplexityModel, 0] :- NOT[?complexityModule, :satisfactoryComplexityModule].
+
 
 
 
 #5.11.3  Monitor performance of trajectory prediction module
 #if trajectory prediction is gonna be put in predicted element branch:
-[?flight, :satisfactoryTrajectoryModel] :-
+[?flight, :doesModelSatisfyTrajectoryPrediction, ?satisfactoryTrajectoryModelIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
@@ -132,8 +147,14 @@ need distance between two flights' positions - pretend we have function implemen
     [?predPoint4D, fx:position, ?predPosition],
     [?predPoint4D, fx:time, ?predPoint4DTime],
     [?predPoint4DTime, fx:absoluteTime, ?predTime],
-    FILTER(ABS(?currPosition - ?predPosition) <= 2.5 && ABS(?currTime - ?predTime) <= 30 && ABS(?currFlightLevel - ?predFlightLevel) <= 100).
-
-[?flight, :doesModelSatisfyTrajectoryPrediction, 1] :- [?flight, :satisfactoryTrajectoryModel].
-[?flight, :doesModelSatisfyTrajectoryPrediction, 0] :- NOT[?flight, :satisfactoryTrajectoryModel].
     
+    BIND(
+        IF(
+            ABS(?currPosition - ?predPosition) <= 2.5 && 
+            ABS(?currTime - ?predTime) <= 30 && 
+            ABS(?currFlightLevel - ?predFlightLevel) <= 100,
+            1,
+            0
+        )
+        AS ?satisfactoryTrajectoryModelIndicator
+    ).

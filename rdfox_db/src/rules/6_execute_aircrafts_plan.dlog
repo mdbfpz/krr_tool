@@ -1,82 +1,108 @@
 #5.6 Execute Aircraft’s Plan 
 
 #5.6.1 Detect aircraft that have to climb/descend to requested FL
-[?flight, :atRequestedFL] :-
+[?flight, :isAtRequestedFL ,?atRequestedFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?flightLevel],
+    [?currPoint4D, fx:level, ?currFlightLevel],
     [?currElement,fx:routeChange, ?currRouteChanges],
     [?currRouteChanges,fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange,fx:level, ?flightLevel].
+    [?currCruisingLevelChange,fx:level, ?changeFlightLevel],
+    BIND(
+        IF(
+            ?currFlightLevel = ?changeFlightLevel,
+            1,
+            0
+        )
+        AS ?atRequestedFLIndicator
+    ).
 
-[?flight, :isAtRequestedFL,1] :- [?flight, :atRequestedFL].
-[?flight, :isAtRequestedFL,0] :- NOT[?flight, :atRequestedFL].
 
-[?flight, :descendFL] :-
+[?flight, :hasToDescendFL ,?descendFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
     [?currElement,fx:routeChange, ?currRouteChanges],
     [?currRouteChanges,fx:level, ?currCruisingLevelChange],
     [?currCruisingLevelChange,fx:level, ?reqFlightLevel],
-    FILTER(?currFlightLevel > ?reqFlightLevel).
-
-[?flight, :hasToDescendFL,1] :- [?flight, :descendFL].
-[?flight, :hasToDescendFL,0] :- NOT[?flight, :descendFL].
-
-[?flight, :hasToClimbFL,1] :- 
-    [?flight, :isAtRequestedFL,0],
-    [?flight, :hasToDescendFL,0].
     
-#DeMorgan
-[?flight, :hasToClimbFL,0] :- 
-    NOT(
-    NOT[?flight, :isAtRequestedFL,1],
-    NOT[?flight, :hasToDescendFL,1]
+    BIND(
+        IF(
+            ?currFlightLevel > ?reqFlightLevel,
+            1,
+            0
+        )
+        AS ?descendFLIndicator
+    ).
+    
+[?flight, :hasToClimbFL,?climbIndicator] :- 
+    [?flight, :isAtRequestedFL,?atRequestedFLIndicator],
+    [?flight, :hasToDescendFL,?descendFLIndicator],
+    BIND(
+        IF(
+            ?atRequestedFLIndicator = 0 && ?descendFLIndicator = 0,
+            1,
+            0
+        )
+        
+        AS ?climbIndicator
     ).
 
 #5.6.2 Detect aircraft that have to climb/descend to exit FL 
 
-[?flight, :atExitFL] :-
-    [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?flightLevel],
-    [?flight, :exitPointElement, ?exitPointElement],
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?flightLevel].
-
-[?flight, :isAtExitFL,1] :- [?flight, :atExitFL].
-[?flight, :isAtExitFL,0] :- NOT[?flight, :atExitFL].
-
-[?flight, :descendToExitFL] :-
+[?flight, :isAtExitFL, ?atExitFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
     [?flight, :exitPointElement, ?exitPointElement],
     [?exitPointElement, fx:point4D, ?exitPoint4D],
     [?exitPoint4D, fx:level, ?exitFlightLevel],
-    FILTER(?currFlightLevel > ?exitFlightLevel).
-
-[?flight, :hasToDescendToExitFL,1] :- [?flight, :descendToExitFL].
-[?flight, :hasToDescendToExitFL,0] :- NOT[?flight, :descendToExitFL].
-
-[?flight, :hasToClimbToExitFL,1] :- 
-    [?flight, :isAtExitFL,0],
-    [?flight, :hasToDescendToExitFL,0].
-    
-#DeMorgan
-[?flight, :hasToClimbToExitFL,0] :- 
-    NOT(
-    NOT[?flight, :isAtExitFL,1],
-    NOT[?flight, :hasToDescendToExitFL,1]
+    BIND(
+        IF(
+            ?currFlightLevel = ?exitFlightLevel,
+            1,
+            0
+        )
+        AS ?atExitFLIndicator
     ).
 
+
+[?flight, :hasToDescendToExitFL, ?descendToExitFLIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?flight, :exitPointElement, ?exitPointElement],
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitFlightLevel],
+    
+    BIND(
+        IF(
+            ?currFlightLevel > ?exitFlightLevel,
+            1,
+            0
+        )
+        AS ?descendToExitFLIndicator
+    ).
+
+
+[?flight, :hasToClimbToExitFL,?climbExitIndicator] :- 
+    [?flight, :isAtExitFL,?atExitFLIndicator],
+    [?flight, :hasToDescendFL,?descendFLIndicator],
+    BIND(
+        IF(
+            ?atExitFLIndicator = 0 && ?descendFLIndicator = 0,
+            1,
+            0
+        )
+        
+        AS ?climbExitIndicator
+    ).
 #5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module)   - not implemented in Java
 
 #5.6.4 Detect if planned trajectory passes through restricted airspace
 
 #trebam military sector west i east
-[?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace]:-
+[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, ?plannedTrajectoryWestRestrAirspaceIndicator]:-
     [?flight, :westMilitaryAirspace, ?airspace]
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -102,12 +128,20 @@
         ?distToIntersectionPoint/?currSpeedInMS
         AS ?b #ovdje je upitno jesu li mi vremena u pogodnom formatu za usporedbu
     ),
-    FILTER(?startTime < ?b && ?endTime > ?b).
+    #FILTER(?startTime < ?b && ?endTime > ?b).
+    BIND(
+        IF(
+            ?startTime < ?b && ?endTime > ?b,
+            1,
+            0
+        )
+        AS ?plannedTrajectoryWestRestrAirspaceIndicator
+    ).
 
-[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace].
-[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace].
+"""[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace].
+[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace]."""
 
-[?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace]:-
+[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, ?plannedTrajectoryRestrictedAirspaceIndicator]:-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -129,9 +163,17 @@
         ?distToIntersectionPoint/?currSpeedInMS
         AS ?b
     ),
-    FILTER(?startTime < ?b && ?endTime > ?b).
+    #FILTER(?startTime < ?b && ?endTime > ?b).
+    BIND(
+        IF(
+            ?startTime < ?b && ?endTime > ?b,
+            1,
+            0
+        )
+        AS ?plannedTrajectoryRestrictedAirspaceIndicator
+    ).
 
-[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace].
-[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace].
+"""[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace].
+[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace]."""
 
 

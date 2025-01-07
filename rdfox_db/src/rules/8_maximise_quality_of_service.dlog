@@ -1,44 +1,65 @@
 #5.8.1 Detect direct-to candidates 
 
-[?flight, :candidateForDirectTo] :-
+[?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator] :-
     #tu nam je potreban izracun flagova u pipelineu - računaju se azimuti između parova tocaka za svaki sektor zasebno
     #pravim se da u east i west flag imam rezultate
     [?flight, :eastMilitarySectorFlag, ?eastFlag],
     [?flight, :westMilitarySectorFlag, ?westFlag],
     #trebam output drugog pravila
+    
+    BIND(
+        IF(
+            [?flight, :isEastMilitaryAreaActive, 0] && [?flight, :isEastMilitaryAreaInactive, 1] && (?eastFlag = 0) && (?westFlag = 1) ||
+    
+            #u drugom uvjetu imam provjeru za west 
+            [?flight, :isWestMilitaryAreaActive, 0] && [?flight, :isWestMilitaryAreaInactive, 1] && (?eastFlag = 1) && (?westFlag = 0) ||
+        
+            #u trecem uvjetu imam provjeru za east i west         
+            [?flight, :isEastMilitaryAreaActive, 0] && [?flight, :isEastMilitaryAreaInactive, 1] && [?flight, :isWestMilitaryAreaActive, 0] &&
+            [?flight, :isWestMilitaryAreaInactive, 1] && (?eastFlag = 0) && (?westFlag = 0) ||
+        
+            #zadnji uvjet        
+            (?eastFlag = 1) && (?westFlag = 1),
+            1,
+            0
+        )
+        AS ?candidateForDirectToIndicator
+    ).
+    
+    """ovo je deMorgan
     !(
-    #u prvom uvjetu imam provjeru za east 
-    !(
-        [?flight, :isEastMilitaryAreaActive, 0],
-        [?flight, :isEastMilitaryAreaInactive, 1],
-        (?eastFlag = 0),
-        (?westFlag = 1)
-    )&&
-    #u drugom uvjetu imam provjeru za west 
-    !(
-        [?flight, :isWestMilitaryAreaActive, 0],
-        [?flight, :isWestMilitaryAreaInactive, 1],
-        (?eastFlag = 1),
-        (?westFlag = 0)
-    )&&
-    #u trecem uvjetu imam provjeru za east i west 
-    !(
-        [?flight, :isEastMilitaryAreaActive, 0],
-        [?flight, :isEastMilitaryAreaInactive, 1],
-        [?flight, :isWestMilitaryAreaActive, 0],
-        [?flight, :isWestMilitaryAreaInactive, 1],
-        (?eastFlag = 0),
-        (?westFlag = 0)
-    )&&
-    #zadnji uvjet
-    !(
-        (?eastFlag = 1),
-        (?westFlag = 1)
-    )
-).
+        #u prvom uvjetu imam provjeru za east 
+        !(
+            [?flight, :isEastMilitaryAreaActive, 0],
+            [?flight, :isEastMilitaryAreaInactive, 1],
+            (?eastFlag = 0),
+            (?westFlag = 1)
+        )&&
+        #u drugom uvjetu imam provjeru za west 
+        !(
+            [?flight, :isWestMilitaryAreaActive, 0],
+            [?flight, :isWestMilitaryAreaInactive, 1],
+            (?eastFlag = 1),
+            (?westFlag = 0)
+        )&&
+        #u trecem uvjetu imam provjeru za east i west 
+        !(
+            [?flight, :isEastMilitaryAreaActive, 0],
+            [?flight, :isEastMilitaryAreaInactive, 1],
+            [?flight, :isWestMilitaryAreaActive, 0],
+            [?flight, :isWestMilitaryAreaInactive, 1],
+            (?eastFlag = 0),
+            (?westFlag = 0)
+        )&&
+        #zadnji uvjet
+        !(
+            (?eastFlag = 1),
+            (?westFlag = 1)
+        )
+    ).
+    """
 
-[?flight, :isCandidateForDirectTo,1] :- [?flight, :candidateForDirectTo].
-[?flight, :isCandidateForDirectTo,0] :- NOT[?flight, :candidateForDirectTo].
+
 
 #5.8.2 Determine military airspace availability
 [?flight, :westMilitaryAirspace, ?airspace] :-
@@ -112,6 +133,7 @@
 
 #5.8.3 Check suggestion for shortened RBT  
 """nije implementiran u javi"""
+#Ivan Tukaric kaže da vjerojatno nećemo imati ovo pravilo
 [?flight, :conflictsInSuggestedRBT] :-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?flight, :isWestMilitaryAreaActive, 0],
@@ -136,4 +158,4 @@
     [?currLatLon, fx:lat, ?currLat],
     [?currLatLon, fx:lon, ?currLon],
     FILTER(ABS(?desiredLon - ?currLon) <= 10 && ABS(?desiredLat - ?currLat) <= 1000).#nesto u ovom smislu?
-    #cekam ivana da objasni materiju
+    

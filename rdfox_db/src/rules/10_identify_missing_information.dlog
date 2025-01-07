@@ -1,30 +1,45 @@
 #5.10.1  Identify aircraft with possible equipment degradation
-[?flight, :possibleEquipmentDegradation] :-
+[?flight, :hasEquipmentDegradation, ?equipmentDegradationIndicator] :-
     [?flight, :datalink, ?datalink], #valjda je ovako definiran predikat i objekt
-    [?datalink, :equipmentDegradation, "YES"].
-[?flight, :hasEquipmentDegradation, 1] :- [?flight, :possibleEquipmentDegradation].
-[?flight, :hasEquipmentDegradation, 0] :- NOT[?flight, :possibleEquipmentDegradation].
+    [?datalink, :equipmentDegradation, ?equipmentDegradation],
+    BIND(
+        IF(
+            ?equipmentDegradation = "YES",
+            1,
+            0
+        )
+        AS ?equipmentDegradationIndicator
+    ).
+
 
 
 #5.10.2 Check situation at destination airport
 
-[?airportHeliport, :normalAirportOpStatus] :-
+[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-
     
     [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, :operationalStatus, ?operationalStatus],    
-    FILTER (?operationalStatus = "NORMAL").#TODO:mislim da je brža opcija da taj filter izbacimo i ubacimo to u join uvjet:
-                                            #[?airportHeliportAvailability, :operationalStatus, "NORMAL"]
-[?airportHeliport, :notifyOpStatus, 0] :- [?airportHeliport, :normalAirportOpStatus].
-[?airportHeliport, :notifyOpStatus, 1] :- NOT[?airportHeliport, :normalAirportOpStatus].
+    BIND(
+        IF(
+            ?operationalStatus = "NORMAL",
+            0,
+            1
+        )
+        AS ?airportOpStatusIndicator
+    ).
 
-[?airportHeliport, :noAirportWarning] :-
+[?airportHeliport, :notifyAirportWarning, ?noAirportWarningIndicator] :-
     
     [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, :warning, ?warning],    
-    FILTER (?warning = "NO_WARNING").#TODO: mislim da je brža opcija da taj filter izbacimo i ubacimo to u join uvjet:
-                                    #[?airportHeliportAvailability, :warning, "NO_WARNING"]
-[?airportHeliport, :notifyAirportWarning, 0] :- [?airportHeliport, :noAirportWarning].
-[?airportHeliport, :notifyAirportWarning, 1] :- NOT[?airportHeliport, :noAirportWarning].
+    BIND(
+        IF(
+            ?warning = "NO_WARNING",
+            0,
+            1
+        )
+        AS ?noAirportWarningIndicator
+    ).                                    
 
 #spoji flight s airportheliport
 
@@ -56,7 +71,7 @@
     [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
 
 #5.10.4  Monitor adverse weather areas
-[?flight2, :notChangedWeatherConditions] :-
+[?flight2, :areWeatherConditionsChanged, ?changedWeatherConditionsIndicator] :-
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
     [?prevT, :flight, ?flight1],
@@ -71,31 +86,39 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:metData, ?currMeteorologicalData],
-    [?currMeteorologicalData, fx:temperature, ?temperature],
-    [?currMeteorologicalData, fx:windSpeed, ?windSpeed],
-    [?currMeteorologicalData, fx:windDirection, ?windDirection],
+    [?currMeteorologicalData, fx:temperature, ?currTemperature],
+    [?currMeteorologicalData, fx:windSpeed, ?currWindSpeed],
+    [?currMeteorologicalData, fx:windDirection, ?currWindDirection],
     #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
     [?currMeteorologicalData, fx:extension, ?currMeterologicalDataExtension],
-    [?currMeterologicalDataExtension, :icing, ?icing],
-    [?currMeterologicalDataExtension, :precipitation, ?precipitation],
-    [?currMeterologicalDataExtension, :cloudCoverage, ?cloudCoverage],
+    [?currMeterologicalDataExtension, :icing, ?currIcing],
+    [?currMeterologicalDataExtension, :precipitation, ?currPrecipitation],
+    [?currMeterologicalDataExtension, :cloudCoverage, ?currCloudCoverage],
+
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:metData, ?prevMeteorologicalData],
-    [?prevMeteorologicalData, fx:temperature, ?temperature],
-    [?prevMeteorologicalData, fx:windSpeed, ?windSpeed],
-    [?prevMeteorologicalData, fx:windDirection, ?windDirection],
+    [?prevMeteorologicalData, fx:temperature, ?prevTemperature],
+    [?prevMeteorologicalData, fx:windSpeed, ?prevWindSpeed],
+    [?prevMeteorologicalData, fx:windDirection, ?prevWindDirection],
     #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
     [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
-    [?prevMeterologicalDataExtension, :icing, ?icing],
-    [?prevMeterologicalDataExtension, :precipitation, ?precipitation],
-    [?prevMeterologicalDataExtension, :cloudCoverage, ?cloudCoverage].
-    
-[?flight, :areWeatherConditionsChanged, 0] :- [?flight, :changedWeatherConditions].
-[?flight, :areWeatherConditionsChanged, 1] :- NOT[?flight, :changedWeatherConditions].
+    [?prevMeterologicalDataExtension, :icing, ?prevIcing],
+    [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
+    [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
+    BIND(
+        IF(
+            ?currTemperature = ?prevTemperature && ?currWindSpeed && ?prevWindSpeed && ?currWindDirection = ?prevWindDirection && 
+            ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage,
+            0,
+            1
+        )
+        AS ?changedWeatherConditionsIndicator
+    ).     
+
 
 #5.10.5 Monitor restricted airspace 
-[?flight2, :noNewActions] 
+[?flight2, :canNewActionsBeTaken, ?noNewActionsIndicator] :- 
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
     [?prevT, :flight, ?flight1],
@@ -106,11 +129,16 @@
     [?flight1, :withinSector, ?sector1],
     [?airspace1, ax:geometryComponent, ?sector1],
     [?airspace1, ax:activation, ?airspaceActivation1],
-    [?airspaceActivation1, ax:status, ?status],
+    [?airspaceActivation1, ax:status, ?status1],
     [?flight2, :withinSector, ?sector2],
     [?airspace2, ax:geometryComponent, ?sector2],
     [?airspace2, ax:activation, ?airspaceActivation2],
-    [?airspaceActivation2, ax:status, ?status],
-
-[?flight, :canNewActionsBeTaken, 1] :- NOT[?flight, :noNewActions].
-[?flight, :canNewActionsBeTaken, 0] :- [?flight, :noNewActions].
+    [?airspaceActivation2, ax:status, ?status2],
+    BIND(
+        IF(
+            ?status1 = ?status2,
+            0,
+            1
+        )
+        AS ?noNewActionsIndicator
+    ).      
