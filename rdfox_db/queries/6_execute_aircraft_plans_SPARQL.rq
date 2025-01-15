@@ -1,0 +1,16 @@
+#5.6.1 Detect aircraft that have to climb/descend to requested FL
+SELECT ?flight ?isAtRequestedFLIndicator WHERE {?flight :isAtRequestedFL ?isAtRequestedFLIndicator}
+SELECT ?flight ?hasToDescendFLIndicator WHERE {?flight :hasToDescendFL ?hasToDescendFLIndicator}
+SELECT ?flight ?hasToClimbFLIndicator WHERE {?flight :hasToClimbFL ?hasToClimbFLIndicator}
+
+#5.6.2 Detect aircraft that have to climb/descend to exit FL
+SELECT ?flight ?isAtExitFLIndicator WHERE {?flight :isAtExitFL ?isAtExitFLIndicator}
+SELECT ?flight ?hasToDescendToExitFLIndicator WHERE {?flight :hasToDescendToExitFL ?hasToDescendToExitFLIndicator}
+SELECT ?flight ?hasToClimbToExitFLIndicator WHERE {?flight :hasToClimbToExitFL ?hasToClimbToExitFLIndicator}
+
+#5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module)   - not implemented in Java
+#TODO?
+
+#5.6.4 Detect if planned trajectory passes through restricted airspace
+SELECT ?flight ?plannedTrajectoryWestRestrAirspaceIndicator WHERE {?flight :plannedTrajectoryPassesThroughWestMilitaryAirspace ?plannedTrajectoryWestRestrAirspaceIndicator}
+SELECT ?flight ?plannedTrajectoryEastRestrAirspaceIndicator WHERE {?flight :plannedTrajectoryPassesThroughEastMilitaryAirspace ?plannedTrajectoryEastRestrAirspaceIndicator}

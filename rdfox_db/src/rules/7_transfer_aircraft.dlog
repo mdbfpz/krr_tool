@@ -1,14 +1,20 @@
 [?flight, :aircraftNotYetAssumed, 1] :-
-    [?flight, fx:coordinationStatus, "NOT_ASSUMED"].
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "NOT_ASSUMED"].
+    
 
 [?flight, :aircraftNotYetAssumed, 0] :-
-    [?flight, fx:coordinationStatus, "ASSUMED"].
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"].
 
 [?flight, :aircraftAlreadyTransferred, 1] :-
-    [?flight, fx:coordinationStatus, "TRANSFERRED"].
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "TRANSFERRED"].
+    
 
 [?flight, :aircraftAlreadyTransferred, 0] :-
-    NOT [?flight, fx:coordinationStatus, "TRANSFERRED"].
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    NOT[?coordStatus, fx:status, "TRANSFERRED"].
 
 
 # 5.7.1 Check which aircraft need to be transferred
@@ -130,21 +136,33 @@
 
 # TODO: add ?indicator to the rules below?
 # 5.7.2 Check if change of frequency is issued to A/C (via datalink)
-[?flight, :changeOfFrequencyIssuedToAC, 1] :-
-    [?flight, :datalink, ?frequencyChange].
-    [?frequencyChange, :status, "YES"].
+[?flight, :changeOfFrequencyIssuedToAC, ?indicator] :-
+    [?flight, :datalink, ?frequencyChange],
+    [?frequencyChange, :status, ?value],
+    BIND(
+        IF(
+            ?value = "YES",
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :changeOfFrequencyIssuedToAC, 0] :-
-    NOT [?flight, :changeOfFrequencyIssuedToAC, 1].
 
 
 # 5.7.3 Change aircraft status to transferred 
-[?flight, :coordinationStatusCanBeChangedToTransferred, 1] :- 
-    NOT [?flight, fx:coordinationStatus, "TRANSFERRED"].
+[?flight, :coordinationStatusCanBeChangedToTransferred, ?indicator] :- 
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    BIND(
+        IF(
+            ?coordStatus = "TRANSFERRED",
+            0,
+            1
+        )
+        AS ?indicator
+    ).
 
-[?flight, :coordinationStatusCanBeChangedToTransferred, 0] :- 
-    [?flight, fx:coordinationStatus, "TRANSFERRED"].
-# OR
+
 """
 [?flight, :coordinationStatusCanBeChangedToTransferred, 0] :- 
     NOT [?flight, :coordinationStatusCanBeChangedToTransferred, 1].

@@ -10,6 +10,7 @@ need distance between two flights' positions - pretend we have function implemen
 
 """
 [?conflictModul, :isSatisfactoryConflictModel, ?satisfactoryConflictModelIndicator]:-
+    """ vidi s ivanom za ovaj task """
     # prev and curr for flight 1
     [?prevT1, :next, ?currT1],  
     # Bind flights at each timestamp
@@ -19,6 +20,23 @@ need distance between two flights' positions - pretend we have function implemen
     [?flight1P, :aircraftIdentification, ?flightID1],
     [?flight1C, :aircraftIdentification, ?flightID1],
 
+    # prev and curr for flight 2
+    [?prevT2, :next, ?currT2],  
+    # Bind flights at each timestamp
+    [?prevT2, :flight, ?flight2P],
+    [?currT2, :flight, ?flight2C],
+    # Extract the same flights only
+    [?flight2P, :aircraftIdentification, ?flightID2],
+    [?flight2C, :aircraftIdentification, ?flightID2],
+
+    [?flight1C, :conflict, ?conflict12C],
+    [?flight2C, :conflict, ?conflict12C],
+    [?conflict12C, :minimumDistance ?minDistC],
+
+    [?flight1P, :conflict, ?conflict12P],
+    [?flight2P, :conflict, ?conflict12P],
+    [?conflict12P, :aircraftDistance ?previousOutput],
+    # Extract previous and current position for the flight2 at each timestamp
     # Extract previous and current position for the flight1 at each timestamp
     [?flight1P, :currentElement, ?prevElement1],
     [?flight1C, :currentElement, ?currElement1],
@@ -32,17 +50,6 @@ need distance between two flights' positions - pretend we have function implemen
     [?currPosition1, fx:pos, ?currLatLon1],
     [?currLatLon1, fx:lat, ?currLat1],
     [?currLatLon1, fx:lon, ?currLon1],
-
-
-    # prev and curr for flight 2
-    [?prevT2, :next, ?currT2],  
-    # Bind flights at each timestamp
-    [?prevT2, :flight, ?flight2P],
-    [?currT2, :flight, ?flight2C],
-    # Extract the same flights only
-    [?flight2P, :aircraftIdentification, ?flightID2],
-    [?flight2C, :aircraftIdentification, ?flightID2],
-    # Extract previous and current position for the flight2 at each timestamp
     [?flight2P, :currentElement, ?prevElement2],
     [?flight2C, :currentElement, ?currElement2],
     [?prevElement2,fx:point4D, prevPoint4D2],    
@@ -57,7 +64,7 @@ need distance between two flights' positions - pretend we have function implemen
     [?currLatLon2, fx:lon, ?currLon2],
 
     #calculate haversine distance
-    """current"""
+    
     BIND(6371 as ?R),		# Radius of the earth in km
     BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
     BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
@@ -71,7 +78,7 @@ need distance between two flights' positions - pretend we have function implemen
     ),
     BIND(2 * math:atan2(math:sqrt(?aCurr), math:sqrt(1-?aCurr)) AS ?cCurr),
     BIND(?R * ?cCurr * 1000 AS ?currDistance),
-    """previous"""
+    
     BIND((?prevLat2 - ?prevLat1) * (math:pi/180) AS ?prevDiffLatInRad),	# deg2rad
     BIND((?prevLon2 - ?prevLon1) * (math:pi/180) AS ?prevDiffLonInRad),
     BIND(?prevLat1 * (math:pi/180) AS ?prevLatInRad1),
@@ -85,6 +92,15 @@ need distance between two flights' positions - pretend we have function implemen
     BIND(2 * math:atan2(math:sqrt(?aPrev), math:sqrt(1-?aPrev)) AS ?cPrev),
     BIND(?R * ?cPrev * 1000 AS ?prevDistance),
 
+    BIND(
+        IF(
+            ?currDistance > ?prevDistance && (?previousOutput = 0 || ?minDistC=?previousOutput),
+            0,
+            1
+        )
+        AS ?satisfactoryConflictModelIndicator
+    ).
+    """
     # Extract output from ML module for this pair of flights
     """treba dogovorit kako bude to napravljeno,
     npr bind identifikacija letova u neki ključ koji predstavlja u modelu da se izracuna distanca za ta dva leta?
@@ -95,18 +111,11 @@ need distance between two flights' positions - pretend we have function implemen
 
     recimo da je scenarij ovakav:
     """
-    [?conflictModul, :firstInputFlight, ?flightID1],
+    """[?conflictModul, :firstInputFlight, ?flightID1],
     [?conflictModul, :secondInputFlight, ?flightID2],
-    [?conflictModul, :calculateDistance, ?modulDistance],
+    [?conflictModul, :calculateDistance, ?modulDistance],"""
     
-    BIND(
-        IF(
-            ?currDistance > ?prevDistance,
-            0,
-            1
-        )
-        AS ?satisfactoryConflictModelIndicator
-    ).
+    
 """
 [?conflictModul, :isSatisfactoryConflictModel, 1] :- NOT[?conflictModul, :satisfactoryConflictModel].
 [?conflictModul, :isSatisfactoryConflictModel, 0] :- [?conflictModul, :satisfactoryConflictModel].

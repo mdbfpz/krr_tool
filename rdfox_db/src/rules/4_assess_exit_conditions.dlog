@@ -7,8 +7,7 @@ TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the
 This point is the last point in the desired branch of the given flight plan. ?point will be a node 
 inside desired or agreed branch (in case there is a change of exit point during the flight)
 """
-# TODO: add ?indicator here as well?
-[?flight, :flyingTowardsExitPoint] :-
+[?flight, :isFlyingTowardsExitPoint ,?flyingTowardsExitPointIndicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -18,20 +17,26 @@ inside desired or agreed branch (in case there is a change of exit point during 
     [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
     [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
     [?clearedDesignatedPoint, fb:designator, ?clearedDesignator],
-    [?clearedDesignator, rdf:value, ?value],
+    [?clearedDesignator, rdf:value, ?clearValue],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:elementStartPoint, ?exitPointElementSP],
     [?exitPointElementSP, fb:designatedPoint, ?exitDesignatedPoint],
     [?exitDesignatedPoint, fb:designator, ?exitDesignator],
-    [?exitDesignator, rdf:value, ?value]. # If this matches with ?value above, then it's flying towards exit point
+    [?exitDesignator, rdf:value, ?exitValue], # If this matches with ?value above, then it's flying towards exit point
+    BIND(
+        IF(
+            ?clearValue = ?exitValue,
+            1,
+            0
+        )
+        AS ?flyingTowardsExitPointIndicator
+    ).
 
-[?flight, :isFlyingTowardsExitPoint, 1] :- [?flight, :flyingTowardsExitPoint].
-[?flight, :isFlyingTowardsExitPoint, 0] :- NOT [?flight, :flyingTowardsExitPoint].
 
 
 # 5.4.2 Check that aircraft will reach the exit point on the required FL
-[?flight, :aircraftWillReachExitPointOnRequiredFL] :-
+[?flight, :aircraftWillReachExitPointOnRequiredFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -75,7 +80,7 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    FILTER(
+    """FILTER(
         (
             ?calculatedVRate > 0 &&
             ?calculatedVRate < 800
@@ -85,9 +90,17 @@ inside desired or agreed branch (in case there is a change of exit point during 
             ?calculatedVRate > -1400
         ) ||
         ?calculatedVRate = 0
+    )."""
+    BIND(
+        IF(
+            ?calculatedVRate > 0 && ?calculatedVRate < 800 || ?calculatedVRate < 0 && ?calculatedVRate > -1400 || ?calculatedVRate = 0,
+            1,
+            0
+        ) 
+        AS ?indicator
     ).
 
-[?flight, :climbToExitFL] :-
+[?flight, :climbToExitFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -131,12 +144,20 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    FILTER(
+    """FILTER(
         ?calculatedVRate >= 800 && 
         ?calculatedVRate <= 1200
+    )."""
+    BIND(
+        IF(
+            ?calculatedVRate >= 800 && ?calculatedVRate <= 1200,
+            1,
+            0
+        ) 
+        AS ?indicator
     ).
 
-[?flight, :aircraftWillNotReachExitPointOnRequiredFL] :-
+[?flight, :aircraftWillNotReachExitPointOnRequiredFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -180,9 +201,17 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    FILTER(?calculatedVRate > 1200).
+    """FILTER(?calculatedVRate > 1200)."""
+    BIND(
+        IF(
+            ?calculatedVRate > 1200,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).
 
-[?flight, :descendToExitFL] :-
+[?flight, :descendToExitFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -226,12 +255,20 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    FILTER(
+    """FILTER(
         ?calculatedVRate >= -3000 && 
         ?calculatedVRate <= -1400
+    )."""
+    BIND(
+        IF(
+            ?calculatedVRate >= -3000 && ?calculatedVRate <= -1400,
+            1,
+            0
+        ) 
+        AS ?indicator
     ).
 
-[?flight, :expediteDescend] :-
+[?flight, :expediteDescend, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -275,4 +312,12 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    FILTER(?calculatedVRate < -3000).
+    """FILTER(?calculatedVRate < -3000)."""
+    BIND(
+        IF(
+           ?calculatedVRate < -3000,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).

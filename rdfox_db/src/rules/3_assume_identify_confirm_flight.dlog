@@ -281,11 +281,18 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
 
 
 # 5.3.3 Check that aircraft has sent the initial call (via datalink)
-[?flight, :aircrafHasSentInitialCall, 1] :-
+[?flight, :aircrafHasSentInitialCall, ?indicator] :-
     [?flight, :datalink, ?datalink],
-    [?datalink, :initialCall, "YES"].
+    [?datalink, :initialCall, ?initCall],
+    BIND(
+        IF(
+            ?initCall = "YES",
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :aircrafHasSentInitialCall, 0] :- NOT [?flight, :aircrafHasSentInitialCall, 1].
 
 
 # 5.3.4 Confirm that aircraft can be assumed

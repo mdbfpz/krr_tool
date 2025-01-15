@@ -192,7 +192,7 @@ applying datalog rule:
 # 5.5.5. Check if conflict pair aircraft data matches ML conflict module metadata
 
 #TODO: these set of roules could be more efficient if there's a way to use the same rule for all sigmas?
-[?flight, :headingWithinSigmaBand, 1] :-
+[?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -205,12 +205,21 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """FILTER (
         ?currLevel >= (?altMean - ?altStDev) mod 360 && 
         ?currLevel <= (?altMean + ?altStDev) mod 360
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - ?altStDev) mod 360 && 
+            ?currLevel <= (?altMean + ?altStDev) mod 360,
+            1,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :headingWithinSigmaBand, 2] :-
+[?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -223,12 +232,21 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """FILTER (
         ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
         ?currLevel <= (?altMean + 2*?altStDev) mod 360
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
+            ?currLevel <= (?altMean + 2*?altStDev) mod 360,
+            2,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :headingWithinSigmaBand, 3] :-
+[?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -241,24 +259,45 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """FILTER (
         ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
         ?currLevel <= (?altMean + 3*?altStDev) mod 360
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
+            ?currLevel <= (?altMean + 3*?altStDev) mod 360,
+            3,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :headingOutside3SigmaBand] :-
+
+[?flight, :headingOutside3SigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],    
+    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],  
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    NOT [?flight, :headingWithinSigmaBand, 3].
+    [?flight, :headingWithinSigmaBand, ?indicator],
+    BIND(
+        IF(
+            ?indicator != 3,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 #TODO: How to say which non-heading parameter is within sigma band?
-[?flight, :nonHeadingParameterWithinSigmaBand, 1] :-
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -271,12 +310,20 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """ FILTER (
         ?currLevel >= (?altMean - ?altStDev) && 
         ?currLevel <= (?altMean + ?altStDev)
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - ?altStDev) && ?currLevel <= (?altMean + ?altStDev),
+            1,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :nonHeadingParameterWithinSigmaBand, 2] :-
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -289,12 +336,20 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """FILTER (
         ?currLevel >= (?altMean - 2*?altStDev) && 
         ?currLevel <= (?altMean + 2*?altStDev)
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 2*?altStDev) && ?currLevel <= (?altMean + 2*?altStDev),
+            2,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :nonHeadingParameterWithinSigmaBand, 3] :-
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
     [?flight, fx:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
@@ -307,21 +362,40 @@ applying datalog rule:
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    FILTER (
+    """FILTER (
         ?currLevel >= (?altMean - 3*?altStDev) && 
         ?currLevel <= (?altMean + 3*?altStDev)
+    )."""
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 3*?altStDev) && ?currLevel <= (?altMean + 3*?altStDev),
+            3,
+            0
+        )
+        AS ?indicator
     ).
 
-[?flight, :nonHeadingParameterOutside3SigmaBand] :-
+[?flight, :nonHeadingParameterOutside3SigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],    
+    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],  
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
     EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
     EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
 
-    NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3].
+    [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator],
+    BIND(
+        IF(
+            ?indicator != 3,#ne znam ako je legalno: NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3],
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 [?flight, :positionWithinBoundingBox, ?indicator] :-
     [?flight, :conflict, ?conflict],

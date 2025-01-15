@@ -2,51 +2,54 @@
 
 #5.9.1 Track current number of assumed aircraft 
 """svaki timestamp nam mora imati objekt/atribut koji govori koliko je trenutno assumed aircrafta"""
-[?timestamp, :assumedAircraft, ?numOfAssumedAircraft] :-
+[?timestamp, :assumedAircraftCount, ?numOfAssumedAircraft] :-
     AGGREGATE(
         [?timestamp, fx:flight, ?flight],
-        [?flight, :aircraftIdentification, ?flightID],
         [?flight, :isAircraftAlreadyAssumed, 1],
         ON ?timestamp
         BIND(COUNT(?flight) AS ?numOfAssumedAircraft)
     ).#valjda tak?
 
 #5.9.2 Track number of conflicts and potential conflicts  
-[?timestamp, :conflicts, ?numOfConflicts]:-
-    [?timestamp, fx:flight, ?flight1],
-    [?timestamp, fx:flight, ?flight2],
-    [?flight1, :aircraftIdentification, ?flightID1],
-    [?flight1, :currentElement, ?currElement1],
-    [?currElement1,fx:point4D, ?currPoint4D1],    
-    [?currPoint4D1, fx:position, ?currPosition1],
-    [?currPosition1, fx:pos, ?currLatLon1],
-    [?currLatLon1, fx:lat, ?currLat1],
-    [?currPoint4D, fx:level, ?currLevel1],
-    [?currLatLon1, fx:lon, ?currLon1],    
-    [?flight2, :aircraftIdentification, ?flightID2],
-    [?flight2, :currentElement, ?currElement2],
-    [?currElement2, fx:point4D, ?currPoint4D2],    
-    [?currPoint4D2, fx:position, ?currPosition2],
-    [?currPosition2, fx:pos, ?currLatLon2],
-    [?currLatLon2, fx:lat, ?currLat2],
-    [?currLatLon2, fx:lon, ?currLon2],
-    [?currPoint4D2, fx:level, ?currLevel2],
-    BIND(ABS(?currLevel1-?currLevel2) as ?verticalDistance),
-    BIND(6371 as ?R),		# Radius of the earth in km
-    BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
-    BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
-    BIND(?currLat1 * (math:pi/180) AS ?currLatInRad1),
-    BIND(?currLat2 * (math:pi/180) AS ?currLatInRad2),
-    BIND(
-        math:pow(math:sin(?diffLatInRad/2), 2) + 
-        math:cos(?currLatInRad1) * math:cos(?currLatInRad2) *
-        math:pow(math:sin(?diffLonInRad/2), 2)
-        AS ?aCurr
-    ),
-    BIND(2 * math:atan2(math:sqrt(?aCurr), math:sqrt(1-?aCurr)) AS ?cCurr),
-    BIND(?R * ?cCurr * 1000 AS ?horizontalDistance),
-    FILTER(?horizontalDistance <= 18520 && ?verticalDistance <= 1000),
-    AGGREGATE(COUNT(DISTINCT ?flight1, ?flight2) AS ?numOfConflicts).
+[?timestamp, :conflictsCount, ?numOfConflicts]:-
+    AGGREGATE(
+
+        [?timestamp, fx:flight, ?flight1],
+        [?timestamp, fx:flight, ?flight2],
+        [?flight1, :aircraftIdentification, ?flightID1],
+        [?flight1, :currentElement, ?currElement1],
+        [?currElement1,fx:point4D, ?currPoint4D1],    
+        [?currPoint4D1, fx:position, ?currPosition1],
+        [?currPosition1, fx:pos, ?currLatLon1],
+        [?currLatLon1, fx:lat, ?currLat1],
+        [?currPoint4D, fx:level, ?currLevel1],
+        [?currLatLon1, fx:lon, ?currLon1],    
+        [?flight2, :aircraftIdentification, ?flightID2],
+        [?flight2, :currentElement, ?currElement2],
+        [?currElement2, fx:point4D, ?currPoint4D2],    
+        [?currPoint4D2, fx:position, ?currPosition2],
+        [?currPosition2, fx:pos, ?currLatLon2],
+        [?currLatLon2, fx:lat, ?currLat2],
+        [?currLatLon2, fx:lon, ?currLon2],
+        [?currPoint4D2, fx:level, ?currLevel2],
+        BIND(ABS(?currLevel1-?currLevel2) as ?verticalDistance),
+        BIND(6371 as ?R),		# Radius of the earth in km
+        BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
+        BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
+        BIND(?currLat1 * (math:pi/180) AS ?currLatInRad1),
+        BIND(?currLat2 * (math:pi/180) AS ?currLatInRad2),
+        BIND(
+            math:pow(math:sin(?diffLatInRad/2), 2) + 
+            math:cos(?currLatInRad1) * math:cos(?currLatInRad2) *
+            math:pow(math:sin(?diffLonInRad/2), 2)
+            AS ?aCurr
+        ),
+        BIND(2 * math:atan2(math:sqrt(?aCurr), math:sqrt(1-?aCurr)) AS ?cCurr),
+        BIND(?R * ?cCurr * 1000 AS ?horizontalDistance),
+        FILTER(?flightID1 != ?flightID2 && ?horizontalDistance <= 18520 && ?verticalDistance <= 1000 )
+        ON ?timestamp
+        BIND(COUNT( ?flight1)/2 AS ?numOfConflicts)
+    ).
 
 #TODO- za potetntial conflicts treba u pipelineu implementirati skriptu jer je potrebno usporediti svaki par točaka
 
@@ -81,7 +84,7 @@
             1,
             0
         )
-        AS ?plausibilityIndicator
+        AS ?highPlausibilityIndicator
     ).
     """
     FILTER(

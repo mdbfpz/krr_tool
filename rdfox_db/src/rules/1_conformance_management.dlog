@@ -86,7 +86,7 @@
 # U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
 # Rule 1: Check if current level is equal to cleared level
 # TODO: add ?indicator here as well?
-[?flight, :atCFL] :-
+"""[?flight, :atCFL] :-
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?level],
@@ -95,8 +95,23 @@
     [?agreedPoint4D, fx:level, ?level].
 
 [?flight, :isAtCFL, 1] :- [?flight, :atCFL].
-[?flight, :isAtCFL, 0] :- NOT [?flight, :atCFL].
+[?flight, :isAtCFL, 0] :- NOT [?flight, :atCFL]."""
 
+[?flight, :isAtCFL, ?indicator] :-
+    [?flight, fx:currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?flight, fx:agreedElement, ?agreedElement],   
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:level, ?agreedLevel],
+    BIND(
+        IF(
+            ?currLevel = ?agreedLevel,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 # Passing CFL:
 # Rule 1: Check if aircraft is passing cleared flight level.
 [?flight, :isPassingCFL, ?indicator] :-
@@ -165,6 +180,21 @@
 [?flight, :isClearedHeadingAssigned, 1] :- [?flight, :clearedHeadingAssigned].
 [?flight, :isClearedHeadingAssigned, 0] :- NOT [?flight, :clearedHeadingAssigned].
 
+"""[?flight, :isClearedHeadingAssigned, ?indicator] :-
+    BIND(
+        IF(
+            EXISTS ?clearedHeading IN(
+                [?flight, :agreedElement, ?agreedElement],
+                [?agreedElement, fx:point4D, ?agreedPoint4D],
+                [?agreedPoint4D, fx:extension, ?clearedPointExtension],
+                [?clearedPointExtension, :heading, ?clearedHeading]
+            ),
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+"""
 [?flight, :isHeadingClearenceJustReceived, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
@@ -292,7 +322,7 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
 
 
 # 5.1.6. Check that aircraft is maintaining current heading (different than cleared heading)
-[?flight2, :maintainingCurrentHeading] :-
+[?flight2, :isMaintainingCurrentHeading, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -322,13 +352,20 @@ Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
     ).
 
 # TODO: add ?indicator here as well?
-[?flight, :maintainingClearedHeading] :-
+[?flight, :isMaintainingClearedHeading, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
-    [?flight, :isMaintainingCurrentHeading, 1],
-    [?flight, :isAtClearedHeading, 1].
+    [?flight, :isMaintainingCurrentHeading, ?currHeadIndicator],
+    [?flight, :isAtClearedHeading, ?clearedHeadIndicator],
+    BIND(
+        IF(
+            ?currHeadIndicator = 1 && ?clearedHeadIndicator = 1,	# Why radius=3?
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :isMaintainingClearedHeading, 1] :- [?flight, :maintainingClearedHeading].
-[?flight, :isMaintainingClearedHeading, 0] :- NOT [?flight, :maintainingClearedHeading].
+
 
 
 # 5.1.7 Check that aircraft is accelerating/decelerating towards cleared speed
@@ -359,17 +396,23 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
 # ATCO cleared speed restriction:
 # TODO: add ?indicator here as well?
-[?flight, :atcoSpeedRestriction] :-
+[?flight, :noATCOSpeedRestriction, ?indicator] :-
     # Extract cleared element for the flight at each timestamp
     [?flight, :agreedElement, ?agreedElement],
     # Ensure that cleared speed doesn't exist
-    NOT EXISTS ?clearedSpeed IN(
-        [?agreedElement, fx:point4D, ?agreedPoint4D],
-        [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
-    ).
+    
+    BIND(
+            IF(
+                NOT EXISTS ?clearedSpeed IN(
+                    [?agreedElement, fx:point4D, ?agreedPoint4D],
+                    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
+                ),
+                1,
+                0
+            )
+            AS ?indicator
+        ).
 
-[?flight, :noATCOSpeedRestriction, 1] :- [?flight, :atcoSpeedRestriction].
-[?flight, :noATCOSpeedRestriction, 0] :- NOT [?flight, :atcoSpeedRestriction].
 
 # Accelerating:
 [?flight2, :isAcceleratingToClearedSpeed, ?indicator] :-
@@ -589,13 +632,19 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
     ).
 
 # TODO: add ?indicator here as well?
-[?flight, :maintainingClearedSpeed] :-
+[?flight, :isMaintainingClearedSpeed,?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
-    [?flight, :isMaintainingCurrentSpeed, 1],
-    [?flight, :isFlyingAtClearedSpeed, 1].
+    [?flight, :isMaintainingCurrentSpeed, ?maintainingCurrSpeedIndicator],
+    [?flight, :isFlyingAtClearedSpeed, ?flyingAtCurrSpeedIndicator],
+    BIND(
+        IF(
+            ?maintainingCurrSpeedIndicator = 1 && ?flyingAtCurrSpeedIndicator = 1
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
-[?flight, :isMaintainingClearedSpeed, 1] :- [?flight, :maintainingClearedSpeed].
-[?flight, :isMaintainingClearedSpeed, 0] :- NOT [?flight, :maintainingClearedSpeed].
 
 
 # 5.1.10  Check that aircraft is flying towards cleared point
@@ -854,7 +903,7 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
 # 5.1.12 Check that aircraft’s current ROC/ROD is lower/higher than cleared
 # TODO: add ?indicator here as well?
-[?flight, :clearedVerticalRateAssigned] :-
+"""[?flight, :clearedVerticalRateAssigned] :-
     EXISTS ?clearedVRate IN(
         [?flight, :agreedElement, ?agreedElement],
         [?agreedElement, fx:extension, ?clearedVRate]
@@ -862,17 +911,37 @@ ako je cleared speed instrukcija stigla u trenutnom vremenu.
 
 [?flight, :isClearedVerticalRateAssigned, 1] :- [?flight, :clearedVerticalRateAssigned].
 [?flight, :isClearedVerticalRateAssigned, 0] :- NOT [?flight, :clearedVerticalRateAssigned].
+"""
+[?flight, :isClearedVerticalRateAssigned, ?indicator] :-
+    BIND(
+        IF(
+            EXISTS ?clearedVRate IN(
+                [?flight, :agreedElement, ?agreedElement],
+                [?agreedElement, fx:extension, ?clearedVRate]
+            ),
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
 
 # TODO: add ?indicator here as well?
-[?flight, :atClearedVerticalRate] :-
+[?flight, :isAtClearedVerticalRate, ?atClearedVerticalRateIndicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, fx:currentElement, ?currElement],
-    [?currElement, fx:extension, ?vRate],
+    [?currElement, fx:extension, ?currvRate],
     [?flight, fx:agreedElement, ?agreedElement],
-    [?agreedElement, fx:extension, ?vRate].
+    [?agreedElement, fx:extension, ?agreedvRate],
 
-[?flight, :isAtClearedVerticalRate, 1] :- [?flight, :atClearedVerticalRate].
-[?flight, :isAtClearedVerticalRate, 0] :- NOT [?flight, :atClearedVerticalRate]
+    BIND(
+        IF(
+            ?currvRate = ?agreedvRate,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
 
 [?flight, :isVerticalRateHigherThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],

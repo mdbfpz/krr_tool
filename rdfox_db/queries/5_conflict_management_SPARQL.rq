@@ -1,0 +1,28 @@
+SELECT ?flight1 ?flight2 WHERE {?flight1 :diverging ?flight2}
+
+# 5.5.1. Check all aircraft pairs for conflict (ML module)
+SELECT ?flight1 ?flight2 WHERE {
+    ?flight1 :conflict ?conflict12.
+    ?flight2 :conflict ?conflict12
+}
+
+# 5.5.2 Check plausibility of the predicted conflicts
+SELECT ?flight1 ?flight2 WHERE {?flight1 :conflictPredictionImplausible ?flight2}
+SELECT ?flight1 ?flight2 WHERE {?flight1 :conflictPredictionPlausible ?flight2}
+
+# 5.5.3. Check which conflicts are to occur within the sector
+SELECT ?conflict ?sector WHERE {?conflict, :conflictWithinSectorVertically, ?sector}
+SELECT ?conflict ?sector WHERE {?conflict, :conflictWithinSectorHorizontally, ?sector} #TODO:implement in pipeline
+SELECT ?conflict ?sector WHERE {?conflict, :conflictWithinSector, ?sector}
+
+# 5.5.4. Rank conflicts based on urgency
+"""no ranking is implemented here, only conflict and corresponding urgency values information retrieved"""
+SELECT ?conflict ?urgency WHERE {?conflict, :conflictUrgency, ?urgency}
+
+# 5.5.5. Check if conflict pair aircraft data matches ML conflict module metadata
+SELECT ?flight ?indicator WHERE {?flight, :headingWithinSigmaBand, ?indicator}
+SELECT ?flight ?outside3SigmaBandIndicator WHERE {?flight, :headingOutside3SigmaBand, ?outside3SigmaBandIndicator}
+SELECT ?flight ?nonHeadingParameterWithinSigmaBandIndicator WHERE {?flight, :nonHeadingParameterWithinSigmaBand, ?nonHeadingParameterWithinSigmaBandIndicator}
+SELECT ?flight ?nonHeadingParameterOutside3SigmaBandIndicator WHERE {?flight, :nonHeadingParameterOutside3SigmaBand, ?nonHeadingParameterOutside3SigmaBandIndicator}
+SELECT ?flight ?positionWithinBoundingBoxIndicator WHERE {?flight, :positionWithinBoundingBox, ?positionWithinBoundingBoxIndicator}
+

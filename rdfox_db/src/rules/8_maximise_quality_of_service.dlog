@@ -6,17 +6,21 @@
     [?flight, :eastMilitarySectorFlag, ?eastFlag],
     [?flight, :westMilitarySectorFlag, ?westFlag],
     #trebam output drugog pravila
-    
+    """pitanje je je li moguce koristiti if i triplete unutar binda, zato mijenjam na expressione"""
+    [?flight, :isEastMilitaryAreaActive, ?eastMilitaryActiveIndicator],
+    [?flight, :isWestMilitaryAreaActive, ?westMilitaryActiveIndicator],
+
+    [?flight, :isEastMilitaryAreaInactive, ?eastMilitaryInactiveIndicator],
+    [?flight, :isWestMilitaryAreaInactive, ?westMilitaryInactiveIndicator],
     BIND(
         IF(
-            [?flight, :isEastMilitaryAreaActive, 0] && [?flight, :isEastMilitaryAreaInactive, 1] && (?eastFlag = 0) && (?westFlag = 1) ||
+            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 1) ||
     
             #u drugom uvjetu imam provjeru za west 
-            [?flight, :isWestMilitaryAreaActive, 0] && [?flight, :isWestMilitaryAreaInactive, 1] && (?eastFlag = 1) && (?westFlag = 0) ||
+            ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 1) && (?westFlag = 0) ||
         
             #u trecem uvjetu imam provjeru za east i west         
-            [?flight, :isEastMilitaryAreaActive, 0] && [?flight, :isEastMilitaryAreaInactive, 1] && [?flight, :isWestMilitaryAreaActive, 0] &&
-            [?flight, :isWestMilitaryAreaInactive, 1] && (?eastFlag = 0) && (?westFlag = 0) ||
+            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 0) ||
         
             #zadnji uvjet        
             (?eastFlag = 1) && (?westFlag = 1),
@@ -74,33 +78,59 @@
     [?airspace, ax:localType, "MILITARY OPERATING AREA"],
     [?airspace, ax:name, "LS-T/TRA_EAST"].
 
-[?flight, :westMilitaryAreaActive] :-
+[?flight, :isWestMilitaryAreaActive,?westMilitaryAreaActiveIndicator] :-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, "ACTIVE"].
-[?flight, :isWestMilitaryAreaActive, 1] :- [?flight, :westMilitaryAreaActive].
-[?flight, :isWestMilitaryAreaActive, 0] :- NOT[?flight, :westMilitaryAreaActive].
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "ACTIVE",
+            1,
+            0
+        )
+        AS ?westMilitaryAreaActiveIndicator
+    ).
 
-[?flight, :eastMilitaryAreaActive] :-
+[?flight, :isEastMilitaryAreaActive,?eastMilitaryAreaActiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, "ACTIVE"].
-[?flight, :isEastMilitaryAreaActive, 1] :- [?flight, :eastMilitaryAreaActive].
-[?flight, :isEastMilitaryAreaActive, 0] :- NOT[?flight, :eastMilitaryAreaActive].
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "ACTIVE",
+            1,
+            0
+        )
+        AS ?eastMilitaryAreaActiveIndicator
+    ).
 
-[?flight, :westMilitaryAreaInactive] :-
+
+
+[?flight, :isWestMilitaryAreaInactive,?westMilitaryAreaInactiveIndicator] :-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, "INACTIVE"].
-[?flight, :isWestMilitaryAreaInactive, 1] :- [?flight, :westMilitaryAreaInactive].
-[?flight, :isWestMilitaryAreaInactive, 0] :- NOT[?flight, :westMilitaryAreaInactive].
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "INACTIVE",
+            1,
+            0
+        )
+        AS ?westMilitaryAreaInactiveIndicator
+    ).
 
-[?flight, :eastMilitaryAreaInactive] :-
+[?flight, :isEastMilitaryAreaInactive,?eastMilitaryAreaInactiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, "INACTIVE"].
-[?flight, :isEastMilitaryAreaInactive, 1] :- [?flight, :eastMilitaryAreaInactive].
-[?flight, :isEastMilitaryAreaInactive, 0] :- NOT[?flight, :eastMilitaryAreaInactive].
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "INACTIVE",
+            1,
+            0
+        )
+        AS ?eastMilitaryAreaInactiveIndicator
+    ).
 
 #ovo dodavanje west/east usagea mozda i ne treba
 [?flight, :westMilitaryAirspaceUsage, ?westUsage] :-

@@ -28,7 +28,7 @@
         AS ?airportOpStatusIndicator
     ).
 
-[?airportHeliport, :notifyAirportWarning, ?noAirportWarningIndicator] :-
+[?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
     
     [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, :warning, ?warning],    
@@ -38,7 +38,7 @@
             0,
             1
         )
-        AS ?noAirportWarningIndicator
+        AS ?airportWarningIndicator
     ).                                    
 
 #spoji flight s airportheliport

@@ -1,17 +1,28 @@
 # TODO: add ?indicator to all helper rules?
-[?flight, :aircraftAlreadyAssumed] :-
+[?flight, :isAircraftAlreadyAssumed, ?aircraftAlreadyAssumedIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
-    [?coordStatus, fx:status, "ASSUMED"].
+    [?coordStatus, fx:status, ?statusValue],
+    BIND(
+        IF(
+            ?statusValue = "ASSUMED",
+            1,
+            0
+        )
+        AS ?aircraftAlreadyAssumedIndicator
+    ).
 
-[?flight, :isAircraftAlreadyAssumed, 1] :- [?flight, :aircraftAlreadyAssumed].
-[?flight, :isAircraftAlreadyAssumed, 0] :- NOT [?flight, :aircraftAlreadyAssumed].
 
-[?flight, :aircraftAlreadyTransferred] :-
+[?flight, :isAircraftAlreadyTransferred, ?aircraftAlreadyTransferredIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
-    [?coordStatus, fx:status, "TRANSFERRED"].
-
-[?flight, :isAircraftAlreadyTransferred, 1] :- [?flight, :aircraftAlreadyTransferred].
-[?flight, :isAircraftAlreadyTransferred, 0] :- NOT [?flight, :aircraftAlreadyTransferred].
+    [?coordStatus, fx:status, ?statusValue],
+    BIND(
+        IF(
+            ?statusValue = "TRANSFERRED",
+            1,
+            0
+        )
+        AS ?aircraftAlreadyTransferredIndicator
+    ).
 
 """
 This checks that the aircraft's current position is within the given sector's upper and lower limit.
@@ -203,7 +214,7 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
 
 
 # 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
-[?flight2, :approachingSectoerAltitude, ?sector] :-
+[?flight2, :approachingSectorAltitude, ?sector] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
