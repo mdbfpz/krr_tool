@@ -2,3 +2,5 @@ httpx
 fastapi
 uvicorn
 rdflib
+geographiclib
+shapely

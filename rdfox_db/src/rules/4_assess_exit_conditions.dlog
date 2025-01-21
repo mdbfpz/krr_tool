@@ -4,8 +4,7 @@ It only makes sense to look if the A/C is flying towards exit point of a sector 
 is inside this sector, otherwise we look if it's flying towards entry point.
 
 TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the pipilene.
-This point is the last point in the desired branch of the given flight plan. ?point will be a node 
-inside desired or agreed branch (in case there is a change of exit point during the flight)
+?point will be a node inside desired or agreed branch (in case there is a change of exit point during the flight)
 """
 # TODO: add ?indicator here as well?
 [?flight, :flyingTowardsExitPoint] :-

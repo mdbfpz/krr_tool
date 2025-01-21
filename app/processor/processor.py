@@ -7,29 +7,8 @@ from app.data_sender.data_sender import DataSender
 from app.rdf_converter.rdf_converter import RDFConverter
 from app.reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 import uvicorn
+from .utils import DataQueue, GeodesicService
 
-
-class DataQueue:
-    """Manages the queue for storing data asynchronously."""
-    
-    def __init__(self):
-        self.queue = asyncio.Queue()
-        self.condition = asyncio.Condition()
-
-    async def add_to_queue(self, data: dict): # TODO: rename to 'put'
-        """Add data to the queue asynchronously."""
-
-        async with self.condition:
-            await self.queue.put(data)
-            self.condition.notify()  # Notify any waiting tasks
-
-    async def get_from_queue(self) -> dict:  # TODO: rename to 'get'
-        """Retrieve data from the queue asynchronously."""
-
-        async with self.condition:
-            while self.queue.empty():
-                await self.condition.wait()  # Wait for new data
-            return await self.queue.get()
 
 class Processor:
     """Processor microservice that orchestrates the pipeline."""

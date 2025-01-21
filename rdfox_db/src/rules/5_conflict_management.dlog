@@ -4,10 +4,10 @@ following structure:
 
 ?flight1 :conflict ?conflict12.     Where ?conflict12 is a conflict pair node.
 ?flight2 :conflict ?conflict12.
-?conflict12 :conflictIndicator ?conflictIndicator.      Where ?conflictIndicator is 1/0.
-?conflict12 :position ?position.
-?conflict12 :minimumDistance ?minDist.
-?conflict12 :distanceToMD ?distToMinDist.
+?conflict12 :conflictIndicator ?conflictIndicator.     # Where ?conflictIndicator is 1/0.
+?conflict12 :position ?position.    # CPA, so 2 points instead of one
+?conflict12 :minimumDistance ?minDist.  # Distance between 2 aircrafts when they are at CPA
+?conflict12 :distanceToMD ?distToMinDist.   # Distance to CPA (to those 2 positions) from current position   
 ?conflict12 :timeToMD ?timeToMinDist.
 ?position :latitude ?lat.
 ?position :longitude ?long.
