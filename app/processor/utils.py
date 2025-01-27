@@ -4,6 +4,8 @@ from shapely.geometry import Point, Polygon, LineString
 import math
 from datetime import datetime
 import matplotlib.pyplot as plt
+from shapely.ops import transform
+import pyproj
 
 
 class DataQueue:
@@ -303,39 +305,74 @@ class GeodesicService:
         return Polygon(normalized_coords), sorted_coords
 
     @staticmethod
-    def f(line_coords, polygon_coords):
-        from pyproj import Transformer
+    def f(line_coords, polygon_coords, current_position):
         """
-        If the height of the end point of the line segment is not set, use the height of the a/c's current position. 
+        Use aircraft's current position to determine the horizontal slice of a sector. 
         """
 
-        # Define a transformer for WGS84 to UTM (example for Zone 33N)
-        transformer_to_utm = Transformer.from_crs("EPSG:4326", "EPSG:32633", always_xy=True)
-        transformer_to_wgs84 = Transformer.from_crs("EPSG:32633", "EPSG:4326", always_xy=True)
+        """curr_flight_level = current_position[-1] * 0.3048 # ft to meters
 
-        # Transform to UTM
-        # line_utm = [transformer_to_utm.transform(lon, lat) for lat, lon in line_coords]
-        print("Line: ", line_coords)
-        # print("Line utm: ", line_utm)
-        line2d, polygon_coords_2d = [], [] 
+        print("Line coords initial: ", line_coords)
+        line_coords_cartesian, polygon_coords_cartesian = [], [] 
         for p in line_coords:
-            x, y, _ = GeodesicService.xyz_from_lat_lon(p[0], p[1], 0)
-            line2d.append((x, y))
-        print("Line 2d: ", line2d)
+            x, y, z = GeodesicService.xyz_from_lat_lon(p[0], p[1], curr_flight_level)
+            line_coords_cartesian.append((x, y, z))
+        print("Line coords cartesian: ", line_coords_cartesian)
         for p in polygon_coords:
-            x, y, _ = GeodesicService.xyz_from_lat_lon(p[0], p[1], 0)
-            polygon_coords_2d.append((y, x))
-        print("polygon coords 2d: ", polygon_coords_2d)
+            x, y, z = GeodesicService.xyz_from_lat_lon(p[0], p[1], curr_flight_level)
+            polygon_coords_cartesian.append((x, y, z))
+        print("Polygon coords cartesian: ", polygon_coords_cartesian)
 
-        # Create Shapely objects in UTM
-        line = LineString(line2d)
-        print("Line: ", line)
-        polygon2d, _ = GeodesicService.create_polygon_from_coords(polygon_coords_2d)
-        print("Polygon 2d: ", polygon2d)
+        line_coords_normalized = [(lon, lat) for (lat, lon) in line_coords]
+        linestring_latlon = LineString(line_coords_normalized)
+        line = [(y, x, z) for (x, y, z) in line_coords_cartesian]
+        linestring = LineString(line)
+        print("Linestring: ", linestring)
+        polygon_cartesian = [(x, y, z) for (x, y, z) in polygon_coords_cartesian]
+        polygon_cartesian, _ = GeodesicService.create_polygon_from_coords(polygon_cartesian, curr_flight_level)
+        print("Polygon cartesian: ", polygon_cartesian)
+       
+        # Calculate intersection
+        intersection_cartesian = list(linestring.intersection(polygon_cartesian).coords)
+        print("Intersection cartesian: ", intersection_cartesian)
 
-        plt.gca().set_aspect('equal', adjustable='box')
+        intersection_latlon = []
+        for p in intersection_cartesian:
+            lat, lon, height = GeodesicService.xyz_to_lat_lon(p[0], p[1], curr_flight_level)
+            intersection_latlon.append((lat, lon, height))
+        print("Intersection in latlon: ", intersection_latlon)
+
+        polygon_latlon, _ = GeodesicService.create_polygon_from_coords(polygon_coords, curr_flight_level)
         # Plot the polygon
-        poly_x, poly_y = zip(*polygon2d.exterior.coords)
+        poly_x, poly_y = zip(*polygon_latlon.exterior.coords)
+        plt.plot(poly_x, poly_y, label="Polygon", color="blue")
+        # Plot the line
+        line_x, line_y = zip(*linestring_latlon.coords)
+        plt.plot(line_x, line_y, label="Line", color="green")
+        # Add labels and legend
+        plt.xlabel("Longitude")
+        plt.ylabel("Latitude")
+        plt.title("Line-Polygon Intersection")
+        plt.legend()
+        plt.grid(True)
+
+        # Plot the intersection points
+        if intersection_latlon:
+            intersection_x, intersection_y = zip(*intersection_latlon)
+            plt.scatter(intersection_y, intersection_x, color="red", label="Intersection Points")
+            for i, point in enumerate(intersection_latlon):
+                plt.text(point[0], point[1], str(i), color='black', fontsize=12, ha='center', va='center')
+        
+        plt.gca().set_aspect('equal', adjustable='box')
+        plt.show()"""
+
+        polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
+        normalized_line_coords = [(coord[1], coord[0]) for coord in line_coords]
+        line = LineString(normalized_line_coords) # TODO: create a method for line creation since it is used often everywhere
+        print(polygon.area)
+        # Visualization
+        # Plot the polygon
+        poly_x, poly_y = zip(*polygon.exterior.coords)
         plt.plot(poly_x, poly_y, label="Polygon", color="blue")
         # Plot the line
         line_x, line_y = zip(*line.coords)
@@ -347,19 +384,28 @@ class GeodesicService:
         plt.legend()
         plt.grid(True)
         
-        # Calculate intersection
-        intersection = list(line.intersection(polygon2d).coords)
-        print("Intersection: ", intersection)
-        intersection_latlon = []
-        for p in intersection:
-            lat, lon, _ = GeodesicService.xyz_to_lat_lon(p[0], p[1], 0)
-            intersection_latlon.append((lon, lat))
-        print("Intersection in latlon: ", intersection_latlon)
+        # Transforming the coordinates into a projected coordinate system
+        projection = pyproj.Transformer.from_proj(
+            pyproj.Proj("EPSG:4326"), 
+            pyproj.Proj("EPSG:25832"),
+            always_xy=True
+        )
+        polygon = transform(projection.transform, polygon)
+        line = transform(projection.transform, line)
+
+        # Extracting the intersection
+        intersection = line.intersection(polygon)
+
+        # Inverse transformation
+        inverse_projection = pyproj.Transformer.from_proj(
+            pyproj.Proj("EPSG:25832"),
+            pyproj.Proj("EPSG:4326"), 
+            always_xy=True
+        )
+        intersection = transform(inverse_projection.transform, intersection)
+        print("Intersection points: ", intersection)
 
         plt.show()
-
-
-
 
     @staticmethod
     def line_sector_intersection(line_coords, polygon_coords):
@@ -368,6 +414,7 @@ class GeodesicService:
         Automatically converts coordinates to (lon, lat) if necessary.
         """
 
+        # TODO: update with z coordinate (height)
         # TODO: could be replaced with .intersects()? This returns true/false.
 
         # Convert line coordinates from (lat, lon) to (lon, lat)
@@ -435,6 +482,8 @@ class GeodesicService:
             list of tuples: List of (lat, lon) intersection points.
         """
 
+        # TODO: update with z coordinate (height)
+
         # Create a polygon from the coordinates
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
 
@@ -496,6 +545,8 @@ class GeodesicService:
         Returns:
             str: Exit point as a tuple (lat, lon).
         """
+
+        # TODO: update with z coordinate (height)
 
         # Add current position to front, to create the first line segment
         trajectory.insert(0, (current_position[0], current_position[1], 0, 0))  # time and height are irrelevant
@@ -603,6 +654,8 @@ class GeodesicService:
         Returns:
             tuple: Entry point as a (lat, lon) tuple.
         """
+
+        # TODO: update with z coordinate (height)
 
         # Create a polygon from the coordinates
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)

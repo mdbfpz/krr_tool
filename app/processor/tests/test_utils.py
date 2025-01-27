@@ -101,7 +101,7 @@ class TestGeodesic(unittest.TestCase):
 
         polygon, _ = GeodesicService.create_polygon_from_coords([(39.967778, -83.024722), (39.949722, -75.164167), (38.916667, -77.070556), (41.464167, -81.664444)])
         self.assertTrue(polygon.is_valid)
-    
+    """
     def test_f(self):
         polygon_coords = [
             (39.9726058, -83.0202268),
@@ -111,8 +111,10 @@ class TestGeodesic(unittest.TestCase):
         ]
 
         line_coords = [(39.3983302, -82.6424770), (40.7001176, -74.0349471)]
-        GeodesicService.f(line_coords, polygon_coords)
-        
+        current_position = (0, 0, 1000)
+        GeodesicService.f(line_coords, polygon_coords, current_position)
+        d = GeodesicService.geodesic_distance(lat1=40.445643882658466, lon1=-76.87341736600898, lat2=40.3474556, lon2=-76.8670986)
+        print(d)
     """
     def test_line_sector_intersection(self):
         polygon_coords = [
@@ -152,7 +154,7 @@ class TestGeodesic(unittest.TestCase):
         line_coords = [(38.0, -80.0), (39.9, -77.0)]
         intersection = GeodesicService.line_sector_intersection(line_coords, polygon_coords)
         self.assertEqual(len(intersection), 1)
-    """
+    
     def test_trajectory_sector_intersection(self):
         polygon_coords = [
             (39.967778, -83.024722), 
