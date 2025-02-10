@@ -408,6 +408,32 @@ class GeodesicService:
         plt.show()
 
     @staticmethod
+    def find_intersection_points(trajectory, polygon_coords):
+        """
+        Finds all intersection points of trajectory and a polygon.
+        """
+        intersection_points_list = []
+        
+        for i in range(1, len(trajectory)):
+            # Extract the next and previous trajectory points (lat, lon, time, height)
+            next_lat, next_lon, _, _ = trajectory[i]
+            prev_lat, prev_lon, _, _ = trajectory[i - 1]
+
+            # Create a line segment between the next and previous trajectory points
+            line_coords = [(prev_lat, prev_lon), (next_lat, next_lon)]
+
+            # Check for intersection
+            intersection_points = GeodesicService.line_sector_intersection(line_coords, polygon_coords)
+
+            if intersection_points:
+                # Add intersection points to the list, avoiding duplicates
+                for point in intersection_points:
+                    if point not in intersection_points_list:
+                        intersection_points_list.append(point)
+        
+        return intersection_points_list
+
+    @staticmethod
     def line_sector_intersection(line_coords, polygon_coords):
         """
         Find intersection points between a line segment and a polygon.
@@ -422,12 +448,35 @@ class GeodesicService:
         line = LineString(normalized_line_coords)
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
         intersection_candidates = line.intersection(polygon)
-        intersection_candidates = list(intersection_candidates.coords)
         print("Intersection candidates:", intersection_candidates)
+
+        # Check if intersection_candidates is not empty
+        if intersection_candidates.is_empty:
+            list_of_intersection_candidates = []
+        else:
+            if intersection_candidates.geom_type == 'MultiLineString':
+                list_of_intersection_candidates = [list(line.coords) for line in intersection_candidates.geoms]
+        # If intersection_candidates is a LineString
+            elif intersection_candidates.geom_type == 'LineString':
+                list_of_intersection_candidates = [list(intersection_candidates.coords)]
+        # Print the resulting list of intersection candidates
+        print("List of intersection candidates:", list_of_intersection_candidates)
+        print(list_of_intersection_candidates)
+        intersection_candidates_expanded = []
+
+        for inner_list in list_of_intersection_candidates:
+            for candidate in inner_list:  # Iterating over each coordinate pair
+                if isinstance(candidate, tuple):  # If candidate is a tuple, it's a coordinate pair
+                    expanded_coords = list(candidate)  # Convert tuple to list
+                    intersection_candidates_expanded.append(expanded_coords)
+                else:
+                    # If candidate is not a tuple, add it directly (this case shouldn't occur with valid input)
+                    intersection_candidates_expanded.append([candidate])
+        #print("Intersection candidates:", intersection_candidates)
         
         # For each intersection point, calculate the wgs84 distance to the projection of that point on the polygon edge.
         # Filter points that are around the edge by some tolerance.
-        for point in intersection_candidates:
+        for point in intersection_candidates_expanded:
             print("\n")
             print("Point: ", Point(point))
             print("Distance to polygon: ", GeodesicService.calculate_distance_to_sector(point[1], point[0], polygon_coords))
@@ -438,7 +487,7 @@ class GeodesicService:
             print("Exterior contains point properly: ", polygon.exterior.contains_properly(Point(point)))
 
         intersection = [
-            (point[1], point[0]) for point in intersection_candidates if 
+            (point[1], point[0]) for point in intersection_candidates_expanded if 
             -100 <= GeodesicService.calculate_distance_to_sector(point[1], point[0], polygon_coords) < 100 # 100 meters tolerance
         ]
         print("Intersection:", intersection)
@@ -489,43 +538,29 @@ class GeodesicService:
 
         plt.clf()
         plt.close()
-        # Plot the polygon
-        polygon_x, polygon_y = zip(*polygon.exterior.coords)
-        plt.plot(polygon_x, polygon_y, label="Polygon", color="blue")
 
+        
         # Plot the trajectory
         traj_lons = [point[1] for point in trajectory]
         traj_lats = [point[0] for point in trajectory]
         plt.plot(traj_lons, traj_lats, label="Trajectory", color="green", linestyle='--')
 
-        intersections = []
-        # TODO: can this be done directly on the whole trajectory LINESTRING object?
-        # Iterate through the trajectory and find intersection for each line segment
-        for i in range(1, len(trajectory)):
-            # Extract the next and previous trajectory points (lat, lon, time, height)
-            next_lat, next_lon, _, _ = trajectory[i]
-            prev_lat, prev_lon, _, _ = trajectory[i-1]
-
-            # Create a line segment between the next and previous trajectory points
-            line_coords = [(prev_lat, prev_lon), (next_lat, next_lon)]
-
-            # Check for intersection
-            intersection_points = GeodesicService.line_sector_intersection(line_coords, polygon_coords)
-
-            if intersection_points:
-                intersections.extend(
-                    (point[1], point[0]) for point in intersection_points if point not in intersections
-                )  # (lat, lon) format and avoid duplicates
-
+        intersections = GeodesicService.find_intersection_points(trajectory,polygon_coords)
         if intersections:
             intersection_y, intersection_x = zip(*intersections)
-            plt.scatter(intersection_x, intersection_y, color="red", label="Intersection")
-        
+
+            # Plot intersection points directly on the polygon
+            for point in intersections:
+                y = point[1]
+                x = point[0]
+                plt.scatter(y, x, color="blue", zorder=5)  # Plot points on the polygon
+                plt.text(y, x, f"({x:.2f}, {y:.2f})", fontsize=9, ha='right', va='bottom', color="blue")
+
         print("Intersections: ", intersections)
         # Add labels and legend
         plt.xlabel("Longitude")
         plt.ylabel("Latitude")
-        plt.title("Trajectory and Polygon intersection")
+        plt.title("Trajectory and Polygon Intersection")
         plt.grid(True)
         plt.gca().set_aspect('equal', adjustable='box')
         plt.legend()
@@ -550,24 +585,8 @@ class GeodesicService:
 
         # Add current position to front, to create the first line segment
         trajectory.insert(0, (current_position[0], current_position[1], 0, 0))  # time and height are irrelevant
-
-        exit_point_candidates = []
-        # Iterate through the trajectory list
-        for i in range(1, len(trajectory)):
-            # Extract the next and previous trajectory points (lat, lon, time, height)
-            next_lat, next_lon, _, _ = trajectory[i]
-            prev_lat, prev_lon, _, _ = trajectory[i-1]
-
-            # Create a line segment between the next and previous trajectory points
-            line_coords = [(prev_lat, prev_lon), (next_lat, next_lon)]
-
-            # Use line_sector_intersection to find intersection points with the polygon
-            intersection = GeodesicService.line_sector_intersection(line_coords, polygon_coords)
-
-            if intersection:
-                exit_point_candidates.extend(
-                    point for point in intersection if point not in exit_point_candidates
-                )   # Avoid duplicates
+        #TODO: put this in separate method because the intersection points search is done in more methods
+        exit_point_candidates = GeodesicService.find_intersection_points(trajectory,polygon_coords)
         
         # Plot the polygon - testing
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
@@ -609,7 +628,7 @@ class GeodesicService:
             else:
                 print("Exit point(s): ", [(point[1], point[0]) for point in exit_point_candidates])
                 # Plot the exit point
-                plt.scatter(exit_point_candidates[0][0], exit_point_candidates[0][1], color="red", label="Exit Point", zorder=5)
+                plt.scatter(exit_point_candidates[0][1], exit_point_candidates[0][0], color="red", label="Exit Point", zorder=5)
                 # Show the plot
                 plt.legend()
                 plt.show()
@@ -624,7 +643,7 @@ class GeodesicService:
                 print("Exit point(s): ", [(point[1], point[0]) for point in exit_points])
                 for exit_point in exit_points:
                     # Plot the exit point
-                    plt.scatter(exit_point[0], exit_point[1], color="red", label="Exit Point", zorder=5)
+                    plt.scatter( exit_point[1],exit_point[0], color="red", label="Exit Point", zorder=5)
                 # Show the plot
                 plt.legend()
                 plt.show()
@@ -634,7 +653,7 @@ class GeodesicService:
                 print("Exit point(s): ", [(point[1], point[0]) for point in exit_points])
                 for exit_point in exit_points:
                     # Plot the exit point
-                    plt.scatter(exit_point[0], exit_point[1], color="red", label="Exit Point", zorder=5)
+                    plt.scatter( exit_point[1],exit_point[0], color="red", label="Exit Point", zorder=5)
                 # Show the plot
                 plt.legend()
                 plt.show()
@@ -642,12 +661,12 @@ class GeodesicService:
  
     @staticmethod
     def find_entry_point(trajectory, polygon_coords, current_position):
+            
         """
         Find the entry point(s) of a trajectory into a polygon.
 
         Args:
-            trajectory (list of tuple): List of trajectory points in [(lat, lon, time, height), ...] format. The first
-            point in the list represents the next point on the route.
+            trajectory (list of tuple): List of trajectory points in [(lat, lon, time, height), ...] format.
             polygon_coords (list of tuple): List of (lat, lon) tuples defining the polygon.
             current_position (tuple): Current position as (lat, lon).
 
@@ -659,12 +678,17 @@ class GeodesicService:
 
         # Create a polygon from the coordinates
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
-        # Add current position to front, to create the first line segment
+        
         trajectory.insert(0, (current_position[0], current_position[1], 0, 0))  # time and height are irrelevant
+        # Iterate through the trajectory to find the first segment that intersects the polygon
+        entry_point_candidates = GeodesicService.find_intersection_points(trajectory,polygon_coords)
+        # Add current position to front, to create the first line segment
         current_point = Point(current_position[1], current_position[0])  # Convert to (lon, lat)
 
+        # Clear any previous plots
         plt.clf()
         plt.close()
+
         # Plot the polygon
         polygon_x, polygon_y = zip(*polygon.exterior.coords)
         plt.plot(polygon_x, polygon_y, label="Polygon", color="blue")
@@ -687,36 +711,26 @@ class GeodesicService:
         # Preconditions: Current position must be outside the polygon
         if polygon.covers(current_point):
             print("Current position is within the sector, no entry point exists.")
+            plt.legend()
+            plt.show()
+            return None
+        # If no entry points found
+        if not entry_point_candidates:
+            print("No entry points found.")
+            plt.legend()
+            plt.show()
             return None
 
-        # Iterate through the trajectory to find the first segment that intersects the polygon
-        for i in range(1, len(trajectory)):
-            # Extract the next and previous trajectory points (lat, lon, time, height)
-            next_lat, next_lon, _, _ = trajectory[i]
-            prev_lat, prev_lon, _, _ = trajectory[i-1]
+        
+        lat, lon = entry_point_candidates[0][0], entry_point_candidates[0][1]  # Swap if necessary
+        plt.scatter(lon, lat, color="red", label="Entry Point", zorder=5)
 
-            # Create a line segment between the next and previous trajectory points
-            line_coords = [(prev_lat, prev_lon), (next_lat, next_lon)]
-
-            # Check for intersection
-            intersection_points = GeodesicService.line_sector_intersection(line_coords, polygon_coords)
-
-            if intersection_points:
-                # The first intersection point is the entry point
-                entry_point = intersection_points[0]
-                print("Entry point found:", entry_point)
-
-                # Plot the entry point
-                plt.scatter(entry_point[0], entry_point[1], color="red", label="Entry Point", zorder=5)
-                plt.legend()
-                plt.show()
-                return entry_point[1], entry_point[0]   # (lat, lon) format
-
-        print("No entry points found.")
+        # Show the plot
         plt.legend()
         plt.show()
-        return None
 
+        # Return the first entry point (in (lat, lon) format)
+        return entry_point_candidates[0][0], entry_point_candidates[0][1]
     @staticmethod
     def calculate_time_to_point(lat1, lon1, lat2, lon2, speed):
         """
@@ -727,3 +741,98 @@ class GeodesicService:
         speed_m_per_s = speed * GeodesicService.c  # Convert knots to m/s
         print("Time to point [s]:", distance/speed_m_per_s)
         return distance/speed_m_per_s
+
+    @staticmethod
+    def distance_to_exit_point(trajectory, polygon_coords, current_position):
+        """
+        Calculate distance from current position to exit point
+        """
+        exit_point = GeodesicService.find_exit_point(trajectory, polygon_coords, current_position)[0]
+        exit_point_data = {}
+        print(f"exit point je: {exit_point}")  
+        exit_point_data["lat"],exit_point_data["lon"] =  current_position[1], current_position[0]
+        distance = Geodesic.WGS84.Inverse(current_position[1], current_position[0], exit_point[1], exit_point[0])['s12']
+        exit_point_data["distance"] = distance
+        return exit_point_data
+    
+    @staticmethod        
+    def military_sector_intersection(trajectory, current_position, coords,direct_to_point):
+        """
+        Calculates the value of flag variable used in Task 8.1 for detecting direct-to points
+        """
+        if direct_to_point == (0, 0):
+            direct_to_lat,direct_to_lon = GeodesicService.find_exit_point(trajectory, coords, current_position)[0]
+        else:    
+            direct_to_lat,direct_to_lon = direct_to_point[1],direct_to_point[0] 
+            
+        current_lon,current_lat  = current_position[1], current_position[0]
+        azi = Geodesic.WGS84.Inverse(current_lat, current_lon, direct_to_lat, direct_to_lon)["azi1"]
+        flag = 1
+        for i in range(0, len(coords), 1):
+            j = i + 1
+            if i == len(coords) - 1:
+                j = 0
+            lat1, lon1 = coords[i]
+            lat2, lon2 = coords[j]
+            azi1 =  Geodesic.WGS84.Inverse(current_lat, current_lon, lat1, lon1)["azi1"]
+            azi2 =  Geodesic.WGS84.Inverse(current_lat, current_lon, lat2, lon2)["azi1"]
+			
+            if (azi1 < 0 and azi2 > 0) or (azi1 > 0 and azi2 < 0):
+                if abs(azi1) < 90 and abs(azi2) < 90:
+                    if azi1 < azi2:
+                        if azi > azi1 and azi < azi2:
+                            flag = 0
+                    else:
+                        if azi < azi1 and azi > azi2:
+                            flag = 0
+                elif (abs(azi1) > 90 and abs(azi2) > 90) or (abs(azi1) < 90 and abs(azi2) > 90) or (abs(azi1) > 90 and abs(azi2) < 90):
+                    if azi1 < azi2:
+                        if azi < azi1 and azi > azi2:
+                            flag = 0
+                    else:
+                        if azi > azi1 and azi < azi2:
+                            flag = 0
+            else:
+                if azi1 < azi2:
+                    if azi > azi1 and azi < azi2:
+                        flag = 0
+                else:
+                    if azi < azi1 and azi > azi2:
+                        flag = 0
+                        
+        return flag
+    
+    @staticmethod
+    def flying_towards_exit_point(heading, trajectory, polygon_coords, current_position):
+        """
+        Checks if the aircraft is flying towards the exit point.
+        
+        Parameters:
+        ----------
+        heading : float
+            The current heading of the aircraft, received from flight data.
+        trajectory : list
+            The flight trajectory, typically a list of waypoints.
+        polygon_coords : list
+            Coordinates defining the military sector or restricted airspace.
+        current_position : tuple
+            The current position of the aircraft as (latitude, longitude).
+
+        Returns:
+        -------
+        1/0
+            True if the aircraft is flying towards the exit point, False otherwise.
+        """
+        
+        current_lon,current_lat  = current_position[1], current_position[0]
+        exit_point_data = GeodesicService.distance_to_exit_point(trajectory, polygon_coords, current_position)
+        exit_point_lat,exit_point_lon = exit_point_data["lat"],exit_point_data["lon"] 
+        azi1 = Geodesic.WGS84.Inverse(current_lat, current_lon, exit_point_lat, exit_point_lon)["azi1"]
+        radius = 2.5 * 1825  # meters
+        distance_to_exit_point = exit_point_data["distance"]
+        alpha_in_pi = math.atan(radius / distance_to_exit_point)
+        alpha_in_deg = math.degrees(alpha_in_pi)  # Convert radians to degrees
+        if azi1 + alpha_in_deg >= heading >= azi1 - alpha_in_deg:
+            return 1 #"Aircraft is flying towards the exit point."
+        else:
+            return 0 #"Aircraft is not flying towards the exit point."
