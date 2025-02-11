@@ -508,8 +508,8 @@ class TestGeodesic(unittest.TestCase):
             
         ]
         current_position = (39.2, -83.3)
-        #distance_to_exit_point = GeodesicService.distance_to_exit_point(trajectory, polygon_coords, current_position)
-        #print(distance_to_exit_point)
+        distance_to_exit_point = GeodesicService.distance_to_exit_point(trajectory, polygon_coords, current_position)
+        print(f"DISTACNEEEEEEE{distance_to_exit_point}")
 
     def test_military_sector_intersection(self):
         polygon_coords = [#konkavan
@@ -550,7 +550,7 @@ class TestGeodesic(unittest.TestCase):
         ]
         current_position = (39.2, -83.3)
         heading = 0.7        
-        flying_towards_exit_point_indicator = GeodesicService.flying_towards_exit_point(heading,trajectory, polygon_coords, current_position)
-        print(flying_towards_exit_point_indicator)
+        #flying_towards_exit_point_indicator = GeodesicService.flying_towards_exit_point(heading,trajectory, polygon_coords, current_position)
+        #print(flying_towards_exit_point_indicator)
 if __name__ == "__main__":
     unittest.main()
