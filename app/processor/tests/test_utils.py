@@ -1,7 +1,8 @@
 import unittest
 import sys
 import os
-
+import contextlib
+import io
 # Add the project root to the Python path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../..')))
 
@@ -9,7 +10,7 @@ from app.processor.utils import GeodesicService
 
 
 class TestGeodesic(unittest.TestCase):
-
+    
     """def test_check_if_point_in_circle(self):
         # Eiffel Tower within 5 km of Louvre
 
@@ -111,10 +112,69 @@ class TestGeodesic(unittest.TestCase):
         ]
 
         line_coords = [(39.3983302, -82.6424770), (40.7001176, -74.0349471)]
+        
+        sector_coords = [
+            (46.32250357357483, 6.490806487276373),
+            (46.6218069498645, 10.38637733114844),
+            (47.46908341605593, 9.700201134835604),
+            (47.35403380915, 7.178403068946462)
+        ]
+
+        flight_coords = [
+            (46.50000000000001, 5.5),
+            (47.37962705331584, 10.82772711280771)
+        ]
+
+        sweden_quadrilateral = [
+            (10.75, 59.91),   # Oslo
+            (8.01, 58.15),    # Kristiansand
+            (12.57, 55.68),   # Copenhagen
+            (16.36, 56.67),   # Kalmar
+            (17.63, 59.86),   # Stockholm
+            (10.75, 59.91)    # Povratak u Oslo (zatvaranje poligona)
+            ]
+
+        intersecting_line = [
+            (9.989460573350431,56.62120804088995),
+            (16.38292273115489,60.074572103287)
+        ]
+
         current_position = (0, 0, 1000)
-        GeodesicService.f(line_coords, polygon_coords, current_position)
-        d = GeodesicService.geodesic_distance(lat1=40.445643882658466, lon1=-76.87341736600898, lat2=40.3474556, lon2=-76.8670986)
-        print(d)
+        """ intersection = GeodesicService.f(flight_coords, sector_coords, current_position)
+        print(intersection.coords[0])
+        print(intersection.coords[1])
+        #da usporedim s intersection metodom
+        line_coords = [(46.50000000000001, 5.5, 0,0), (47.37962705331584, 10.82772711280771,0,0)]
+        intersecting_line = [
+        (56.50131570522598, 12.47928302150437,0,0),
+            (67.22698213465218, 20.68759922394839,0,0)
+        ]
+        with contextlib.redirect_stdout(io.StringIO()):
+            intersection_points = GeodesicService.find_intersection_points(
+                list(map(lambda point: (point[1], point[0],point[2],point[3]), line_coords)),
+                list(map(lambda point: (point[1], point[0]), sector_coords))
+            )
+        print(f"intersection_points = {intersection_points}")
+
+        
+        dF = GeodesicService.geodesic_distance(lat1=39.6768861, lon1=-81.1347035, lat2=39.6583870, lon2=-81.2360201)
+        dI = GeodesicService.geodesic_distance(lat1=39.6329086, lon1=-81.0914242, lat2=39.6583870, lon2=-81.2360201)
+        d3 = GeodesicService.geodesic_distance(lat1=39.6674960440, lon1=-81.1858756253, lat2=39.6583870, lon2=-81.2360201)
+        d4 = GeodesicService.geodesic_distance(lat1=39.67661486, lon1=-81.13344745, lat2=39.6583870, lon2=-81.2360201)
+        print(f"distance method f lower point: {dF}")
+        print(f"distance method find_intersection_point lower point: {dI}")
+        print(f"distance method 3 lower point: {d3}")
+        print(f"distance method 4 lower point: {d4}")
+
+        dF2 = GeodesicService.geodesic_distance(lat1=40.3631769, lon1=-76.7598187, lat2=40.3474556, lon2=-76.8670986)
+        dI2 = GeodesicService.geodesic_distance(lat1=40.3020074, lon1=-76.6672858, lat2=40.3474556, lon2=-76.8670986)
+        d3 = GeodesicService.geodesic_distance(lat1=40.3455014939, lon1=-76.8829310291, lat2=40.3474556, lon2=-76.8670986)
+        d4 = GeodesicService.geodesic_distance(lat1=40.36260055, lon1=-76.75602865, lat2=40.3474556, lon2=-76.8670986)
+        print(f"distance method f upper point: {dF2}")
+        print(f"distance method find_intersection_point upper point: {dI2}")        
+        print(f"distance method 3 upper point: {d3}")
+        print(f"distance method 4 upper point: {d4}") """
+        
     """
         GeodesicService.f(line_coords, polygon_coords)
         
@@ -508,8 +568,8 @@ class TestGeodesic(unittest.TestCase):
             
         ]
         current_position = (39.2, -83.3)
-        distance_to_exit_point = GeodesicService.distance_to_exit_point(trajectory, polygon_coords, current_position)
-        print(f"DISTACNEEEEEEE{distance_to_exit_point}")
+        #distance_to_exit_point = GeodesicService.distance_to_exit_point(trajectory, polygon_coords, current_position)
+        #print(f"DISTACNEEEEEEE{distance_to_exit_point}")
 
     def test_military_sector_intersection(self):
         polygon_coords = [#konkavan
@@ -552,5 +612,210 @@ class TestGeodesic(unittest.TestCase):
         heading = 0.7        
         #flying_towards_exit_point_indicator = GeodesicService.flying_towards_exit_point(heading,trajectory, polygon_coords, current_position)
         #print(flying_towards_exit_point_indicator)
+
+        
+        
+    def test_route_point_closest_to_exit_point(self):
+        polygon_coords = [#konkavan
+            (37.9726058, -83.0202268),
+            (40.5583192, -75.00),
+            (39.9216105, -79.0526693),
+            (41.4483224, -81.6853763)
+        ]
+        
+        trajectory = [
+            
+            (38.5, -80.5, 1202, 12500),  # Move towards the polygon
+            (38.8, -79.0, 1205, 13000),  # Enter the polygon
+            (39.3, -78.3, 1210, 13000),  # Move within the polygon
+            (39.8, -76.40, 1215, 13000),  # Exit the polygon
+            (41.0, -75.75, 1220, 13500)   # Additional point
+            
+        ]
+        current_position = (39.2, -83.3)
+        #closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        #print(distances)
+        #print(closest_point)
+        
+        polygon_coords = [
+            (39.967778, -83.024722), 
+            (39.949722, -75.164167), 
+            (38.916667, -77.070556), 
+            (41.464167, -81.664444)
+        ]
+        """
+        # Case 1: Trajectory starts and ends entirely outside the sector, zero intersections
+        trajectory = [
+            (40.0, -84.0, 1205, 13000), 
+            (42.0, -82.0, 1210, 13000),
+            (40.5, -75.0, 1210, 13000),
+            (39.0, -75.0, 1210, 13000)
+        ]
+        current_position = (39.0, -83.5)
+        closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(closest_point)
+        # Case 2: Trajectory starts outside the sector, ends inside the sector, one intersection
+        trajectory = [
+            (40.5, -81.0, 1205, 13000)
+        ]
+        current_position = (39.0, -83.5)
+        closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(closest_point)
+        # Case 4: Trajectory starts outside, passes through, and ends outside the sector, two intersection
+        trajectory = [
+            (39.8, -80.035, 1205, 13000), 
+            (40.0, -77.035, 1210, 13000), 
+            (40.7, -74.035, 1215, 13000)
+        ]
+        current_position = (39.4, -82.6)
+        closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(closest_point)
+        # Case 5: Trajectory starts outside, exits and enters the sector multiple times  
+        trajectory = [
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1215, 13000)
+        ]
+        current_position = (39.4, -82.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(closest_point)
+
+        # Case 7: Trajectory starts inside, exits and enters the sector multiple times
+        trajectory = [
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1215, 13000)
+        ]
+        current_position = (40.0, -82.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_exit_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(closest_point)
+        """
+        
+        
+        
+    
+    def test_route_point_closest_to_entry_point(self):
+        polygon_coords = [#konkavan
+            (37.9726058, -83.0202268),
+            (40.5583192, -75.00),
+            (39.9216105, -79.0526693),
+            (41.4483224, -81.6853763)
+        ]
+        
+        """ trajectory = [
+            
+            (38.5, -80.5, 1202, 12500),  # Move towards the polygon
+            (38.8, -79.0, 1205, 13000),  # Enter the polygon
+            (39.3, -78.3, 1210, 13000),  # Move within the polygon
+            (39.8, -76.40, 1215, 13000),  # Exit the polygon
+            (41.0, -75.75, 1220, 13500)   # Additional point
+            
+        ]
+        current_position = (38.06, -81.3)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}") """
+        
+        """
+        # Case 1: Trajectory starts and ends entirely outside the sector, zero intersections
+        trajectory = [
+            (40.0, -84.0, 1205, 13000), 
+            (42.0, -82.0, 1210, 13000),
+            (40.5, -75.0, 1210, 13000),
+            (39.0, -75.0, 1215, 13000)
+        ]
+        current_position = (39.0, -83.5)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        # Case 2: Trajectory starts outside the sector, ends inside the sector, one intersection
+        trajectory = [
+            (39.95, -83.0, 1200, 13000), 
+            (39.95, -80.0, 1205, 13000)
+        ]
+        current_position = (39.0, -84.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        # Case 3: Trajectory starts inside the sector and exits, ends outside, one intersection -> no entry point
+        trajectory = [
+            (39.95, -81.0, 1200, 13000), 
+            (40.5, -75.0, 1205, 13000)
+        ]
+        current_position = (39.9, -81.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+
+        # Case 4: Trajectory starts outside, passes through, and ends outside the sector, two intersection
+        trajectory = [
+            (39.39, -82.64, 1200, 13000), 
+            (39.8, -80.035, 1205, 13000), 
+            (40.0, -77.035, 1210, 13000), 
+            (40.7, -74.035, 1215, 13000)
+        ]
+        current_position = (39.0, -83.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        # Case 5: Trajectory starts outside, exits and enters the sector multiple times  
+        trajectory = [
+            (39.4, -82.0, 1200, 13000), 
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1220, 13000)
+        ]
+        current_position = (39.0, -83.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        # Case 6: Trajectory starts outside, exits and enters the sector multiple times  
+        trajectory = [
+            (39.4, -82.0, 1200, 13000), 
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1220, 13000),
+            (40.5, -76.0, 1225, 13000)
+        ]
+        current_position = (39.0, -83.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        
+        # Case 7: Trajectory starts inside, exits and enters the sector multiple times -> no entry point
+        trajectory = [
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1225, 13000)
+        ]
+        current_position = (40.0, -82.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        
+
+        # Case 8: Trajectory starts inside, exits and enters the sector multiple times -> no entry point
+        trajectory = [
+            (40.3, -81.0, 1205, 13000), 
+            (41.5, -79.5, 1210, 13000), 
+            (41.0, -77.0, 1215, 13000),
+            (40.0, -79.0, 1220, 13000),
+            (40.5, -76.0, 1225, 13000)
+        ]
+        current_position = (40.0, -82.0)
+        closest_point, distances = GeodesicService.route_point_closest_to_entry_point(trajectory, polygon_coords, current_position)
+        print(distances)
+        print(f"closest_point is :{closest_point}")
+        """        
 if __name__ == "__main__":
     unittest.main()

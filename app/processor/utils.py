@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import asyncio
 from geographiclib.geodesic import Geodesic
 from shapely.geometry import Point, Polygon, LineString
@@ -6,7 +7,8 @@ from datetime import datetime
 import matplotlib.pyplot as plt
 from shapely.ops import transform
 import pyproj
-
+import contextlib
+import io
 
 class DataQueue:
     """Manages the queue for storing data asynchronously."""
@@ -369,7 +371,7 @@ class GeodesicService:
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
         normalized_line_coords = [(coord[1], coord[0]) for coord in line_coords]
         line = LineString(normalized_line_coords) # TODO: create a method for line creation since it is used often everywhere
-        print(polygon.area)
+        print(f"polygon.area ={polygon.area}")
         # Visualization
         # Plot the polygon
         poly_x, poly_y = zip(*polygon.exterior.coords)
@@ -385,32 +387,40 @@ class GeodesicService:
         plt.grid(True)
         
         # Transforming the coordinates into a projected coordinate system
-        projection = pyproj.Transformer.from_proj(
+        """  projection = pyproj.Transformer.from_proj(
             pyproj.Proj("EPSG:4326"), 
             pyproj.Proj("EPSG:25832"),
             always_xy=True
-        )
-        polygon = transform(projection.transform, polygon)
+        ) """
+        
+        projection = pyproj.Transformer.from_crs("EPSG:4326", "EPSG:32617", always_xy=True)
+        inverse_projection = pyproj.Transformer.from_crs("EPSG:32617", "EPSG:4326", always_xy=True)
+
+        projected_coords = [projection.transform(lon, lat) for lon, lat in polygon.exterior.coords]
+        polygon = Polygon(projected_coords)
+
+        #polygon = transform(projection.transform, polygon)
         line = transform(projection.transform, line)
 
         # Extracting the intersection
         intersection = line.intersection(polygon)
 
         # Inverse transformation
-        inverse_projection = pyproj.Transformer.from_proj(
+        """ inverse_projection = pyproj.Transformer.from_proj(
             pyproj.Proj("EPSG:25832"),
             pyproj.Proj("EPSG:4326"), 
             always_xy=True
-        )
+        ) """
         intersection = transform(inverse_projection.transform, intersection)
         print("Intersection points: ", intersection)
 
         plt.show()
-
+        return intersection
     @staticmethod
     def find_intersection_points(trajectory, polygon_coords):
         """
         Finds all intersection points of trajectory and a polygon.
+        This method returns same values as previous project's Java methods for finding intersection points.
         """
         intersection_points_list = []
         
@@ -461,7 +471,6 @@ class GeodesicService:
                 list_of_intersection_candidates = [list(intersection_candidates.coords)]
         # Print the resulting list of intersection candidates
         print("List of intersection candidates:", list_of_intersection_candidates)
-        print(list_of_intersection_candidates)
         intersection_candidates_expanded = []
 
         for inner_list in list_of_intersection_candidates:
@@ -586,7 +595,8 @@ class GeodesicService:
         # Add current position to front, to create the first line segment
         trajectory.insert(0, (current_position[0], current_position[1], 0, 0))  # time and height are irrelevant
         #TODO: put this in separate method because the intersection points search is done in more methods
-        exit_point_candidates = GeodesicService.find_intersection_points(trajectory,polygon_coords)
+        with contextlib.redirect_stdout(io.StringIO()):
+            exit_point_candidates = GeodesicService.find_intersection_points(trajectory,polygon_coords)
         
         # Plot the polygon - testing
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
@@ -836,3 +846,120 @@ class GeodesicService:
             return 1 #"Aircraft is flying towards the exit point."
         else:
             return 0 #"Aircraft is not flying towards the exit point."
+        
+    @staticmethod
+    def route_point_closest_to_exit_point(trajectory, polygon_coords, current_position):
+        """
+        Pronalazi točku na ruti najbližu izlaznoj točci i vraća udaljenosti za sve točke
+        
+        Args:
+            trajectory: Lista tuple-a (lat, lon) - koordinate rute
+            polygon_coords: Koordinate poligona
+            current_position: Trenutna pozicija (lat, lon)
+            
+        Returns:
+            tuple: (najbliža_točka, OrderedDict sa udaljenostima za sve točke)
+        """
+        # Pronađi izlaznu točku
+        trajectory_copy = list(trajectory)
+        with contextlib.redirect_stdout(io.StringIO()):
+            exit_points = GeodesicService.find_exit_point(trajectory_copy, polygon_coords, current_position)
+        if not exit_points:
+            raise ValueError("Nema pronađenih izlaznih točaka")
+        #print(exit_points)
+        exit_lat, exit_lon = exit_points[-1][1], exit_points[-1][0]
+        distances = OrderedDict()
+
+        # Prođi kroz sve segmente rute
+        for i in range(1, len(trajectory)):
+            prev_point = trajectory[i-1]
+            next_point = trajectory[i]
+            
+            # Ekstrahiraj koordinate (pretpostavka: lat je prvi element, lon drugi)
+            prev_lat, prev_lon = prev_point[0], prev_point[1]
+            next_lat, next_lon = next_point[0], next_point[1]
+            
+            # Napravi linijski segment
+            segment = [(prev_lat, prev_lon), (next_lat, next_lon)]
+            
+            # Provjeri presjek sa sektorom
+            with contextlib.redirect_stdout(io.StringIO()):
+                if GeodesicService.line_sector_intersection(segment, polygon_coords):
+                    # Dodaj obje točke segmenta u razmatranje
+                    for point in (prev_point, next_point):
+                        point_lat, point_lon = point[0], point[1]
+                        print(exit_lat, exit_lon,point_lat, point_lon)
+                        distance = GeodesicService.geodesic_distance(
+                            exit_lat, exit_lon,
+                            point_lat, point_lon
+                        )
+                        distances[point] = distance
+        #print(exit_lat, exit_lon,point_lat, point_lon)
+        if not distances:
+            raise ValueError("Nema segmenata koji presjecaju sektor")
+        
+        closest_point = min(distances, key=distances.get)
+        return closest_point, distances
+
+    @staticmethod
+    def route_point_closest_to_entry_point(trajectory, polygon_coords, current_position):
+        """
+        Pronalazi točku na ruti najbližu ulaznoj točci i vraća udaljenosti za sve točke
+        
+        Args:
+            trajectory: Lista tuple-a (lat, lon) - koordinate rute
+            polygon_coords: Koordinate poligona
+            current_position: Trenutna pozicija (lat, lon)
+            
+        Returns:
+            tuple: (najbliža_točka, OrderedDict sa udaljenostima za sve točke)
+        """
+        # Pronađi izlaznu točku
+        #trajectory_copy = list(trajectory)
+        with contextlib.redirect_stdout(io.StringIO()):
+            entry_points = GeodesicService.find_entry_point(trajectory, polygon_coords, current_position)
+        if not entry_points:
+            raise ValueError("Nema pronađenih ulaznih točaka")
+        print(f"entry: {entry_points}")
+        entry_lat, entry_lon = entry_points[0], entry_points[1]
+        distances = OrderedDict()
+
+        # Prođi kroz sve segmente rute
+        for i in range(1, len(trajectory)):
+            """ if i == 1:
+                prev_point = current_position
+            else: """
+            prev_point = trajectory[i-1]
+            next_point = trajectory[i]
+            
+            # Ekstrahiraj koordinate (pretpostavka: lat je prvi element, lon drugi)
+            prev_lat, prev_lon = prev_point[0], prev_point[1]
+            next_lat, next_lon = next_point[0], next_point[1]
+            
+            # Napravi linijski segment
+            segment = [(prev_lat, prev_lon), (next_lat, next_lon)]
+            
+            # Provjeri presjek sa sektorom
+            with contextlib.redirect_stdout(io.StringIO()):
+                intersection = GeodesicService.line_sector_intersection(segment, polygon_coords)
+
+            # Ispis ostatka koda ide normalno jer nismo unutar redirect bloka
+            if intersection:
+                for point in (prev_point, next_point):
+                    
+                    if point == (*current_position,0,0):
+                        
+                        continue
+                    point_lat, point_lon = point[0], point[1]
+                    #print(entry_lat, entry_lon, point_lat, point_lon)
+                    distance = GeodesicService.geodesic_distance(
+                        entry_lat, entry_lon,
+                        point_lat, point_lon
+                    )
+                    distances[point] = distance
+                    #print(entry_lat, entry_lon,point_lat, point_lon)
+                    if not distances:
+                        raise ValueError("Nema segmenata koji presjecaju sektor")
+        
+        closest_point = min(distances, key=distances.get)
+        return closest_point, distances
