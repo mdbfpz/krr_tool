@@ -1,9 +1,17 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
 # 5.3.1 Check that aircraft is incoming
 
 # Incoming vertically:
 [?flight2, :aircraftIncomingVerticallyFromAbove, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:upperLimit, ?upperLimit],
     [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
+
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -31,10 +39,6 @@
     [?prevPosition, fx:pos, ?prevLatLon],
     [?prevLatLon, fx:lat, ?prevLat],
     [?prevLatLon, fx:lon, ?prevLon],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:upperLimit, ?upperLimit],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -54,8 +58,12 @@
     ).
 
 [?flight2, :aircraftIncomingVerticallyFromBelow, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
     [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
+
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -84,9 +92,6 @@
     [?prevLatLon, fx:lat, ?prevLat],
     [?prevLatLon, fx:lon, ?prevLon],
 
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:lowerLimit, ?lowerLimit],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -105,19 +110,30 @@
         ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
 
-# DeMorgan
-# TODO: check if the syntax is correct!
+
+[?flight, :aircraftNotIncomingVertically, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftIncomingVerticallyFromAbove, ?sector],
+    NOT [?flight, :aircraftIncomingVerticallyFromBelow, ?sector].
+
 [?flight, :aircraftIncomingVertically, ?sector] :-
-    NOT(
-        NOT [?flight, :aircraftIncomingVerticallyFromAbove, ?sector],
-        NOT [?flight, :aircraftIncomingVerticallyFromBelow, ?sector]
-    ).
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftNotIncomingVertically, ?sector].
     
 
 # Incoming horizontally:
-[?flight, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector] :-
-    NOT [?flight, :withinSectorHorizontally, ?sector],
-    [?flight, :withinSectorVertically, ?sector],
+[?flight2, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:upperLimit, ?upperLimit],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    NOT [?flight2, :withinSectorHorizontally, ?sector],
+    [?flight2, :withinSectorVertically, ?sector],
+
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -145,10 +161,6 @@
     [?prevPosition, fx:pos, ?prevLatLon],
     [?prevLatLon, fx:lat, ?prevLat],
     [?prevLatLon, fx:lon, ?prevLon],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:lowerLimit, ?lowerLimit],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -183,9 +195,14 @@
     ).
 
 
-[?flight, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector] :-
-    NOT [?flight, :withinSectorHorizontally, ?sector],
-    NOT [?flight, :withinSectorVertically, ?sector],
+[?flight2, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:upperLimit, ?upperLimit],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    NOT [?flight2, :withinSectorHorizontally, ?sector],
+    NOT [?flight2, :withinSectorVertically, ?sector],
+
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -213,10 +230,6 @@
     [?prevPosition, fx:pos, ?prevLatLon],
     [?prevLatLon, fx:lat, ?prevLat],
     [?prevLatLon, fx:lon, ?prevLon],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:lowerLimit, ?lowerLimit],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -251,34 +264,44 @@
         )
     ).
 
+[?flight, :aircraftNotIncomingHorizontally, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector],
+    NOT [?flight, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector].
+
 [?flight, :aircraftIncomingHorizontally, ?sector] :-
-    NOT(
-        NOT [?flight, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector],
-        NOT [?flight, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector]
-    ).
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftNotIncomingHorizontally, ?sector].
 
 # The main rule associated with the task
-[?flight, :aircraftIncoming, ?sector] :-
-    NOT(
-        NOT [?flight, :aircraftIncomingVertically, ?sector],
-        NOT [?flight, :aircraftIncomingHorizontally, ?sector]
-    ).
 
+[?flight, :aircraftNotIncoming, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftIncomingVertically, ?sector],
+    NOT [?flight, :aircraftIncomingHorizontally, ?sector].
+
+[?flight, :aircraftIncoming, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftNotIncoming, ?sector].
 
 
 # 5.3.2 Check that aircraft is planned
-"""
-The aircraft is planned if any of its planned route points lie within the given sector.
-"""
-"""
-Obzirom da plan leta ubacujemo svake sekunde u graf (iduću planiranu točku), ne možemo odmah u startu tvrditi da je let planiran
-ukoliko tek neka kasnija točka rute leži u sektoru obzirom da još se ne nalazi u grafu. Najbolje za svaku točku rute (plan leta dobijemo cijeli
-prilikom parsiranja) unutar pipelinea provjeriti pripada li sektoru i onda tu informaciju ubaciti u graf, 
-tj. dodati trojku [?flight, :aircraftIsPlanned, ?sector] kad postoji točka na ruti koja se nalazi u danom sektoru ?sector.
-Eventualno, dodati cijeli plan leta u graf i onda napraviti pravilo koje za svaku točku leta provjerava nalazi li se u sektoru. 
-Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je li planiran. Što ako se plan mijenja?
-"""
 
+#The aircraft is planned if any of its planned route points lie within the given sector.
+# Obzirom da plan leta ubacujemo svake sekunde u graf (iduću planiranu točku), ne možemo odmah u startu tvrditi da je let planiran
+# ukoliko tek neka kasnija točka rute leži u sektoru obzirom da još se ne nalazi u grafu. Najbolje za svaku točku rute (plan leta dobijemo cijeli
+# prilikom parsiranja) unutar pipelinea provjeriti pripada li sektoru i onda tu informaciju ubaciti u graf, 
+# tj. dodati trojku [?flight, :aircraftIsPlanned, ?sector] kad postoji točka na ruti koja se nalazi u danom sektoru ?sector.
+# Eventualno, dodati cijeli plan leta u graf i onda napraviti pravilo koje za svaku točku leta provjerava nalazi li se u sektoru. 
+# Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je li planiran. Što ako se plan mijenja?
 
 # 5.3.3 Check that aircraft has sent the initial call (via datalink)
 [?flight, :aircrafHasSentInitialCall, ?indicator] :-
@@ -294,11 +317,15 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
     ).
 
 
-
 # 5.3.4 Confirm that aircraft can be assumed
 [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
     [?flight, :withinSectorHorizontally, ?sector],
-    NOT [?flight, :withinSectorVertically, ?sector]
+    NOT [?flight, :withinSectorVertically, ?sector],
+
     # Extract previous and current elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -309,10 +336,6 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:lowerLimit, ?lowerLimit],
 
     [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
@@ -342,16 +365,16 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
     ).
 
 [?flight, :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
     NOT [?flight, :withinSectorHorizontally, ?sector],
-    [?flight, :withinSectorVertically, ?sector]
+    [?flight, :withinSectorVertically, ?sector],
+
     # Extract previous and current elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
 
     [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
@@ -364,16 +387,19 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
     FILTER(?timeToReachSector <= ?x).
 
 [?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
     NOT [?flight, :withinSectorHorizontally, ?sector],
-    NOT [?flight, :withinSectorVertically, ?sector]
+    NOT [?flight, :withinSectorVertically, ?sector],
+
     # Extract previous and current elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
+    [?currElement, fx:extension, ?currVRate],
 
     [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
@@ -392,20 +418,26 @@ Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je 
         AS ?distToVerticalLimit
     ),
     BIND(
-        ?distToVerticalLimit/timeToReachSector
+        ?distToVerticalLimit/?timeToReachSector
         AS ?v
     ),
 
     FILTER(
         ?timeToReachSector <= ?x &&
         ?distToVerticalLimit <= ?y &&
-        ABS(?currVRate) >= ?v*60 # ft/min
+        ABS(?currVRate) >= ?v * 60 # ft/min
     ).
 
-# TODO: check syntax!
+[?flight, :aircraftCanNotBeAssumed, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector],
+    NOT [?flight, :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally, ?sector],
+    NOT [?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector].
+
 [?flight, :aircraftCanBeAssumed, ?sector] :-
-    NOT(
-        NOT [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector],
-        NOT [?flight, :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally, ?sector],
-        NOT [?flight, :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally, ?sector]
-    ).
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
+    NOT [?flight, :aircraftCanNotBeAssumed, ?sector].

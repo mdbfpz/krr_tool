@@ -1,13 +1,19 @@
-# 5.4.1. Check that aircraft is flying towards the exit point
-"""
-It only makes sense to look if the A/C is flying towards exit point of a sector when it 
-is inside this sector, otherwise we look if it's flying towards entry point.
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix fb: <http://www.fixm.aero/base/4.3>.
 
-TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the pipilene.
-This point is the last point in the desired branch of the given flight plan. ?point will be a node 
-inside desired or agreed branch (in case there is a change of exit point during the flight)
-"""
-[?flight, :isFlyingTowardsExitPoint ,?flyingTowardsExitPointIndicator] :-
+# 5.4.1. Check that aircraft is flying towards the exit point
+
+# It only makes sense to look if the A/C is flying towards exit point of a sector when it 
+# is inside this sector, otherwise we look if it's flying towards entry point.
+
+# TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the pipilene.
+# This point is the last point in the desired branch of the given flight plan. ?point will be a node 
+# inside desired or agreed branch (in case there is a change of exit point during the flight)
+
+[?flight, :isFlyingTowardsExitPoint, ?flyingTowardsExitPointIndicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
@@ -34,7 +40,6 @@ inside desired or agreed branch (in case there is a change of exit point during 
     ).
 
 
-
 # 5.4.2 Check that aircraft will reach the exit point on the required FL
 [?flight, :aircraftWillReachExitPointOnRequiredFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
@@ -57,7 +62,7 @@ inside desired or agreed branch (in case there is a change of exit point during 
 
     BIND(
         IF(
-            ?exitLevel = 0,
+            ?exitLevel = 0, # TODO: perhaps it won't be zero if missing
             ?clearedLevel,
             ?exitLevel
         )
@@ -65,7 +70,7 @@ inside desired or agreed branch (in case there is a change of exit point during 
     ),
     BIND(
         ?sectorExitLevel - ?currLevel
-        AS ?a
+        AS ?diffLevel
     ),
     BIND(
         ?currSpeed * 0.514444444
@@ -73,27 +78,17 @@ inside desired or agreed branch (in case there is a change of exit point during 
     ),
     BIND(
         ?distToExitPoint/?currSpeedInMS
-        AS ?b
+        AS ?timeToExitPoint
     ),
     BIND(
-        (?a/?b) * 60
+        (?diffLevel/?timeToExitPoint) * 60
         AS ?calculatedVRate
     ),
-
-    """FILTER(
-        (
-            ?calculatedVRate > 0 &&
-            ?calculatedVRate < 800
-        ) ||
-        (
-            ?calculatedVRate < 0 &&
-            ?calculatedVRate > -1400
-        ) ||
-        ?calculatedVRate = 0
-    )."""
     BIND(
         IF(
-            ?calculatedVRate > 0 && ?calculatedVRate < 800 || ?calculatedVRate < 0 && ?calculatedVRate > -1400 || ?calculatedVRate = 0,
+            (?calculatedVRate > 0 && ?calculatedVRate < 800) || 
+            (?calculatedVRate < 0 && ?calculatedVRate > -1400) || 
+            ?calculatedVRate = 0,
             1,
             0
         ) 
@@ -144,10 +139,6 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    """FILTER(
-        ?calculatedVRate >= 800 && 
-        ?calculatedVRate <= 1200
-    )."""
     BIND(
         IF(
             ?calculatedVRate >= 800 && ?calculatedVRate <= 1200,
@@ -201,7 +192,6 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    """FILTER(?calculatedVRate > 1200)."""
     BIND(
         IF(
             ?calculatedVRate > 1200,
@@ -255,10 +245,6 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    """FILTER(
-        ?calculatedVRate >= -3000 && 
-        ?calculatedVRate <= -1400
-    )."""
     BIND(
         IF(
             ?calculatedVRate >= -3000 && ?calculatedVRate <= -1400,
@@ -312,7 +298,6 @@ inside desired or agreed branch (in case there is a change of exit point during 
         AS ?calculatedVRate
     ),
 
-    """FILTER(?calculatedVRate < -3000)."""
     BIND(
         IF(
            ?calculatedVRate < -3000,

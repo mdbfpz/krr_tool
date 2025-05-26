@@ -1,3 +1,8 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
+
 [?flight, :aircraftNotYetAssumed, 1] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
     [?coordStatus, fx:status, "NOT_ASSUMED"].
@@ -161,9 +166,3 @@
         )
         AS ?indicator
     ).
-
-
-"""
-[?flight, :coordinationStatusCanBeChangedToTransferred, 0] :- 
-    NOT [?flight, :coordinationStatusCanBeChangedToTransferred, 1].
-"""

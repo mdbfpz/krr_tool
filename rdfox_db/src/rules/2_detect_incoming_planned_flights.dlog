@@ -1,3 +1,7 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
 # TODO: add ?indicator to all helper rules?
 [?flight, :isAircraftAlreadyAssumed, ?aircraftAlreadyAssumedIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
@@ -24,10 +28,8 @@
         AS ?aircraftAlreadyTransferredIndicator
     ).
 
-"""
-This checks that the aircraft's current position is within the given sector's upper and lower limit.
-"""
-[?flight, :withinSectorVertically, ?sector]
+# This checks that the aircraft's current position is within the given sector's upper and lower limit.
+[?flight, :withinSectorVertically, ?sector] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
@@ -42,36 +44,10 @@ This checks that the aircraft's current position is within the given sector's up
         ?currLevel >= ?lowerLimit*100
     ).
 
-"""
-This checks that the planned route point is within the given sector's upper and lower limit.
-"""
-"""[?flight, :plannedPointWithinSectorVertically, ?sector]
-    [?flight, :agreedElement, ?plannedElement],
-    [?plannedElement, fx:point4D, ?plannedPoint4D],
-    [?plannedPoint4D, fx:level, ?plannedLevel],
-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:lowerLimit, ?lowerLimit],
-    [?sector, ax:upperLimit, ?upperLimit],
-
-    FILTER(?plannedLevel <= ?upperLimit*100),
-    FILTER(?plannedLevel >= ?lowerLimit*100)."""
-
-"""
-This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
-"""
+# This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
 [?flight, :withinSector, ?sector] :-
     [?flight, :withinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
     [?flight, :withinSectorVertically, ?sector].
-
-"""
-This checks that the aircraft's planned route point is within the 3D sector - both horizontally and vertically.
-"""
-"""[?flight, :plannedPointWithinSector, ?sector] :-
-    [?flight, :plannedPointWithinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
-    [?flight, :plannedPointWithinSectorVertically, ?sector]."""
-
 
 # 5.2.1. Check that aircraft is close to Sector boundary
 [?flight, :aircraftCloseToSectorBoundary, ?sector] :-
@@ -116,6 +92,9 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     [?flight, :aircraftCloseToSectorBoundary, ?sector].
 
 [?flight, :aircraftNotCloseToSectorBoundary, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
     NOT [?flight, :plannedAircraftCloseToSectorBoundary, ?sector],
     NOT [?flight, :notPlannedAircraftCloseToSectorBoundary, ?sector].
 
@@ -193,6 +172,9 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     [?flight, :aircraftApproachingToSectorBoundary, ?sector].
 
 [?flight, :aircraftNotApproacingToSectorBoundary, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
     NOT [?flight, :plannedAircraftApproachingToSectorBoundary, ?sector],
     NOT [?flight, :notPlannedAircraftApproachingToSectorBoundary, ?sector].
 
@@ -209,6 +191,9 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     [?flight, :withinSectorVertically, ?sector].
 
 [?flight, :aircraftAltitudeNotWithinSectorBandAltitude, ?sector] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
     NOT [?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector],
     NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
 
@@ -276,20 +261,20 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
     [?currElement, fx:extension, ?currVRate],
 
     [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector]
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSectorVertically, ?sector],
 
-    FILTER(?verticalRate = 0),
-    [?flight, :withinSectorVertically].
+    FILTER(?currVRate = 0).
 
 [?flight, :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
     [?flight, fx:currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
 
     [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector]
+    [?airspace, ax:geometryComponent, ?sector],
+    NOT [?flight, :withinSectorVertically, ?sector],
 
-    FILTER(?verticalRate = 0),
-    NOT [?flight, :withinSectorVertically].
+    FILTER(?currVRate = 0). # TODO: move this "0" to the object ?currVRate in the second fact of the body
 
 [?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector] :-
     [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output
@@ -298,7 +283,3 @@ This checks that the aircraft's planned route point is within the 3D sector - bo
 [?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector] :-
     [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output
     [?flight, :approachingSectorAltitude, ?sector].
-
-"""[?flight, :aircraftIsNotApproachingSectorAltitude, ?sector] :-
-    NOT [?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector],
-    NOT [?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector]."""

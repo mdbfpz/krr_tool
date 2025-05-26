@@ -1,83 +1,83 @@
-"""
-Between each two flights (airplanes) there should be a predicate :conflict with the 
-following structure:
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
 
-?flight1 :conflict ?conflict12.     Where ?conflict12 is a conflict pair node.
-?flight2 :conflict ?conflict12.
-?conflict12 :conflictIndicator ?conflictIndicator.      Where ?conflictIndicator is 1/0.
-?conflict12 :position ?position.
-?conflict12 :minimumDistance ?minDist.
-?conflict12 :distanceToMD ?distToMinDist.
-?conflict12 :timeToMD ?timeToMinDist.
-?position :latitude ?lat.
-?position :longitude ?long.
-?position :altitude ?alt.
+# Between each two flights (airplanes) there should be a predicate :conflict with the 
+# following structure:
 
+# ?flight1 :conflict ?conflict12.     # Where ?conflict12 is a conflict pair node.
+# ?flight2 :conflict ?conflict12.
+# ?conflict12 :conflictIndicator ?conflictIndicator.    # Where ?conflictIndicator is 1/0. Is this needed? Maybe leave the conflict branch missing if no conflict.
+# ?conflict12 :position ?cpaPosition.    # CPA position.
+# ?conflict12 :minimumDistance ?minDist.
+# ?conflict12 :distanceToMD ?distToMinDist.
+# ?conflict12 :timeToMD ?timeToMinDist.
+# ?cpaPosition :latitude ?lat.
+# ?cpaPosition :longitude ?long.
+# ?cpaPosition :altitude ?alt.
 
-We need to import statistics root where each branch represents a flight. 
-Also those flights will have a connection with the flights in each timestamp. 
-?statistics :statsFlight ?flight.
-?flight fx:aircraftIdentification, ?flightID.
-?flight :altStd ?altStd.
-?flight :altMean ?altMean.
-?flight :latMax ?latMax.
-?flight :latMin ?latMin.
-?flight :lonMax ?lonMax.
-?flight :lonMin ?lonMin.
-...
-"""
+# We need to import statistics root where each branch represents a flight. 
+# Also those flights will have a connection with the flights in each timestamp. 
+# ?statistics :statsFlight ?flight.
+# ?flight fx:aircraftIdentification, ?flightID.
+# ?flight :altStd ?altStd.
+# ?flight :altMean ?altMean.
+# ?flight :latMax ?latMax.
+# ?flight :latMin ?latMin.
+# ?flight :lonMax ?lonMax.
+# ?flight :lonMin ?lonMin.
+# ...
+
 
 # TODO: do we need to make this symmetric relation - add [?flight2, :diverging, ?flight1]?
 # TODO: through the pipeline, add: 
 # [?flight1, :distanceBetween, ?flights12], [?flight2, :distanceBetween, ?flights12], [?flights12, :distanceValue, ?value]
 # where both flights are in the same timestamp
 
-[?currFlight1, :diverging, ?currFlight2] :-
+# [?currFlight1, :diverging, ?currFlight2] :-
     # Identify consecutive timestamps
-    [?prevT, :next, ?currT],  
+    # [?prevT, :next, ?currT],  
 
-    [?prevT, :flight, ?prevFlight1],
-    [?prevT, :flight, ?prevFlight2],
-    [?currT, :flight, ?currFlight1],
-    [?currT, :flight, ?currFlight2],
+    # [?prevT, :flight, ?prevFlight1],
+    # [?prevT, :flight, ?prevFlight2],
+    # [?currT, :flight, ?currFlight1],
+    # [?currT, :flight, ?currFlight2],
 
-    [?prevFlight1, :aircraftIdentification, ?prevFlight1ID],
-    [?prevFlight2, :aircraftIdentification, ?prevFlight2ID],
-    [?currFlight1, :aircraftIdentification, ?currFlight1ID],
-    [?currFlight2, :aircraftIdentification, ?currFlight2ID],
+    # [?prevFlight1, :aircraftIdentification, ?prevFlight1ID],
+    # [?prevFlight2, :aircraftIdentification, ?prevFlight2ID],
+    # [?currFlight1, :aircraftIdentification, ?currFlight1ID],
+    # [?currFlight2, :aircraftIdentification, ?currFlight2ID],
 
     # Avoid creation of symmetric relations within this rule. To avoid unnecessary computation, 
     # we create symmetric relations below this rule.
-    NOT [?currFlight2, :diverging, ?currFlight1], 
+    # NOT [?currFlight2, :diverging, ?currFlight1], 
     
     # TODO: can we check this in the previous step?(flight pairs directly without IDs)?
-    FILTER(
-        ?prevFlight1ID = ?currFlight1ID && 
-        ?prevFlight2ID = ?currFlight2ID && 
-        ?prevFlight1ID != ?prevFlight2ID && 
-        ?currFlight1ID != ?currFlight2ID
-    ),
+    # FILTER(
+    #     ?prevFlight1ID = ?currFlight1ID && 
+    #     ?prevFlight2ID = ?currFlight2ID && 
+    #     ?prevFlight1ID != ?prevFlight2ID && 
+    #     ?currFlight1ID != ?currFlight2ID
+    # ),
 
-    [?prevFlight1, :distanceBetween, ?prevFlights12],
-    [?prevFlight2, :distanceBetween, ?prevFlights12],
-    [?prevFlights12, :distanceValue, ?prevValue],
+    # [?prevFlight1, :distanceBetween, ?prevFlights12],
+    # [?prevFlight2, :distanceBetween, ?prevFlights12],
+    # [?prevFlights12, :distanceValue, ?prevValue],
 
-    [?currFlight1, :distanceBetween, ?currFlights12],
-    [?currFlight2, :distanceBetween, ?currFlights12],
-    [?currFlights12, :distanceValue, ?currValue],
+    # [?currFlight1, :distanceBetween, ?currFlights12],
+    # [?currFlight2, :distanceBetween, ?currFlights12],
+    # [?currFlights12, :distanceValue, ?currValue],
 
-    FILTER(?prevValue < ?currValue).
+    # FILTER(?prevValue < ?currValue).
 
 # Make this relation symmetric
-[?flight2, :diverging, ?flight1] :- [?flight1, :diverging, ?flight2].
+# [?flight2, :diverging, ?flight1] :- [?flight1, :diverging, ?flight2].
 
 
 # 5.5.1. Check all aircraft pairs for conflict (ML module)
-"""
-No need to implement this. We have a conflict detection ML module, whose outputs will be 
-directly stored in a graph. To read this information, we just call a corresponding SPARQL 
-query in the pipeline.
-"""
+# No need to implement this. We have a conflict detection ML module, whose outputs will be 
+# directly stored in a graph. To read this information, we just call a corresponding SPARQL 
+# query in the pipeline.
 
 # 5.5.2 Check plausibility of the predicted conflicts
 
@@ -143,8 +143,8 @@ query in the pipeline.
 
 # 5.5.3. Check which conflicts are to occur within the sector
 [?conflict, :conflictWithinSectorVertically, ?sector] :-
-    [?conflict, :conflictPosition, ?position],
-    [?position, :conflictAltitude, ?alt],
+    [?conflict, :position, ?cpaPosition],
+    [?cpaPosition, :conflictAltitude, ?alt],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -163,12 +163,11 @@ query in the pipeline.
 
 
 # 5.5.4. Rank conflicts based on urgency
-"""
-1. It makes no sense to implement sorting algorithim in a Datalog.
-2. Better solution is to implement this in the pipeline as a postprocessing step, 
-where we can use a sorting algorithm, and classify conflicts based on urgency directly in the graph by 
-applying datalog rule:
-"""
+
+# 1. It makes no sense to implement sorting algorithim in a Datalog.
+# 2. Better solution is to implement this in the pipeline as a postprocessing step, 
+# where we can use a sorting algorithm, and classify conflicts based on urgency directly in the graph by 
+# applying datalog rule:
 
 [?conflict, :conflictUrgency, ?urgency] :-
     [?conflict, :conflictIndicator, 1],
@@ -184,7 +183,7 @@ applying datalog rule:
                 "medium",
                 "low"
             )
-        ),
+        )
         AS ?urgency
     ).
 
@@ -202,17 +201,13 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
     
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """FILTER (
-        ?currLevel >= (?altMean - ?altStDev) mod 360 && 
-        ?currLevel <= (?altMean + ?altStDev) mod 360
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - ?altStDev) mod 360 && 
-            ?currLevel <= (?altMean + ?altStDev) mod 360,
+            ?currLevel >= (?altMean - ?altStd) mod 360 && 
+            ?currLevel <= (?altMean + ?altStd) mod 360,
             1,
             0
         )
@@ -229,17 +224,13 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """FILTER (
-        ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
-        ?currLevel <= (?altMean + 2*?altStDev) mod 360
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - 2*?altStDev) mod 360 && 
-            ?currLevel <= (?altMean + 2*?altStDev) mod 360,
+            ?currLevel >= (?altMean - 2*?altStd) mod 360 && 
+            ?currLevel <= (?altMean + 2*?altStd) mod 360,
             2,
             0
         )
@@ -256,17 +247,13 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """FILTER (
-        ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
-        ?currLevel <= (?altMean + 3*?altStDev) mod 360
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - 3*?altStDev) mod 360 && 
-            ?currLevel <= (?altMean + 3*?altStDev) mod 360,
+            ?currLevel >= (?altMean - 3*?altStd) mod 360 && 
+            ?currLevel <= (?altMean + 3*?altStd) mod 360,
             3,
             0
         )
@@ -283,8 +270,8 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
     [?flight, :headingWithinSigmaBand, ?indicator],
     BIND(
@@ -307,16 +294,12 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """ FILTER (
-        ?currLevel >= (?altMean - ?altStDev) && 
-        ?currLevel <= (?altMean + ?altStDev)
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - ?altStDev) && ?currLevel <= (?altMean + ?altStDev),
+            ?currLevel >= (?altMean - ?altStd) && ?currLevel <= (?altMean + ?altStd),
             1,
             0
         )
@@ -333,16 +316,12 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """FILTER (
-        ?currLevel >= (?altMean - 2*?altStDev) && 
-        ?currLevel <= (?altMean + 2*?altStDev)
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - 2*?altStDev) && ?currLevel <= (?altMean + 2*?altStDev),
+            ?currLevel >= (?altMean - 2*?altStd) && ?currLevel <= (?altMean + 2*?altStd),
             2,
             0
         )
@@ -359,16 +338,12 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
-    """FILTER (
-        ?currLevel >= (?altMean - 3*?altStDev) && 
-        ?currLevel <= (?altMean + 3*?altStDev)
-    )."""
     BIND(
         IF(
-            ?currLevel >= (?altMean - 3*?altStDev) && ?currLevel <= (?altMean + 3*?altStDev),
+            ?currLevel >= (?altMean - 3*?altStd) && ?currLevel <= (?altMean + 3*?altStd),
             3,
             0
         )
@@ -384,8 +359,8 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
-    EXISTS ?altStd IN [?flightStats, :altStd, ?altStd],
-    EXISTS ?altMean IN [?flightStats, :altMean, ?altMean],
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
 
     [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator],
     BIND(
@@ -410,10 +385,10 @@ applying datalog rule:
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
     
-    EXISTS ?latMax IN [?flightStats, :latMax, ?latMax],
-    EXISTS ?latMin IN [?flightStats, :latMin, ?latMin],
-    EXISTS ?lonMax IN [?flightStats, :lonMax, ?lonMax],
-    EXISTS ?lonMin IN [?flightStats, :lonMin, ?lonMin],
+    [?flightStats, :latMax, ?latMax],
+    [?flightStats, :latMin, ?latMin],
+    [?flightStats, :lonMax, ?lonMax],
+    [?flightStats, :lonMin, ?lonMin],
 
     BIND(
         IF(

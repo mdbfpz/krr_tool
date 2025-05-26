@@ -1,13 +1,17 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
 #5.6 Execute Aircraft’s Plan 
 
 #5.6.1 Detect aircraft that have to climb/descend to requested FL
-[?flight, :isAtRequestedFL ,?atRequestedFLIndicator] :-
+[?flight, :isAtRequestedFL, ?atRequestedFLIndicator] :-
     [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
+    [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
-    [?currElement,fx:routeChange, ?currRouteChanges],
-    [?currRouteChanges,fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange,fx:level, ?changeFlightLevel],
+    [?currElement, fx:routeChange, ?currRouteChanges],
+    [?currRouteChanges, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?changeFlightLevel],
     BIND(
         IF(
             ?currFlightLevel = ?changeFlightLevel,
@@ -18,13 +22,13 @@
     ).
 
 
-[?flight, :hasToDescendFL ,?descendFLIndicator] :-
+[?flight, :hasToDescendFL, ?descendFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
-    [?currElement,fx:routeChange, ?currRouteChanges],
-    [?currRouteChanges,fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange,fx:level, ?reqFlightLevel],
+    [?currElement, fx:routeChange, ?currRouteChanges],
+    [?currRouteChanges, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?reqFlightLevel],
     
     BIND(
         IF(
@@ -35,9 +39,9 @@
         AS ?descendFLIndicator
     ).
     
-[?flight, :hasToClimbFL,?climbIndicator] :- 
-    [?flight, :isAtRequestedFL,?atRequestedFLIndicator],
-    [?flight, :hasToDescendFL,?descendFLIndicator],
+[?flight, :hasToClimbFL, ?climbIndicator] :- 
+    [?flight, :isAtRequestedFL, ?atRequestedFLIndicator],
+    [?flight, :hasToDescendFL, ?descendFLIndicator],
     BIND(
         IF(
             ?atRequestedFLIndicator = 0 && ?descendFLIndicator = 0,
@@ -103,7 +107,7 @@
 
 #trebam military sector west i east
 [?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, ?plannedTrajectoryWestRestrAirspaceIndicator]:-
-    [?flight, :westMilitaryAirspace, ?airspace]
+    [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
     [?flight, :withinSectorVertically, ?sector], #linije 79 i 141 provjeravaju to u javi
@@ -115,9 +119,9 @@
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    """gledamo kao da se pretvorba headinga obavlja u pipelineu
-       linija 60 - linija 86
-    """
+    # gledamo kao da se pretvorba headinga obavlja u pipelineu
+    #    linija 60 - linija 86
+    # 
     [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
     BIND(
         ?currSpeed * 0.514444444
@@ -137,9 +141,6 @@
         )
         AS ?plannedTrajectoryWestRestrAirspaceIndicator
     ).
-
-"""[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace].
-[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughWestRestrictedAirspace]."""
 
 [?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, ?plannedTrajectoryRestrictedAirspaceIndicator]:-
     [?flight, :eastMilitaryAirspace, ?airspace],
@@ -172,8 +173,3 @@
         )
         AS ?plannedTrajectoryRestrictedAirspaceIndicator
     ).
-
-"""[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 1] :- [?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace].
-[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, 0] :- NOT[?flight, :plannedTrajectoryPassesThroughEastRestrictedAirspace]."""
-
-

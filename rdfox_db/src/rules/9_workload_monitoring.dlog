@@ -1,19 +1,24 @@
-#5.9 Workload Monitoring 
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
-#5.9.1 Track current number of assumed aircraft 
-"""svaki timestamp nam mora imati objekt/atribut koji govori koliko je trenutno assumed aircrafta"""
+# 5.9 Workload Monitoring 
+
+# 5.9.1 Track current number of assumed aircraft 
+# svaki timestamp nam mora imati objekt/atribut koji govori koliko je trenutno assumed aircrafta
 [?timestamp, :assumedAircraftCount, ?numOfAssumedAircraft] :-
     AGGREGATE(
         [?timestamp, fx:flight, ?flight],
-        [?flight, :isAircraftAlreadyAssumed, 1],
+        [?flight, :isAircraftAlreadyAssumed, 1]
         ON ?timestamp
-        BIND(COUNT(?flight) AS ?numOfAssumedAircraft)
-    ).#valjda tak?
+        BIND COUNT(?flight) AS ?numOfAssumedAircraft
+    ).
 
-#5.9.2 Track number of conflicts and potential conflicts  
-[?timestamp, :conflictsCount, ?numOfConflicts]:-
+# 5.9.2 Track number of conflicts and potential conflicts
+[?timestamp, :conflictsCount, ?count]:-
     AGGREGATE(
-
         [?timestamp, fx:flight, ?flight1],
         [?timestamp, fx:flight, ?flight2],
         [?flight1, :aircraftIdentification, ?flightID1],
@@ -32,46 +37,63 @@
         [?currLatLon2, fx:lat, ?currLat2],
         [?currLatLon2, fx:lon, ?currLon2],
         [?currPoint4D2, fx:level, ?currLevel2],
-        BIND(ABS(?currLevel1-?currLevel2) as ?verticalDistance),
-        BIND(6371 as ?R),		# Radius of the earth in km
-        BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
-        BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
-        BIND(?currLat1 * (math:pi/180) AS ?currLatInRad1),
-        BIND(?currLat2 * (math:pi/180) AS ?currLatInRad2),
         BIND(
-            math:pow(math:sin(?diffLatInRad/2), 2) + 
-            math:cos(?currLatInRad1) * math:cos(?currLatInRad2) *
-            math:pow(math:sin(?diffLonInRad/2), 2)
+            ABS(?currLevel1 - ?currLevel2) AS ?verticalDistance
+        ), 
+        BIND(6371 as ?R),		# Radius of the earth in km
+        BIND(
+            (?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad
+        ), 	# deg2rad
+        BIND(
+            (?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad
+        ), 
+        BIND(
+            ?currLat1 * (math:pi/180) AS ?currLatInRad1
+        ),
+        BIND(
+            ?currLat2 * (math:pi/180) AS ?currLatInRad2
+        ),
+        BIND(
+            POW(SIN(?diffLatInRad/2), 2) + COS(?currLatInRad1) * COS(?currLatInRad2) * POW(SIN(?diffLonInRad/2), 2)
             AS ?aCurr
         ),
-        BIND(2 * math:atan2(math:sqrt(?aCurr), math:sqrt(1-?aCurr)) AS ?cCurr),
-        BIND(?R * ?cCurr * 1000 AS ?horizontalDistance),
-        FILTER(?flightID1 != ?flightID2 && ?horizontalDistance <= 18520 && ?verticalDistance <= 1000 )
+        BIND(
+            2 * ATAN2(SQRT(?aCurr), SQRT(1-?aCurr)) AS ?cCurr
+        ),
+        BIND(
+            ?R * ?cCurr * 1000 AS ?horizontalDistance
+        ),
+        FILTER(
+            ?flightID1 != ?flightID2 && 
+            ?horizontalDistance <= 18520 && 
+            ?verticalDistance <= 1000
+        )
         ON ?timestamp
-        BIND(COUNT( ?flight1)/2 AS ?numOfConflicts)
-    ).
+        BIND COUNT(?flight1) AS ?numOfConflicts
+    ),
+    BIND(?numOfConflicts/2 AS ?count).
 
-#TODO- za potetntial conflicts treba u pipelineu implementirati skriptu jer je potrebno usporediti svaki par točaka
+# TODO- za potetntial conflicts treba u pipelineu implementirati skriptu jer je potrebno usporediti svaki par točaka
 
-#5.9.3 Determine future number of sector entries 
-#todo - prekomplicirano za datalog
+# 5.9.3 Determine future number of sector entries 
+# todo - prekomplicirano za datalog
 
-#5.9.4 Determine sector air traffic complexity (ML module) 
-"""trebamo li opce pravilo za ovo?"""
+# 5.9.4 Determine sector air traffic complexity (ML module) 
+# trebamo li opce pravilo za ovo?
 
-#5.9.5 Determine plausibility of traffic complexity assessment 
+# 5.9.5 Determine plausibility of traffic complexity assessment 
 
 [?timestamp2, :hasHighPlausibilty, ?highPlausibilityIndicator] :-
     [?timestamp1, :next, ?timestamp2],
-    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
-    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft],#curr
+    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft], # prev
+    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft], # curr
     [?timestamp1, :conflictModule, ?prevConflictModule],
     [?timestamp2, :conflictModule, ?currConflictModule],
     [?prevConflictModule, :conflicts, ?prevNumOfConflicts],
     [?currConflictModule, :conflicts, ?currNumOfConflicts],
     [?timestamp1, :complexityModule, ?prevComplexityModule],
     [?timestamp2, :complexityModule, ?currComplexityModule],
-    [?prevComplexityModule, :complexity, ?prevComplexity],#TODO: dodati u graf module
+    [?prevComplexityModule, :complexity, ?prevComplexity], # TODO: dodati u graf module
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
@@ -86,46 +108,19 @@
         )
         AS ?highPlausibilityIndicator
     ).
-    """
-    FILTER(
-        (?currComplexity > ?prevComplexity) && (?currN > ?prevN) ||
-        (?currComplexity < ?prevComplexity) && (?currN < ?prevN) ||
-        (?currN = ?prevN) && ABS(?currComplexity - ?prevComplexity) <= 0.5 #ovo provjeriti, u AISAi ima complexity tolerance +- 0.5
-    ).
-
-    referenca je 5.4.2 za ovaj nacin pisanja filtera
-    FILTER(
-
-        !(
-            !(
-                (?currComplexity > ?prevComplexity),
-                (?currN > ?prevN),
-            )&&
-            !(
-                (?currComplexity < ?prevComplexity),
-                (?currN < ?prevN),
-            )&&
-            !(
-                ABS(?currComplexity - ?prevComplexity) <= 0.5,#ovo provjeriti, u AISAi ima complexity tolerance +- 0.5
-                (?currN = ?prevN),
-            )
-
-        )
-    ).
-    """
 
 [?timestamp2, :hasMediumPlausibilty, ?mediumPlausabilityIndicator] :-
     [?timestamp2, :hasHighPlausibilty, 0],
     [?timestamp1, :next, ?timestamp2],
-    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
-    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft],#curr
+    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft], # prev
+    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft], # curr
     [?timestamp1, :conflictModule, ?prevConflictModule],
     [?timestamp2, :conflictModule, ?currConflictModule],
     [?prevConflictModule, :conflicts, ?prevNumOfConflicts],
     [?currConflictModule, :conflicts, ?currNumOfConflicts],
     [?timestamp1, :complexityModule, ?prevComplexityModule],
     [?timestamp2, :complexityModule, ?currComplexityModule],
-    [?prevComplexityModule, :complexity, ?prevComplexity],#TODO: dodati u graf module
+    [?prevComplexityModule, :complexity, ?prevComplexity], # TODO: dodati u graf module
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
@@ -141,43 +136,19 @@
         )
         AS ?mediumPlausabilityIndicator
     ).
-    """    deMorgan
-    FILTER(
-
-        !(
-            !(
-                (?currComplexity > ?prevComplexity),
-                (?currN = ?prevN),
-                
-            )&&
-            !(
-                (?currComplexity < ?prevComplexity),
-                (?currN = ?prevN),
-            )&&
-            !(
-                ABS(?currComplexity - ?prevComplexity) <= 0.5,
-                (?currN > ?prevN),
-            )&&
-            !(
-                ABS(?currComplexity - ?prevComplexity) <= 0.5,
-                (?currN < ?prevN),
-            )
-        )
-    ).
-    """
 
 [?timestamp2, :hasLowPlausibilty, ?lowPlausabilityIndicator] :-
     [?timestamp2, :hasMediumPlausibilty, 0],
     [?timestamp1, :next, ?timestamp2],
-    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft],#prev
-    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft],#curr
+    [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft], # prev
+    [?timestamp2, :assumedAircraft, ?currNumOfAssumedAircraft], # curr
     [?timestamp1, :conflictModule, ?prevConflictModule],
     [?timestamp2, :conflictModule, ?currConflictModule],
     [?prevConflictModule, :conflicts, ?prevNumOfConflicts],
     [?currConflictModule, :conflicts, ?currNumOfConflicts],
     [?timestamp1, :complexityModule, ?prevComplexityModule],
     [?timestamp2, :complexityModule, ?currComplexityModule],
-    [?prevComplexityModule, :complexity, ?prevComplexity],#TODO: dodati u graf module
+    [?prevComplexityModule, :complexity, ?prevComplexity], # TODO: dodati u graf module
     [?currComplexityModule, :complexity, ?currComplexity],
     BIND(?prevNumOfConflicts + ?prevNumOfAssumedAircraft AS ?prevN),
     BIND(?currNumOfConflicts + ?currNumOfAssumedAircraft AS ?currN),
@@ -190,21 +161,3 @@
         )
         AS ?lowPlausabilityIndicator
     ).
-    
-    """referenca je 5.4.2 za ovaj nacin pisanja filtera"""
-    """FILTER(
-
-        !(
-            !(
-                (?currComplexity > ?prevComplexity),
-                (?currN < ?prevN),
-            )&&
-            !(
-                (?currComplexity < ?prevComplexity),
-                (?currN > ?prevN),
-            )
-           
-        )
-    )."""
-
-
