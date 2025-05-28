@@ -58,9 +58,10 @@ class Processor:
         while True:
             received_data = await self.converter_queue.get_from_queue()
             print("Got from queue: ", received_data["data_type"], "\n", received_data["data"] )
-            turtle_data = self.rdf_converter.run(
+            self.rdf_converter.convert(
                 received_data["data"].decode("utf-8") # Convert bytes to string using UTF-8 encoding
             )
+            turtle_data = self.rdf_converter.serialize().decode("utf-8")
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):
