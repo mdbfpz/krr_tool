@@ -1,0 +1,161 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
+#5.8.1 Detect direct-to candidates 
+
+[?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator] :-
+    #tu nam je potreban izracun flagova u pipelineu - računaju se azimuti između parova tocaka za svaki sektor zasebno
+    #pravim se da u east i west flag imam rezultate
+    [?flight, :eastMilitarySectorFlag, ?eastFlag],
+    [?flight, :westMilitarySectorFlag, ?westFlag],
+    #trebam output drugog pravila
+    # pitanje je je li moguce koristiti if i triplete unutar binda, zato mijenjam na expressione
+    [?flight, :isEastMilitaryAreaActive, ?eastMilitaryActiveIndicator],
+    [?flight, :isWestMilitaryAreaActive, ?westMilitaryActiveIndicator],
+
+    [?flight, :isEastMilitaryAreaInactive, ?eastMilitaryInactiveIndicator],
+    [?flight, :isWestMilitaryAreaInactive, ?westMilitaryInactiveIndicator],
+    BIND(
+        IF(
+            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 1) ||
+    
+            #u drugom uvjetu imam provjeru za west 
+            ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 1) && (?westFlag = 0) ||
+        
+            #u trecem uvjetu imam provjeru za east i west         
+            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 0) ||
+        
+            #zadnji uvjet        
+            (?eastFlag = 1) && (?westFlag = 1),
+            1,
+            0
+        )
+        AS ?candidateForDirectToIndicator
+    ).
+   
+
+#5.8.2 Determine military airspace availability
+[?flight, :westMilitaryAirspace, ?airspace] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+    [?airspace, ax:localType, "MILITARY OPERATING AREA"],
+    [?airspace, ax:name, "LS-T/TRA_WEST"].
+
+[?flight, :eastMilitaryAirspace, ?airspace] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+    [?airspace, ax:localType, "MILITARY OPERATING AREA"],
+    [?airspace, ax:name, "LS-T/TRA_EAST"].
+
+[?flight, :isWestMilitaryAreaActive,?westMilitaryAreaActiveIndicator] :-
+    [?flight, :westMilitaryAirspace, ?airspace],
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "ACTIVE",
+            1,
+            0
+        )
+        AS ?westMilitaryAreaActiveIndicator
+    ).
+
+[?flight, :isEastMilitaryAreaActive,?eastMilitaryAreaActiveIndicator] :-
+    [?flight, :eastMilitaryAirspace, ?airspace],
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "ACTIVE",
+            1,
+            0
+        )
+        AS ?eastMilitaryAreaActiveIndicator
+    ).
+
+
+
+[?flight, :isWestMilitaryAreaInactive,?westMilitaryAreaInactiveIndicator] :-
+    [?flight, :westMilitaryAirspace, ?airspace],
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "INACTIVE",
+            1,
+            0
+        )
+        AS ?westMilitaryAreaInactiveIndicator
+    ).
+
+[?flight, :isEastMilitaryAreaInactive,?eastMilitaryAreaInactiveIndicator] :-
+    [?flight, :eastMilitaryAirspace, ?airspace],
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:status, ?activationStatus],
+    BIND(
+        IF(
+            ?activationStatus = "INACTIVE",
+            1,
+            0
+        )
+        AS ?eastMilitaryAreaInactiveIndicator
+    ).
+
+#ovo dodavanje west/east usagea mozda i ne treba
+[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
+    [?flight, :isWestMilitaryAreaActive, 1],
+    BIND("Aircraft can't use previously reserved military airspace." as ?westUsage).
+
+[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
+    [?flight, :isWestMilitaryAreaActive, 0],
+    [?flight, :isWestMilitaryAreaInactive, 1],
+    BIND("Aircraft can now use previously reserved military airspace." as ?westUsage).
+
+[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
+    [?flight, :isWestMilitaryAreaActive, 0],
+    [?flight, :isWestMilitaryAreaInactive, 0],
+    BIND("Aircraft can conditionally use previously reserved military airspace (possible coordination with military required)." as ?westUsage).
+
+[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
+    [?flight, :isEastMilitaryAreaActive, 1],
+    BIND("Aircraft can't use previously reserved military airspace." as ?eastUsage).
+
+[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
+    [?flight, :isEastMilitaryAreaActive, 0],
+    [?flight, :isEastMilitaryAreaInactive, 1],
+    BIND("Aircraft can now use previously reserved military airspace." as ?eastUsage).
+
+[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
+    [?flight, :isEastMilitaryAreaActive, 0],
+    [?flight, :isEastMilitaryAreaInactive, 0],
+    BIND("Aircraft can conditionally use previously reserved military airspace (possible coordination with military required)." as ?eastUsage).
+
+#5.8.3 Check suggestion for shortened RBT  
+# nije implementiran u javi
+# Ivan Tukaric kaže da vjerojatno nećemo imati ovo pravilo
+[?flight, :conflictsInSuggestedRBT, 1] :-
+    [?flight, :westMilitaryAirspace, ?airspace],
+    [?flight, :isWestMilitaryAreaActive, 0],
+    [?flight, :isWestMilitaryAreaInactive, 1],#gledam samo inactive radi odredivanja ima li konflikata il nema, ako je aktivna vojna zona nije prigodan rbt suggestion pa nit ne provjeravamo
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+    [?flight, :desiredElement, ?desiredElement],
+    [?desiredElement, fx:point4D, ?desiredPoint4D],
+    [?flight, :suggestedRbtIntersectsMilitaryArea, 0],#TODO: implementirati u pipelineu provjeru prolazi li suggested rbt kroz vojnu zonu
+    [?desiredPoint4D, fx:position, ?desiredPosition],
+    [?desiredPosition, fx:pos, ?desiredLatLon],
+    [?desiredLatLon, fx:lat, ?desiredLat],
+    [?desiredLatLon, fx:lon, ?desiredLon],
+    #ovo je samo ideja kako konflikt modul može vratiti potrebne podatke
+    [?conflictModul, :firstInputFlight, ?flight],
+    [?conflictModul, :closestFlight, ?flight2],
+    [?flight2, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+    FILTER(ABS(?desiredLon - ?currLon) <= 10 && ABS(?desiredLat - ?currLat) <= 1000).#nesto u ovom smislu?
+    

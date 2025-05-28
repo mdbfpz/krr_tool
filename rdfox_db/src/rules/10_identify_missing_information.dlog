@@ -1,0 +1,150 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
+#5.10.1  Identify aircraft with possible equipment degradation
+[?flight, :hasEquipmentDegradation, ?equipmentDegradationIndicator] :-
+    [?flight, :datalink, ?datalink], #valjda je ovako definiran predikat i objekt
+    [?datalink, :equipmentDegradation, ?equipmentDegradation],
+    BIND(
+        IF(
+            ?equipmentDegradation = "YES",
+            1,
+            0
+        )
+        AS ?equipmentDegradationIndicator
+    ).
+
+
+
+#5.10.2 Check situation at destination airport
+
+[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-
+    
+    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, :operationalStatus, ?operationalStatus],    
+    BIND(
+        IF(
+            ?operationalStatus = "NORMAL",
+            0,
+            1
+        )
+        AS ?airportOpStatusIndicator
+    ).
+
+[?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
+    
+    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, :warning, ?warning],    
+    BIND(
+        IF(
+            ?warning = "NO_WARNING",
+            0,
+            1
+        )
+        AS ?airportWarningIndicator
+    ).                                    
+
+#spoji flight s airportheliport
+
+[?flight, :destinationAirportHeliport, ?airportHeliport] :-
+    [?flight, :arrival, ?arrival],
+    [?arrival, :destinationAerodrome, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+[?flight, :departureAirportHeliport, ?airportHeliport] :-
+    [?flight, :departure, ?departure],
+    [?departure, :departureAerodrome, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+#5.10.3 check situation at alternate airport
+
+#spojiti flight/alternateAerodrome s airportHeliport
+[?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-
+    [?flight, :arrival, ?arrival],
+    [?arrival, :destinationAerodromeAlternate, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+[?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-
+    [?flight, :departure, ?departure],
+    [?departure, :departureAerodromeAlternate, ?aerodrome],
+    [?aerodrome, :locationIndicator, ?locationIndicator],
+    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+
+#5.10.4  Monitor adverse weather areas
+[?flight2, :areWeatherConditionsChanged, ?changedWeatherConditionsIndicator] :-
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:metData, ?currMeteorologicalData],
+    [?currMeteorologicalData, fx:temperature, ?currTemperature],
+    [?currMeteorologicalData, fx:windSpeed, ?currWindSpeed],
+    [?currMeteorologicalData, fx:windDirection, ?currWindDirection],
+    #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
+    [?currMeteorologicalData, fx:extension, ?currMeterologicalDataExtension],
+    [?currMeterologicalDataExtension, :icing, ?currIcing],
+    [?currMeterologicalDataExtension, :precipitation, ?currPrecipitation],
+    [?currMeterologicalDataExtension, :cloudCoverage, ?currCloudCoverage],
+    [?currMeterologicalDataExtension, :thunder, ?currThunder],
+
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:metData, ?prevMeteorologicalData],
+    [?prevMeteorologicalData, fx:temperature, ?prevTemperature],
+    [?prevMeteorologicalData, fx:windSpeed, ?prevWindSpeed],
+    [?prevMeteorologicalData, fx:windDirection, ?prevWindDirection],
+    #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
+    [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
+    [?prevMeterologicalDataExtension, :icing, ?prevIcing],
+    [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
+    [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
+    [?prevMeterologicalDataExtension, :thunder, ?prevThunder],
+    BIND(
+        IF(
+            ?currTemperature = ?prevTemperature && ?currWindSpeed && ?prevWindSpeed && ?currWindDirection = ?prevWindDirection && 
+            ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage && ?currThunder = ?prevThunder,
+            0,
+            1
+        )
+        AS ?changedWeatherConditionsIndicator
+    ).     
+
+
+#5.10.5 Monitor restricted airspace 
+[?flight2, :canNewActionsBeTaken, ?noNewActionsIndicator] :- 
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, :withinSector, ?sector1],
+    [?airspace1, ax:geometryComponent, ?sector1],
+    [?airspace1, ax:activation, ?airspaceActivation1],
+    [?airspaceActivation1, ax:status, ?status1],
+    [?flight2, :withinSector, ?sector2],
+    [?airspace2, ax:geometryComponent, ?sector2],
+    [?airspace2, ax:activation, ?airspaceActivation2],
+    [?airspaceActivation2, ax:status, ?status2],
+    BIND(
+        IF(
+            ?airspace1 = ?airspace2 && ?airspaceActivation1 = ?airspaceActivation2 && ?sector1 = ?sector2 && ?status1 = ?status2,
+            0,
+            1
+        )
+        AS ?noNewActionsIndicator
+    ).      

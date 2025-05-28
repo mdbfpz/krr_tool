@@ -1,0 +1,49 @@
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix fb: <http://www.fixm.aero/base/4.3>.
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
+@prefix hmi: <http://www.fixm.aero/hmi/1.0/>.
+
+# Create transitivity closure between different (current, agreed, desired, predicted) 
+# route-trajectory elements and flights.
+
+[?flight, :currentElement, ?currentElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:current, ?currentRouteTrajectory],
+    [?currentRouteTrajectory, fx:element, ?currentElement].
+
+[?flight, :agreedElement, ?agreedElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:agreed, ?agreedRouteTrajectory],
+    [?agreedRouteTrajectory, fx:element, ?agreedElement].
+
+[?flight, :desiredElement, ?desiredElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:desired, ?desiredRouteTrajectory],
+    [?desiredRouteTrajectory, fx:element, ?desiredElement].
+
+[?flight, :predictedElement, ?predictedElement] :-
+    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+    [?routeTrajectoryContainer, fx:predicted, ?predictedRouteTrajectory],
+    [?predictedRouteTrajectory, fx:element, ?predictedElement].
+
+
+# TODO: provjeriti sintaksu za ovo ispod!
+# Assign :next predicate to consecutive timestamps
+[?timestamp1, :next, ?timestamp2] :-
+    [?timestamp1, :timestamp, ?time1],
+    [?timestamp2, :timestamp, ?time2],
+    [?timestamp3, :timestamp, ?time3],
+    NOT EXISTS ?time3 IN(
+        [?timestamp3, :timestamp, ?time3],
+        FILTER(
+            ?time2 > ?time1 && 
+            ?time3 > ?time1 && 
+            ?time3 < ?time2
+        )
+    ).
+
+
+# When aircraft passes the planned point, we need to update the "agreed" branch to point to new 
+# planned position.

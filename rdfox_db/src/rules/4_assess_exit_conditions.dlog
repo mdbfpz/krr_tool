@@ -1,0 +1,308 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
+@prefix fb: <http://www.fixm.aero/base/4.3>.
+
+# 5.4.1. Check that aircraft is flying towards the exit point
+
+# It only makes sense to look if the A/C is flying towards exit point of a sector when it 
+# is inside this sector, otherwise we look if it's flying towards entry point.
+
+# TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the pipilene.
+# This point is the last point in the desired branch of the given flight plan. ?point will be a node 
+# inside desired or agreed branch (in case there is a change of exit point during the flight)
+
+[?flight, :isFlyingTowardsExitPoint, ?flyingTowardsExitPointIndicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, :isFlyingTowardsClearedPoint, 1], # Task 1.10
+
+    [?flight, fx:agreedElement, ?clearedElement],
+    [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
+    [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
+    [?clearedDesignatedPoint, fb:designator, ?clearedDesignator],
+    [?clearedDesignator, rdf:value, ?clearValue],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:elementStartPoint, ?exitPointElementSP],
+    [?exitPointElementSP, fb:designatedPoint, ?exitDesignatedPoint],
+    [?exitDesignatedPoint, fb:designator, ?exitDesignator],
+    [?exitDesignator, rdf:value, ?exitValue], # If this matches with ?value above, then it's flying towards exit point
+    BIND(
+        IF(
+            ?clearValue = ?exitValue,
+            1,
+            0
+        )
+        AS ?flyingTowardsExitPointIndicator
+    ).
+
+
+# 5.4.2 Check that aircraft will reach the exit point on the required FL
+[?flight, :aircraftWillReachExitPointOnRequiredFL, ?indicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, fx:agreed, ?clearedElement],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:level, ?clearedLevel],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+
+    BIND(
+        IF(
+            ?exitLevel = 0, # TODO: perhaps it won't be zero if missing
+            ?clearedLevel,
+            ?exitLevel
+        )
+        AS ?sectorExitLevel
+    ),
+    BIND(
+        ?sectorExitLevel - ?currLevel
+        AS ?diffLevel
+    ),
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToExitPoint/?currSpeedInMS
+        AS ?timeToExitPoint
+    ),
+    BIND(
+        (?diffLevel/?timeToExitPoint) * 60
+        AS ?calculatedVRate
+    ),
+    BIND(
+        IF(
+            (?calculatedVRate > 0 && ?calculatedVRate < 800) || 
+            (?calculatedVRate < 0 && ?calculatedVRate > -1400) || 
+            ?calculatedVRate = 0,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).
+
+[?flight, :climbToExitFL, ?indicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, fx:agreed, ?clearedElement],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:level, ?clearedLevel],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+
+    BIND(
+        IF(
+            ?exitLevel = 0,
+            ?clearedLevel,
+            ?exitLevel
+        )
+        AS ?sectorExitLevel
+    ),
+    BIND(
+        ?sectorExitLevel - ?currLevel
+        AS ?a
+    ),
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToExitPoint/?currSpeedInMS
+        AS ?b
+    ),
+    BIND(
+        (?a/?b) * 60
+        AS ?calculatedVRate
+    ),
+
+    BIND(
+        IF(
+            ?calculatedVRate >= 800 && ?calculatedVRate <= 1200,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).
+
+[?flight, :aircraftWillNotReachExitPointOnRequiredFL, ?indicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, fx:agreed, ?clearedElement],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:level, ?clearedLevel],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+
+    BIND(
+        IF(
+            ?exitLevel = 0,
+            ?clearedLevel,
+            ?exitLevel
+        )
+        AS ?sectorExitLevel
+    ),
+    BIND(
+        ?sectorExitLevel - ?currLevel
+        AS ?a
+    ),
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToExitPoint/?currSpeedInMS
+        AS ?b
+    ),
+    BIND(
+        (?a/?b) * 60
+        AS ?calculatedVRate
+    ),
+
+    BIND(
+        IF(
+            ?calculatedVRate > 1200,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).
+
+[?flight, :descendToExitFL, ?indicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, fx:agreed, ?clearedElement],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:level, ?clearedLevel],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+
+    BIND(
+        IF(
+            ?exitLevel = 0,
+            ?clearedLevel,
+            ?exitLevel
+        )
+        AS ?sectorExitLevel
+    ),
+    BIND(
+        ?sectorExitLevel - ?currLevel
+        AS ?a
+    ),
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToExitPoint/?currSpeedInMS
+        AS ?b
+    ),
+    BIND(
+        (?a/?b) * 60
+        AS ?calculatedVRate
+    ),
+
+    BIND(
+        IF(
+            ?calculatedVRate >= -3000 && ?calculatedVRate <= -1400,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).
+
+[?flight, :expediteDescend, ?indicator] :-
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+
+    [?flight, fx:agreed, ?clearedElement],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:level, ?clearedLevel],
+
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+
+    BIND(
+        IF(
+            ?exitLevel = 0,
+            ?clearedLevel,
+            ?exitLevel
+        )
+        AS ?sectorExitLevel
+    ),
+    BIND(
+        ?sectorExitLevel - ?currLevel
+        AS ?a
+    ),
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToExitPoint/?currSpeedInMS
+        AS ?b
+    ),
+    BIND(
+        (?a/?b) * 60
+        AS ?calculatedVRate
+    ),
+
+    BIND(
+        IF(
+           ?calculatedVRate < -3000,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).

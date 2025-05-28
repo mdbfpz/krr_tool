@@ -1,0 +1,450 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix hmi: <http://www.fixm.aero/hmi/1.0/>.
+
+# Helper rules
+[?flight, :qosCandidate, ?indicator] :-
+    [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator], # TODO: provjeriti ovo, zar ne treba provjera za točku rute je li kandidat, a ne samo indikator?
+
+    # Is there a Requested Flight Level (RFL) which hasn't been given, i.e. higher than current FL
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:routeChange, ?currRouteChange],
+    [?currRouteChange, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?changeFlightLevel],
+    [?flight, :hasToClimbFL, ?hasToClimbFLIndicator],
+    BIND(
+        IF(
+            ?candidateForDirectToIndicator = 1 || ?hasToClimbFLIndicator = 1,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+# Check that aircraft is approaching sector boundary
+# -- this is already implemented in monitoring tasks (5.2.2), but for not assumed A/C's
+[?flight2, :approachingSectorBoundary, ?sector] :-
+    # Identify consecutive timestamps
+    [?prevT, :next, ?currT],  
+    # Bind flights at each timestamp
+    [?prevT, :flight, ?flight1],
+    [?currT, :flight, ?flight2],
+    # Extract the same flights only
+    [?flight1, :aircraftIdentification, ?flightID],
+    [?flight2, :aircraftIdentification, ?flightID],
+
+    # Extract previous and current elements for the flight at each timestamp
+    [?flight1, :currentElement, ?prevElement],
+    [?flight2, :currentElement, ?currElement],
+
+    [?flight2, :isAircraftAlreadyTransferred, 0],
+    NOT [?flight2, :withinSector, ?sector],
+    
+    # Extract previous and current positions and flight levels
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, fx:position, ?prevPosition],
+    [?prevPosition, fx:pos, ?prevLatLon],
+    [?prevLatLon, fx:lat, ?prevLat],
+    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPoint4D, fx:level, ?prevLevel],
+    [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    BIND(
+        MINFN(
+            ABS(?upperLimit*100 - ?currLevel), 
+            ABS(?lowerLimit*100 - ?currLevel)
+        )
+        AS ?currVerticalDistanceToSector
+    ),
+
+    BIND(
+        MINFN(
+            ABS(?upperLimit*100 - ?prevLevel), 
+            ABS(?lowerLimit*100 - ?prevLevel)
+        )
+        AS ?prevVerticalDistanceToSector
+    ),
+
+    FILTER(
+        ?currMinDist < ?prevMinDist ||
+        ?currVerticalDistanceToSector < ?prevVerticalDistanceToSector
+    ).
+
+
+# 1 ENTRY CONFLICT RESOLUTION
+[?flight, :activeTask, "entry_conflict_resolution"] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+
+    # A/C is in conflict
+    [?flight, :conflict, ?conflict], 
+    # Separation falling under a certain value (e.g. minDistance < 5 NM)
+    [?conflict, :minimumDistance, ?minDistance],
+    FILTER(?minDistance < 5),
+
+    # The A/C is outside the sector
+    NOT [?flight, :withinSector, ?sector],
+
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"].
+
+# 2 EXIT CONFLICT RESOLUTION
+[?flight, :activeTask, "exit_conflict_resolution"] :-
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+
+    # A/C is in conflict
+    [?flight, :conflict, ?conflict],
+    # The conflict is outside the sector
+    NOT [?conflict, :conflictWithinSector, ?sector],
+    # Separation falling under a certain value (e.g. minDistance < 5 NM)
+    [?conflict, :minimumDistance, ?minDistance],
+    FILTER(?minDistance < 5),
+
+    # The A/C is inside the sector
+    [?flight, :withinSector, ?sector],
+
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"].
+
+# 3. QOS PLANNING
+[?flight, :activeTask, "qos_planning"] :-
+    # A/C coordination status is ASSUMED or NOT_ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, ?statusValue],
+    FILTER(
+        ?statusValue = "ASSUMED" || ?statusValue = "NOT_ASSUMED"
+    ),
+
+    # A/C is not in conflict
+    [?flight, :conflict, ?conflict], # We need to make sure each fight has a conflict node, even if it is not in conflict
+    [?conflict, :conflictIndicator, 0],
+
+    # A/C is a QOS candidate
+    [?flight, :qosCandidate, 1].
+
+
+# 4. ENTRY COORDINATION
+[?flight, :entryCoordTaskHelper, 1] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+    
+    # A/C is outside the sector and approaching
+    [?flight, :approachingSectorBoundary, ?sector],
+
+    # A/C is not in conflict nor a QOS candidate
+    [?flight, :conflict, ?conflict],
+    [?conflict, :conflictIndicator, 0],
+    NOT [?flight, :qosCandidate, 1].
+
+[?flight, :activeTask, "entry_coordination"] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+    
+    # A/C is outside the sector and approaching
+    [?flight, :approachingSectorBoundary, ?sector],
+
+    # A/C is in conflict or a QOS candidate
+    NOT [?flight, :entryCoordTaskHelper, 1].
+
+
+# 5. EXIT COORDINATION
+[?flight, :activeTask, "exit_coordination"] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+    
+    # Current FL is not the same as the exit FL
+    [?flight, :isAtExitFL, 0].
+
+
+# 6. ASSUME AIRCRAFT
+[?flight, :activeTask, "assume_aircraft"] :-
+    # A/C coordination status is 'NOT_ASSUMED'
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "NOT_ASSUMED"].
+
+
+# 7. TRANSFER AIRCRAFT
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "transfer_aircraft"] :-
+    # A/C coordination status is 'ASSUMED'
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+
+    # A/C is within the sector - is this needed? Because it is checked in the rules below.
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+
+    # Exit conditions are met
+    [?flight, :isFlyingTowardsExitPoint, 1],
+    [?flight, :aircraftWillReachExitPointOnRequiredFL, 1].
+
+
+# 8. CONFLICT DETECTION
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "conflict_detection"] :-
+    # A/C is in conflict - detected by the Conflict detection module
+    [?flight, :conflict, ?conflict],
+
+    # Check the time
+    [?conflict, :timeToMD, ?timeToMinDist],
+    BIND(5 AS ?timeThreshold), # Time in minutes
+    FILTER(?timeToMinDist > 5).
+
+
+# 9. CONFLICT RESOLUTION
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "conflict_resolution"] :-
+    # A/C is in conflict - detected by the Conflict detection module
+    [?flight, :conflict, ?conflict],
+
+    # Check the time
+    [?conflict, :timeToMD, ?timeToMinDist],
+    BIND(5 AS ?timeThreshold), # Time in minutes
+    FILTER(?timeToMinDist < 5).
+
+
+# 10. NON-CONFORMANCE RESOLUTION
+# TODO: Compare this with the diagram when it is finished
+# TODO: Chek IF conditions!
+[?flight, :nonConformanceFL, ?indicator] :-
+    [?flight, :isAtCFL, ?indicatorAt],
+    [?flight, :isClimbingToCFL, ?indicatorClimbing],
+    [?flight, :isDescendingToCFL, ?indicatorDescending],
+
+    BIND(
+        IF(
+            (?indicatorAt = 0 && (?indicatorClimbing = 1 || ?indicatorDescending = 1)) ||
+            (?indicatorAt = 1 && ?indicatorClimbing = 0 && ?indicatorDescending = 0),
+            0,
+            1
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonConformanceHeading, ?indicator] :-        
+    [?flight, :isAtClearedHeading, ?indicatorAt],
+    [?flight, :isTurningTowardsClearedHeading, ?indicatorTo],
+    [?flight, :isTurningOppositeOfClearedHeading, ?indicatorOpposite],
+
+    BIND(
+        IF(
+            (?indicatorAt = 0 && ?indicatorTo = 1 && ?indicatorOpposite = 0) ||
+            (?indicatorAt = 1 && ?indicatorTo = 0 && ?indicatorOpposite = 0),
+            0,
+            1
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonConformanceSpeed, ?indicator] :-
+    [?flight, :isFlyingAtClearedSpeed, ?indicatorAt],
+    [?flight, :isAcceleratingToClearedSpeed, ?indicatorAccTo],
+    [?flight, :isAcceleratingWithinClearedSpeed, ?indicatorAccWithin],
+    [?flight, :isDeceleratingToClearedSpeed, ?indicatorDecTo],
+    [?flight, :isDeceleratingWithinClearedSpeed, ?indicatorDecWithin],
+
+    BIND(
+        IF(
+            (?indicatorAt = 0 && (?indicatorAccTo = 1 || ?indicatorAccWithin = 1 || ?indicatorDecTo = 1 || ?indicatorDecWithin = 1)) ||
+            (?indicatorAt = 1 && ?indicatorAccTo = 0 && ?indicatorAccWithin = 0 && ?indicatorDecTo = 0 && ?indicatorDecWithin = 0),
+            0,
+            1
+        )
+        AS ?indicator
+    ).
+
+
+[?flight, :nonConformancePoint, ?indicator] :-
+    [?flight, :notFlyingToClearPoint, ?indicatorToPoint],
+
+    BIND(
+        IF(
+            ?indicatorToPoint = 1,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonConformanceVerticalRate, ?indicator] :-
+    [?flight, :isAtClearedVerticalRate, ?indicatorAt],
+    [?flight, :isVerticalRateWithinClearedVerticalRate, ?indicatorWithin],
+    [?flight, :isIncreasingToClearedVerticalRate, ?indicatorIncreasing],
+    [?flight, :isDecreasingToClearedVerticalRate, ?indicatorDecreasing],
+    [?flight, :isIncreasingWithinClearedVerticalRate, ?indicatorIncreasingWithin],
+    [?flight, :isDecreasingWithinClearedVerticalRate, ?indicatorDecreasingWithin],
+
+    BIND(
+        IF(
+            ((?indicatorAt = 0 || ?indicatorWithin = 0) && (?indicatorIncreasing = 1 || ?indicatorDecreasing = 1 || ?indicatorIncreasingWithin = 1 || ?indicatorDecreasingWithin = 1)) ||
+            ((?indicatorAt = 1 || ?indicatorWithin = 1) && ?indicatorIncreasing = 0 && ?indicatorDecreasing = 0 && ?indicatorIncreasingWithin = 0 && ?indicatorDecreasingWithin = 0),
+            0,
+            1
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonConformance3Dtrajectory, ?indicator] :-
+    [?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, ?indicatorFLTolerance],
+    [?flight, :isDeviationFrom3DtrajectoryWithinTolerance, ?indicatorDeviationTolerance],
+
+    BIND(
+        IF(
+            ?indicatorFLTolerance = 1 && ?indicatorDeviationTolerance = 1,
+            0,
+            1
+        )
+        AS ?indicator
+    ).
+        
+# isFlightLevelBust?
+# isPassingCFL?
+# isMaintainingFL?
+# isMaintainingCurrentHeading?
+# isMaintainingClearedHeading?
+# isMaintainingCurrentSpeed?
+# isMaintainingClearedSpeed?
+# flyingOnClearedHeading?
+# isAtClearedPoint?
+# isMaintainingClearedVerticalRate?
+
+[?flight, :nonConfResHelper, 1] :-
+    [?flight, a, fx:Flight], # TODO: add this type to new flight node instances!
+    NOT [?flight, :nonConformanceFL, 1],
+    NOT [?flight, :nonConformanceHeading, 1],
+    NOT [?flight, :nonConformanceSpeed, 1],
+    NOT [?flight, :nonConformancePoint, 1],
+    NOT [?flight, :nonConformanceVerticalRate, 1],
+    NOT [?flight, :nonConformance3Dtrajectory, 1].
+
+[?flight, :activeTask, "non_conformance_resolution"] :-
+    [?flight, a, fx:Flight], # TODO: add this type to new flight node instances!
+    NOT [?flight, :nonConfResHelper, 1].
+
+# 11. QoS IMPROVEMENT
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "qos_improvement"] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+
+    # A/C is not in conflict
+    [?flight, :conflict, ?conflict], # We need to make sure each fight has a conflict node, even if it is not in conflict
+    [?conflict, :conflictIndicator, 0],
+
+    # Next point is not the same as the exit point
+    [?flight, :isFlyingTowardsExitPoint, 0],
+
+    # FL (requested/stated in flight plan/max?) can be higher than the current FL
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+
+    [?currElement, fx:routeChange, ?currRouteChanges],
+    [?currRouteChanges, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?reqFlightLevel],
+
+    [?flight, :desiredElement, ?desiredElement],
+    [?desiredElement, fx:point4D, ?desiredPoint4D],
+    [?desiredPoint4D, fx:level, ?desiredFlightLevel],
+    FILTER(
+        ?desiredFlightLevel > ?currFlightLevel || ?reqFlightLevel > ?currFlightLevel
+    ).
+
+# 12. EXIT CONDITIONS
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "exit_conditions"] :-
+    # Exit conditions are met
+    [?flight, :isFlyingTowardsExitPoint, 1],
+    [?flight, :aircraftWillReachExitPointOnRequiredFL, 1].
+
+
+# 13. SAFETY NET ALERTS
+# TODO: Compare this with the diagram when it is finished
+
+# Assume HMI Structure:
+#    hmi:relatedFlight
+#    hmi:alert
+#    hmi:alertStatus
+#    hmi:alertType (RAM, CLAM, STCA, Area proximity warning)
+
+[?flight, :activeTask, "safety_net_alerts"] :-
+    # Join HMI info and FIXM on flight
+    [?flight, a, fx:Flight],
+    [?hmi, hmi:relatedFlight, ?flight],
+
+    # Assure the alert status is ON
+    [?hmi, hmi:alert, ?alert],
+    [?alert, hmi:alertStatus, "ON"].
+
+
+# 14. AIRCRAFT REQUESTS
+# TODO: Compare this with the diagram when it is finished
+# [?flight, :activeTask, "aircraft_requests"] :-
+#    ...
+
+
+# 15. ZONE CONFLICT
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "zone_conflict"] :-
+    # A/C whose route (per flight plan or predicted) goes through a zone (military, weather etc.) 
+    [?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, ?indicatorEast], # TODO: check if those methods follow the "(per flight plan or predicted)" condition
+    [?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, ?indicatorWest],
+    FILTER(?indicatorEast = 1 || ?indicatorWest = 1).
+
+
+# 16. RETURN TO ROUTE
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "return_to_route"] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+
+    # A/C's heading is assigned
+    [?flight, :isClearedHeadingAssigned, 1],
+
+    # A/C is deviating from the route
+    [?flight, :isDeviationFrom3DtrajectoryWithinTolerance, 0].
+
+
+# 17. ENTRY CONDITIONS
+# TODO: Compare this with the diagram when it is finished
+[?flight, :activeTask, "entry_conditions"] :-
+    # A/C coordination status is ASSUMED
+    [?flight, fx:coordinationStatus, ?coordStatus],
+    [?coordStatus, fx:status, "ASSUMED"],
+
+    # CFL is lower than the sector lower boundary
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    FILTER(?currLevel < ?lowerLimit).
+
+# 18. COORDINATION RESPONSE
+# TODO: Compare this with the diagram when it is finished
+# [?flight, :activeTask, "coordination_response"] :-
+#    ...

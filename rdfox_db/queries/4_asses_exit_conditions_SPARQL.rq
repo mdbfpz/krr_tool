@@ -1,0 +1,9 @@
+# 5.4.1. Check that aircraft is flying towards the exit point
+SELECT ?flight ?flyingTowardsExitPointIndicator WHERE {?flight :isFlyingTowardsExitPoint ?flyingTowardsExitPointIndicator}
+
+#5.4.2 Check that aircraft will reach the exit point on the required FL
+SELECT ?flight ?reachingExitPointOnRequiredFLIndicator WHERE {?flight :aircraftWillReachExitPointOnRequiredFL ?reachingExitPointOnRequiredFLIndicator}
+SELECT ?flight ?climbToExitFLIndicator WHERE {?flight :climbToExitFL ?climbToExitFLIndicator}
+SELECT ?flight ?notReachingExitPointOnRequiredFLIndicator WHERE {?flight :aircraftWillNotReachExitPointOnRequiredFL ?notReachingExitPointOnRequiredFLIndicator}
+SELECT ?flight ?descendToExitFLIndicator WHERE {?flight :descendToExitFL ?descendToExitFLIndicator}
+SELECT ?flight ?expediteDescendIndicator WHERE {?flight :expediteDescend ?expediteDescendIndicator}

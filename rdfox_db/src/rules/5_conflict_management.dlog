@@ -1,0 +1,401 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
+# Between each two flights (airplanes) there should be a predicate :conflict with the 
+# following structure:
+
+# ?flight1 :conflict ?conflict12.     # Where ?conflict12 is a conflict pair node.
+# ?flight2 :conflict ?conflict12.
+# ?conflict12 :conflictIndicator ?conflictIndicator.    # Where ?conflictIndicator is 1/0. Is this needed? Maybe leave the conflict branch missing if no conflict.
+# ?conflict12 :position ?cpaPosition.    # CPA position.
+# ?conflict12 :minimumDistance ?minDist.
+# ?conflict12 :distanceToMD ?distToMinDist.
+# ?conflict12 :timeToMD ?timeToMinDist.
+# ?cpaPosition :latitude ?lat.
+# ?cpaPosition :longitude ?long.
+# ?cpaPosition :altitude ?alt.
+
+# We need to import statistics root where each branch represents a flight. 
+# Also those flights will have a connection with the flights in each timestamp. 
+# ?statistics :statsFlight ?flight.
+# ?flight fx:aircraftIdentification, ?flightID.
+# ?flight :altStd ?altStd.
+# ?flight :altMean ?altMean.
+# ?flight :latMax ?latMax.
+# ?flight :latMin ?latMin.
+# ?flight :lonMax ?lonMax.
+# ?flight :lonMin ?lonMin.
+# ...
+
+
+# TODO: do we need to make this symmetric relation - add [?flight2, :diverging, ?flight1]?
+# TODO: through the pipeline, add: 
+# [?flight1, :distanceBetween, ?flights12], [?flight2, :distanceBetween, ?flights12], [?flights12, :distanceValue, ?value]
+# where both flights are in the same timestamp
+
+# [?currFlight1, :diverging, ?currFlight2] :-
+    # Identify consecutive timestamps
+    # [?prevT, :next, ?currT],  
+
+    # [?prevT, :flight, ?prevFlight1],
+    # [?prevT, :flight, ?prevFlight2],
+    # [?currT, :flight, ?currFlight1],
+    # [?currT, :flight, ?currFlight2],
+
+    # [?prevFlight1, :aircraftIdentification, ?prevFlight1ID],
+    # [?prevFlight2, :aircraftIdentification, ?prevFlight2ID],
+    # [?currFlight1, :aircraftIdentification, ?currFlight1ID],
+    # [?currFlight2, :aircraftIdentification, ?currFlight2ID],
+
+    # Avoid creation of symmetric relations within this rule. To avoid unnecessary computation, 
+    # we create symmetric relations below this rule.
+    # NOT [?currFlight2, :diverging, ?currFlight1], 
+    
+    # TODO: can we check this in the previous step?(flight pairs directly without IDs)?
+    # FILTER(
+    #     ?prevFlight1ID = ?currFlight1ID && 
+    #     ?prevFlight2ID = ?currFlight2ID && 
+    #     ?prevFlight1ID != ?prevFlight2ID && 
+    #     ?currFlight1ID != ?currFlight2ID
+    # ),
+
+    # [?prevFlight1, :distanceBetween, ?prevFlights12],
+    # [?prevFlight2, :distanceBetween, ?prevFlights12],
+    # [?prevFlights12, :distanceValue, ?prevValue],
+
+    # [?currFlight1, :distanceBetween, ?currFlights12],
+    # [?currFlight2, :distanceBetween, ?currFlights12],
+    # [?currFlights12, :distanceValue, ?currValue],
+
+    # FILTER(?prevValue < ?currValue).
+
+# Make this relation symmetric
+# [?flight2, :diverging, ?flight1] :- [?flight1, :diverging, ?flight2].
+
+
+# 5.5.1. Check all aircraft pairs for conflict (ML module)
+# No need to implement this. We have a conflict detection ML module, whose outputs will be 
+# directly stored in a graph. To read this information, we just call a corresponding SPARQL 
+# query in the pipeline.
+
+# 5.5.2 Check plausibility of the predicted conflicts
+
+[?flight1, :conflictPredictionImplausible, ?flight2] :- 
+    # Make sure we look for the flights in the same timestamp
+    [?t, :flight, ?flight1],
+    [?t, :flight, ?flight2],
+
+    [?flight1, :aircraftIdentification, ?flight1ID],
+    [?flight2, :aircraftIdentification, ?flight2ID],
+
+    FILTER(?flight1ID != ?flight2ID),
+
+    [?flight1, :conflict, ?conflict12],
+    [?flight2, :conflict, ?conflict12],
+    [?conflict12, :distanceToMD, ?distToMinDist],
+    [?conflict12, :timeToMD, ?timeToMinDist],
+
+    [?flight1, :currentElement, ?currElement1],
+    [?flight2, :currentElement, ?currElement2],
+    [?currElement1, fx:point4D, ?currPoint4D1],
+    [?currPoint4D1, fx:predictedAirspeed, ?currSpeed1],
+    [?currElement2, fx:point4D, ?currPoint4D2],
+    [?currPoint4D2, fx:predictedAirspeed, ?currSpeed2],
+
+    BIND(
+        ?timeToMinDist*(?currSpeed1/3600)
+        AS ?dist1
+    ),
+    BIND(
+        ?timeToMinDist*(?currSpeed2/3600)
+        AS ?dist2
+    ),
+    BIND(5 AS ?distTolerance),
+
+    FILTER(
+        !(
+            ?dist1 <= ?distToMinDist + ?distTolerance && 
+            ?dist1 >= ?distToMinDist - ?distTolerance && 
+            ?dist2 <= ?distToMinDist + ?distTolerance && 
+            ?dist2 >= ?distToMinDist - ?distTolerance
+        )
+    ).
+
+[?flight1, :conflictPredictionPlausible, ?flight2] :- 
+    # Make sure we look for the flights in the same timestamp
+    [?t, :flight, ?flight1],
+    [?t, :flight, ?flight2],
+
+    [?flight1, :aircraftIdentification, ?flight1ID],
+    [?flight2, :aircraftIdentification, ?flight2ID],
+
+    FILTER(?flight1ID != ?flight2ID),
+
+    # Assure there are conflict information
+    [?flight1, :conflict, ?conflict12],
+    [?flight2, :conflict, ?conflict12],
+    [?conflict12, :distanceToMD, ?distToMinDist],
+    [?conflict12, :timeToMD, ?timeToMinDist],
+
+    NOT [?flight1, :conflictPredictionImplausible, ?flight2].
+
+
+# 5.5.3. Check which conflicts are to occur within the sector
+[?conflict, :conflictWithinSectorVertically, ?sector] :-
+    [?conflict, :position, ?cpaPosition],
+    [?cpaPosition, :conflictAltitude, ?alt],
+
+    [?aixmFeatures, :contains, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?sector, ax:lowerLimit, ?lowerLimit],
+    [?sector, ax:upperLimit, ?upperLimit],
+
+    FILTER(
+        ?alt <= ?upperLimit*100 && 
+        ?alt >= ?lowerLimit*100
+    ).
+
+[?conflict, :conflictWithinSector, ?sector] :-
+    # TODO: ovo prvo implementirati u pipelineu - isto kao i za aircraft iz pipelinea (ista je funkcija)
+    [?conflict, :conflictWithinSectorHorizontally, ?sector],
+    [?conflict, :conflictWithinSectorVertically, ?sector].
+
+
+# 5.5.4. Rank conflicts based on urgency
+
+# 1. It makes no sense to implement sorting algorithim in a Datalog.
+# 2. Better solution is to implement this in the pipeline as a postprocessing step, 
+# where we can use a sorting algorithm, and classify conflicts based on urgency directly in the graph by 
+# applying datalog rule:
+
+[?conflict, :conflictUrgency, ?urgency] :-
+    [?conflict, :conflictIndicator, 1],
+    [?conflict, :timeToMD, ?timeToMD],
+
+    BIND(?timeToMD/60 AS ?timeToMDInMinutes),
+    BIND(
+        IF(
+            ?timeToMDInMinutes < 1, 
+            "high",
+            IF(
+                ?timeToMDInMinutes <= 5,
+                "medium",
+                "low"
+            )
+        )
+        AS ?urgency
+    ).
+
+
+# 5.5.5. Check if conflict pair aircraft data matches ML conflict module metadata
+
+#TODO: these set of roules could be more efficient if there's a way to use the same rule for all sigmas?
+[?flight, :headingWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+    
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - ?altStd) mod 360 && 
+            ?currLevel <= (?altMean + ?altStd) mod 360,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :headingWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 2*?altStd) mod 360 && 
+            ?currLevel <= (?altMean + 2*?altStd) mod 360,
+            2,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :headingWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 3*?altStd) mod 360 && 
+            ?currLevel <= (?altMean + 3*?altStd) mod 360,
+            3,
+            0
+        )
+        AS ?indicator
+    ).
+
+
+[?flight, :headingOutside3SigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],  
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    [?flight, :headingWithinSigmaBand, ?indicator],
+    BIND(
+        IF(
+            ?indicator != 3,
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+#TODO: How to say which non-heading parameter is within sigma band?
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - ?altStd) && ?currLevel <= (?altMean + ?altStd),
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 2*?altStd) && ?currLevel <= (?altMean + 2*?altStd),
+            2,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    BIND(
+        IF(
+            ?currLevel >= (?altMean - 3*?altStd) && ?currLevel <= (?altMean + 3*?altStd),
+            3,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :nonHeadingParameterOutside3SigmaBand, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],  
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+
+    [?flightStats, :altStd, ?altStd],
+    [?flightStats, :altMean, ?altMean],
+
+    [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator],
+    BIND(
+        IF(
+            ?indicator != 3,#ne znam ako je legalno: NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3],
+            1,
+            0
+        )
+        AS ?indicator
+    ).
+
+[?flight, :positionWithinBoundingBox, ?indicator] :-
+    [?flight, :conflict, ?conflict],
+    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPosition, fx:pos, ?currLatLon],
+    [?currLatLon, fx:lat, ?currLat],
+    [?currLatLon, fx:lon, ?currLon],
+    
+    [?statistics, :statsFlight, ?flightStats],
+    [?flightStats, fx:aircraftIdentification, ?flightID],
+    
+    [?flightStats, :latMax, ?latMax],
+    [?flightStats, :latMin, ?latMin],
+    [?flightStats, :lonMax, ?lonMax],
+    [?flightStats, :lonMin, ?lonMin],
+
+    BIND(
+        IF(
+            ?currLat >= ?latMin && ?currLat <= ?latMax && 
+            ?currLon >= ?lonMin && ?currLon <= ?lonMax,
+            1,
+            0
+        ) 
+        AS ?indicator
+    ).

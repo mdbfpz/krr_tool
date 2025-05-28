@@ -1,0 +1,24 @@
+#5.10.1  Identify aircraft with possible equipment degradation
+SELECT ?flight ?equipmentDegradationIndicator WHERE {?flight :hasEquipmentDegradation ?equipmentDegradationIndicator}
+#5.10.2 Check situation at destination airport
+SELECT ?flight ?airportHeliport ?airportOpStatusIndicator WHERE {
+    ?flight :destinationAirportHeliport ?airportHeliport .
+    ?airportHeliport :notifyOpStatus ?airportOpStatusIndicator
+    }
+SELECT ?flight ?airportHeliport ?airportWarningIndicator WHERE {
+    ?flight :destinationAirportHeliport ?airportHeliport .
+    ?airportHeliport :notifyAirportWarning ?airportWarningIndicator
+    }
+#5.10.3 check situation at alternate airport
+SELECT ?flight ?alternateAirportHeliport ?airportOpStatusIndicator WHERE {
+    ?flight :alternateDestinationAirportHeliport ?alternateAirportHeliport .
+    ?alternateAirportHeliport :notifyOpStatus ?airportOpStatusIndicator
+    }
+SELECT ?flight ?alternateAirportHeliport ?airportWarningIndicator WHERE {
+    ?flight :alternateDestinationAirportHeliport ?alternateAirportHeliport .
+    ?alternateAirportHeliport :notifyAirportWarning ?airportWarningIndicator
+    }
+#5.10.4  Monitor adverse weather areas
+SELECT ?flight ?changedWeatherConditionsIndicator WHERE {?flight :areWeatherConditionsChanged ?changedWeatherConditionsIndicator}
+#5.10.5 Monitor restricted airspace
+SELECT ?flight ?noNewActionsIndicator WHERE {?flight :canNewActionsBeTaken ?noNewActionsIndicator}

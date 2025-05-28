@@ -1,0 +1,23 @@
+# 5.3.1 Check that aircraft is incoming
+
+# Incoming vertically:
+SELECT ?flight ?sectorAircraftIncomingToVerticallyFromAbove WHERE {?flight :aircraftIncomingVerticallyFromAbove ?sectorAircraftIncomingToVerticallyFromAbove}
+SELECT ?flight ?sectorAircraftIncomingToVerticallyFromBelow WHERE {?flight :aircraftIncomingVerticallyFromBelow ?sectorAircraftIncomingToVerticallyFromBelow}
+SELECT ?flight ?sectorAircraftIncomingToVertically WHERE {?flight :aircraftIncomingVertically ?sectorAircraftIncomingToVertically}
+SELECT ?flight ?sectorAircraftIncomingToHorizontallyWhenWithinVertically WHERE {?flight :aircraftIncomingHorizontallyWhenInSectorVertically ?sectorAircraftIncomingToHorizontallyWhenWithinVertically}
+SELECT ?flight ?sectorAircraftIncomingToHorizontallyWhenNotWithinVertically WHERE {?flight :aircraftIncomingHorizontallyWhenNotInSectorVertically ?sectorAircraftIncomingToHorizontallyWhenNotWithinVertically}
+SELECT ?flight ?sectorAircraftIncomingToHorizontally WHERE {?flight :aircraftIncomingHorizontally ?sectorAircraftIncomingToHorizontally}
+SELECT ?flight ?sectorAircraftIncomingTo WHERE {?flight :aircraftIncoming ?sectorAircraftIncomingTo}
+
+# 5.3.2 Check that aircraft is planned
+"""TODO: rule yet to be implemented"""
+
+# 5.3.3 Check that aircraft has sent the initial call (via datalink)
+SELECT ?flight ?initialCallSentIndicator WHERE {?flight :aircrafHasSentInitialCall ?initialCallSentIndicator}
+
+# 5.3.4 Confirm that aircraft can be assumed
+"""horz=horizontally, vert=vertically"""
+SELECT ?flight ?sectorWhereAircraftWhenInSectorHorzNotVertCanBeAssumed WHERE {?flight :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically ?sectorWhereAircraftWhenInSectorHorzNotVertCanBeAssumed}
+SELECT ?flight ?sectorWhereAircraftWhenInSectorVertNotHorzCanBeAssumed WHERE {?flight :aircraftCanBeAssumedWhenInSectorVerticallyNotHorizontally ?sectorWhereAircraftWhenInSectorVertNotHorzCanBeAssumed}
+SELECT ?flight ?sectorWhereAircraftWhenNotInSectorVertHorzCanBeAssumed WHERE {?flight :aircraftCanBeAssumedWhenNotInSectorVerticallyAndHorizontally ?sectorWhereAircraftWhenNotInSectorVertHorzCanBeAssumed}
+SELECT ?flight ?sectorWhereAircraftCanBeAssumed WHERE {?flight :aircraftCanBeAssumed ?sectorWhereAircraftCanBeAssumed}

@@ -1,0 +1,19 @@
+#5.9.1 Track current number of assumed aircraft
+SELECT ?timestamp ?numOfAssumedAircraft WHERE {?timestamp :assumedAircraftCount ?numOfAssumedAircraft}
+
+#5.9.2 Track number of conflicts and potential conflicts
+SELECT ?timestamp ?numOfConflicts WHERE {?timestamp :conflictsCount ?numOfConflicts}
+#ovo se mora u pipelineu implementirati
+SELECT ?timestamp ?numOfPotentialConflicts WHERE {?timestamp :potentialConflictsCount ?numOfConflicts}
+
+#5.9.3 Determine future number of sector entries 
+#todo - prekomplicirano za datalog
+
+#5.9.4 Determine sector air traffic complexity (ML module) 
+#TODO u pipelineu? ovaj query samo ideja
+SELECT ?sector ?airTrafficComplexity WHERE {?sector :determineAirTrafficComplexity ?airTrafficComplexity}
+
+#5.9.5 Determine plausibility of traffic complexity assessment 
+SELECT ?timestamp ?highPlausibilityIndicator WHERE {?timestamp :hasHighPlausibilty ?highPlausibilityIndicator}
+SELECT ?timestamp ?mediumPlausabilityIndicator WHERE {?timestamp :hasMediumPlausibilty ?mediumPlausabilityIndicator}
+SELECT ?timestamp ?lowPlausabilityIndicator WHERE {?timestamp :hasLowPlausibilty ?lowPlausabilityIndicator}

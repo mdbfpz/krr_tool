@@ -1,0 +1,15 @@
+#5.8.1 Detect direct-to candidates 
+SELECT ?flight ?candidateForDirectToIndicator WHERE {?flight :isCandidateForDirectTo ?candidateForDirectToIndicator}
+
+#5.8.2 Determine military airspace availability
+SELECT ?flight ?westAirspace WHERE {?flight :westMilitaryAirspace ?westAirspace}
+SELECT ?flight ?eastAirspace WHERE {?flight :eastMilitaryAirspace ?eastAirspace}
+
+SELECT ?flight ?westMilitaryAreaActiveIndicator WHERE {?flight :isWestMilitaryAreaActive ?westMilitaryAreaActiveIndicator}
+SELECT ?flight ?eastMilitaryAreaActiveIndicator WHERE {?flight :isEastMilitaryAreaActive ?eastMilitaryAreaActiveIndicator}
+
+SELECT ?flight ?westMilitaryAreaInactiveIndicator WHERE {?flight :isWestMilitaryAreaInactive ?westMilitaryAreaInactiveIndicator}
+SELECT ?flight ?eastMilitaryAreaInactiveIndicator WHERE {?flight :isEastMilitaryAreaInactive ?eastMilitaryAreaInactiveIndicator}
+
+SELECT ?flight ?westUsage WHERE {?flight :westMilitaryAirspaceUsage ?westUsage}
+SELECT ?flight ?eastUsage WHERE {?flight :eastMilitaryAirspaceUsage ?eastUsage}

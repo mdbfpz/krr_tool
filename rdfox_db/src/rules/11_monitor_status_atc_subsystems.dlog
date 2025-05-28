@@ -1,0 +1,171 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix : <http://aisa-project.eu/adsb#>.
+@prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
+
+#5.11  Monitor Status of ATC Sub-systems
+
+#5.11.1  Monitor performance of ATC conflict detection module
+#TODO
+# need previous and current position of two fligths (each pair)
+# need output from module (let's say we have a node in graph representing module's output)
+# need distance between two flights' positions - pretend we have function implemented in python put in a graph
+
+[?conflictModule, :isSatisfactoryConflictModel, ?satisfactoryConflictModelIndicator]:-
+    # vidi s ivanom za ovaj task
+    [?timestamp, :conflictModule, ?conflictModule],
+
+    # prev and curr for flight 1
+    [?prevT1, :next, ?currT1],  
+    # Bind flights at each timestamp
+    [?prevT1, :flight, ?flight1P],
+    [?currT1, :flight, ?flight1C],
+    # Extract the same flights only
+    [?flight1P, :aircraftIdentification, ?flightID1],
+    [?flight1C, :aircraftIdentification, ?flightID1],
+
+    # prev and curr for flight 2
+    [?prevT2, :next, ?currT2],  
+    # Bind flights at each timestamp
+    [?prevT2, :flight, ?flight2P],
+    [?currT2, :flight, ?flight2C],
+    # Extract the same flights only
+    [?flight2P, :aircraftIdentification, ?flightID2],
+    [?flight2C, :aircraftIdentification, ?flightID2],
+
+    [?flight1C, :conflict, ?conflict12C],
+    [?flight2C, :conflict, ?conflict12C],
+    [?conflict12C, :minimumDistance, ?minDistC],
+
+    [?flight1P, :conflict, ?conflict12P],
+    [?flight2P, :conflict, ?conflict12P],
+    [?conflict12P, :aircraftDistance, ?previousOutput],
+    # Extract previous and current position for the flight2 at each timestamp
+    # Extract previous and current position for the flight1 at each timestamp
+    [?flight1P, :currentElement, ?prevElement1],
+    [?flight1C, :currentElement, ?currElement1],
+    [?prevElement1,fx:point4D, ?prevPoint4D1],    
+    [?prevPoint4D1, fx:position, ?prevPosition1],
+    [?prevPosition1, fx:pos, ?prevLatLon1],
+    [?prevLatLon1, fx:lat, ?prevLat1],
+    [?prevLatLon1, fx:lon, ?prevLon1],
+    [?currElement1,fx:point4D, ?currPoint4D1],    
+    [?currPoint4D1, fx:position, ?currPosition1],
+    [?currPosition1, fx:pos, ?currLatLon1],
+    [?currLatLon1, fx:lat, ?currLat1],
+    [?currLatLon1, fx:lon, ?currLon1],
+    [?flight2P, :currentElement, ?prevElement2],
+    [?flight2C, :currentElement, ?currElement2],
+    [?prevElement2, fx:point4D, ?prevPoint4D2],    
+    [?prevPoint4D2, fx:position, ?prevPosition2],
+    [?prevPosition2, fx:pos, ?prevLatLon2],
+    [?prevLatLon2, fx:lat, ?prevLat2],
+    [?prevLatLon2, fx:lon, ?prevLon2],
+    [?currElement2,fx:point4D, ?currPoint4D2],    
+    [?currPoint4D2, fx:position, ?currPosition2],
+    [?currPosition2, fx:pos, ?currLatLon2],
+    [?currLatLon2, fx:lat, ?currLat2],
+    [?currLatLon2, fx:lon, ?currLon2],
+
+    #calculate haversine distance
+    
+    BIND(6371 as ?R),		# Radius of the earth in km
+    BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
+    BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
+    BIND(?currLat1 * (math:pi/180) AS ?currLatInRad1),
+    BIND(?currLat2 * (math:pi/180) AS ?currLatInRad2),
+    BIND(
+        POW(SIN(?diffLatInRad/2), 2) + 
+        COS(?currLatInRad1) * COS(?currLatInRad2) *
+        POW(SIN(?diffLonInRad/2), 2)
+        AS ?aCurr
+    ),
+    BIND(2 * ATAN2(SQRT(?aCurr), SQRT(1-?aCurr)) AS ?cCurr),
+    BIND(?R * ?cCurr * 1000 AS ?currDistance),
+    
+    BIND((?prevLat2 - ?prevLat1) * (math:pi/180) AS ?prevDiffLatInRad),	# deg2rad
+    BIND((?prevLon2 - ?prevLon1) * (math:pi/180) AS ?prevDiffLonInRad),
+    BIND(?prevLat1 * (math:pi/180) AS ?prevLatInRad1),
+    BIND(?prevLat2 * (math:pi/180) AS ?prevLatInRad2),
+    BIND(
+        POW(SIN(?diffLatInRad/2), 2) + 
+        COS(?prevLatInRad1) * COS(?prevLatInRad2) *
+        POW(SIN(?diffLonInRad/2), 2)
+        AS ?aPrev
+    ),
+    BIND(2 * ATAN2(SQRT(?aPrev), SQRT(1-?aPrev)) AS ?cPrev),
+    BIND(?R * ?cPrev * 1000 AS ?prevDistance),
+
+    BIND(
+        IF(
+            ?currDistance > ?prevDistance && (?previousOutput = 0 || ?minDistC=?previousOutput),
+            0,
+            1
+        )
+        AS ?satisfactoryConflictModelIndicator
+    ).
+
+    # """
+    # # Extract output from ML module for this pair of flights
+    # """treba dogovorit kako bude to napravljeno,
+    # npr bind identifikacija letova u neki ključ koji predstavlja u modelu da se izracuna distanca za ta dva leta?
+    # ili nesto tipa:
+    # [?modul, :firstInput, ?flight1],
+    # [?modul, :secondInput, ?flight2],
+    # [?modul, :calcDistance, ?dist]
+
+    # recimo da je scenarij ovakav:
+    # """
+    # """[?conflictModul, :firstInputFlight, ?flightID1],
+    # [?conflictModul, :secondInputFlight, ?flightID2],
+    # [?conflictModul, :calculateDistance, ?modulDistance],"""
+    
+    
+# """
+# [?conflictModul, :isSatisfactoryConflictModel, 1] :- NOT[?conflictModul, :satisfactoryConflictModel].
+# [?conflictModul, :isSatisfactoryConflictModel, 0] :- [?conflictModul, :satisfactoryConflictModel].
+# ovo treba još pogledati kaj bi se točno trebalo returnati- ako treba dodati varijable
+# koje budu predstavljale output iz jave https://github.com/Tukaric/FPZ-AISA-WP4-clone/blob/main/java/moduli/Taskovi11/Task11_1.java - linija 78"""
+
+#5.11.2  Monitor performance of complexity assessment module  
+# treba dodati cvor za complexityModule i povezati ga s timestampom
+[?complexityModule, :isSatisfactoryComplexityModel, ?satisfactoryComplexityModuleIndicator] :-
+    [?timestamp, :complexityModule, ?complexityModule],
+    [?timestamp, :hasHighPlausibilty, ?highPlausibilityIndicator],
+    [?timestamp, :hasMediumPlausibilty, ?mediumPlausabilityIndicator],
+    
+    BIND(
+        IF(
+            ?highPlausibilityIndicator = 1 || ?mediumPlausabilityIndicator = 1,
+            1,
+            0
+        )
+        AS ?satisfactoryComplexityModuleIndicator
+    ).
+
+
+#5.11.3  Monitor performance of trajectory prediction module
+#if trajectory prediction is gonna be put in predicted element branch:
+[?flight, :doesModelSatisfyTrajectoryPrediction, ?satisfactoryTrajectoryModelIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:position, ?currPosition],
+    [?currPoint4D, fx:time, ?currPoint4DTime],
+    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?flight, :predictedElement, ?predElement],
+    [?predElement, fx:point4D, ?predPoint4D],
+    [?predPoint4D, fx:level, ?predFlightLevel],
+    [?predPoint4D, fx:position, ?predPosition],
+    [?predPoint4D, fx:time, ?predPoint4DTime],
+    [?predPoint4DTime, fx:absoluteTime, ?predTime],
+    
+    BIND(
+        IF(
+            ABS(?currPosition - ?predPosition) <= 2.5 && 
+            ABS(?currTime - ?predTime) <= 30 && 
+            ABS(?currFlightLevel - ?predFlightLevel) <= 100,
+            1,
+            0
+        )
+        AS ?satisfactoryTrajectoryModelIndicator
+    ).

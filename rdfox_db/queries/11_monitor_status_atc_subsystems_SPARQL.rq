@@ -1,0 +1,7 @@
+#5.11.1  Monitor performance of ATC conflict detection module
+SELECT ?conflictModul ?satisfactoryConflictModelIndicator WHERE {?conflictModul :isSatisfactoryConflictModel ?satisfactoryConflictModelIndicator}
+#5.11.2  Monitor performance of complexity assessment module 
+SELECT ?complexityModule ?satisfactoryComplexityModuleIndicator WHERE {?flight :isSatisfactoryComplexityModel ?satisfactoryComplexityModuleIndicator}
+
+#5.11.3  Monitor performance of trajectory prediction module
+SELECT ?flight ?satisfactoryTrajectoryModelIndicator WHERE {?flight :doesModelSatisfyTrajectoryPrediction ?satisfactoryTrajectoryModelIndicator}

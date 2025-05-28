@@ -1,0 +1,175 @@
+@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
+@prefix : <http://aisa-project.eu/adsb#>.
+
+#5.6 Execute Aircraft’s Plan 
+
+#5.6.1 Detect aircraft that have to climb/descend to requested FL
+[?flight, :isAtRequestedFL, ?atRequestedFLIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currElement, fx:routeChange, ?currRouteChanges],
+    [?currRouteChanges, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?changeFlightLevel],
+    BIND(
+        IF(
+            ?currFlightLevel = ?changeFlightLevel,
+            1,
+            0
+        )
+        AS ?atRequestedFLIndicator
+    ).
+
+
+[?flight, :hasToDescendFL, ?descendFLIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currElement, fx:routeChange, ?currRouteChanges],
+    [?currRouteChanges, fx:level, ?currCruisingLevelChange],
+    [?currCruisingLevelChange, fx:level, ?reqFlightLevel],
+    
+    BIND(
+        IF(
+            ?currFlightLevel > ?reqFlightLevel,
+            1,
+            0
+        )
+        AS ?descendFLIndicator
+    ).
+    
+[?flight, :hasToClimbFL, ?climbIndicator] :- 
+    [?flight, :isAtRequestedFL, ?atRequestedFLIndicator],
+    [?flight, :hasToDescendFL, ?descendFLIndicator],
+    BIND(
+        IF(
+            ?atRequestedFLIndicator = 0 && ?descendFLIndicator = 0,
+            1,
+            0
+        )
+        
+        AS ?climbIndicator
+    ).
+
+#5.6.2 Detect aircraft that have to climb/descend to exit FL 
+
+[?flight, :isAtExitFL, ?atExitFLIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?flight, :exitPointElement, ?exitPointElement],
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitFlightLevel],
+    BIND(
+        IF(
+            ?currFlightLevel = ?exitFlightLevel,
+            1,
+            0
+        )
+        AS ?atExitFLIndicator
+    ).
+
+
+[?flight, :hasToDescendToExitFL, ?descendToExitFLIndicator] :-
+    [?flight, :currentElement, ?currElement],
+    [?currElement,fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?flight, :exitPointElement, ?exitPointElement],
+    [?exitPointElement, fx:point4D, ?exitPoint4D],
+    [?exitPoint4D, fx:level, ?exitFlightLevel],
+    
+    BIND(
+        IF(
+            ?currFlightLevel > ?exitFlightLevel,
+            1,
+            0
+        )
+        AS ?descendToExitFLIndicator
+    ).
+
+
+[?flight, :hasToClimbToExitFL,?climbExitIndicator] :- 
+    [?flight, :isAtExitFL,?atExitFLIndicator],
+    [?flight, :hasToDescendFL,?descendFLIndicator],
+    BIND(
+        IF(
+            ?atExitFLIndicator = 0 && ?descendFLIndicator = 0,
+            1,
+            0
+        )
+        
+        AS ?climbExitIndicator
+    ).
+#5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module)   - not implemented in Java
+
+#5.6.4 Detect if planned trajectory passes through restricted airspace
+
+#trebam military sector west i east
+[?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, ?plannedTrajectoryWestRestrAirspaceIndicator]:-
+    [?flight, :westMilitaryAirspace, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+    [?flight, :withinSectorVertically, ?sector], #linije 79 i 141 provjeravaju to u javi
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:timeInterval, ?timesheet],
+    [?timesheet, ax:startTime, ?startTime],
+    [?timesheet, ax:endTime, ?endTime],
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    # gledamo kao da se pretvorba headinga obavlja u pipelineu
+    #    linija 60 - linija 86
+    # 
+    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+
+    BIND(
+        ?distToIntersectionPoint/?currSpeedInMS
+        AS ?b #ovdje je upitno jesu li mi vremena u pogodnom formatu za usporedbu
+    ),
+    #FILTER(?startTime < ?b && ?endTime > ?b).
+    BIND(
+        IF(
+            ?startTime < ?b && ?endTime > ?b,
+            1,
+            0
+        )
+        AS ?plannedTrajectoryWestRestrAirspaceIndicator
+    ).
+
+[?flight, :plannedTrajectoryPassesThroughEastMilitaryAirspace, ?plannedTrajectoryRestrictedAirspaceIndicator]:-
+    [?flight, :eastMilitaryAirspace, ?airspace],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?flight, :withinSector, ?sector],
+    [?flight, :withinSectorVertically, ?sector],
+    [?airspace, ax:activation, ?airspaceActivation],
+    [?airspaceActivation, ax:timeInterval, ?timesheet],
+    [?timesheet, ax:startTime, ?startTime],
+    [?timesheet, ax:endTime, ?endTime],
+    [?flight, fx:current, ?currElement],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
+    BIND(
+        ?currSpeed * 0.514444444
+        AS ?currSpeedInMS
+    ),
+    BIND(
+        ?distToIntersectionPoint/?currSpeedInMS
+        AS ?b
+    ),
+    #FILTER(?startTime < ?b && ?endTime > ?b).
+    BIND(
+        IF(
+            ?startTime < ?b && ?endTime > ?b,
+            1,
+            0
+        )
+        AS ?plannedTrajectoryRestrictedAirspaceIndicator
+    ).

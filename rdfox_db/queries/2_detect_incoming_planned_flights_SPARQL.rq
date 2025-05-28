@@ -1,0 +1,31 @@
+#helper rules
+SELECT ?flight ?aircraftAlreadyAssumedIndicator WHERE {?flight :isAircraftAlreadyAssumed ?aircraftAlreadyAssumedIndicator}
+SELECT ?flight ?aircraftAlreadyTransferredIndicator WHERE {?flight :isAircraftAlreadyTransferred ?aircraftAlreadyTransferredIndicator}
+SELECT ?flight ?sector WHERE {?flight :withinSectorVertically ?sector}
+SELECT ?flight ?sector WHERE {?flight :withinSector ?sector}
+
+# 5.2.1. Check that aircraft is close to Sector boundary
+"""return "sector" values are not 1 or 0, they are sector objects"""
+SELECT ?flight ?sectorCloseToFlight WHERE {?flight :aircraftCloseToSectorBoundary ?sectorCloseToFlight}
+SELECT ?flight ?sectorCloseToPlannedFlight WHERE {?flight :plannedAircraftCloseToSectorBoundary ?sectorCloseToPlannedFlight}
+SELECT ?flight ?sectorCloseToNotPlannedFlight WHERE {?flight :notPlannedAircraftCloseToSectorBoundary ?sectorCloseToNotPlannedFlight}
+SELECT ?flight ?sectorNotCloseToFlight WHERE {?flight :aircraftNotCloseToSectorBoundary ?sectorNotCloseToFlight}
+
+# 5.2.2. Check that aircraft is approaching Sector boundary
+SELECT ?flight ?sectorWhichBoundaryAircraftIsApproaching WHERE {?flight :aircraftApproachingToSectorBoundary ?sectorWhichBoundaryAircraftIsApproaching}
+SELECT ?flight ?sectorWhichBoundaryPlannedAircraftIsApproaching WHERE {?flight :plannedAircraftApproachingToSectorBoundary ?sectorWhichBoundaryPlannedAircraftIsApproaching}
+SELECT ?flight ?sectorWhichBoundaryNotPlannedAircraftIsApproaching WHERE {?flight :notPlannedAircraftApproachingToSectorBoundary ?sectorWhichBoundaryNotPlannedAircraftIsApproaching}
+SELECT ?flight ?sectorWhichBoundaryPlannedAircraftIsNotApproaching WHERE {?flight :aircraftNotApproacingToSectorBoundary ?sectorWhichBoundaryPlannedAircraftIsNotApproaching}
+
+# 5.2.3. Check that aircraft’s altitude is within the altitude band of the Sector
+SELECT ?flight ?sectorPlannedAircraftAltWithin WHERE {?flight :plannedAircraftAltitudeWithinSectorBandAltitude ?sectorPlannedAircraftAltWithin}
+SELECT ?flight ?sectorNotPlannedAircraftAltWithin WHERE {?flight :notPlannedAircraftAltitudeWithinSectorBandAltitude ?sectorNotPlannedAircraftAltWithin}
+SELECT ?flight ?sectorAircraftAltNotWithin WHERE {?flight :aircraftAltitudeNotWithinSectorBandAltitude ?sectorAircraftAltNotWithin}
+
+# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
+SELECT ?flight ?sectorWhichAltitudeAircraftIsApproaching WHERE {?flight :approachingSectorAltitude ?sectorWhichAltitudeAircraftIsApproaching}
+SELECT ?flight ?sectorWhereAircraftWithinVerticallyIsNotApproachingAltitude WHERE {?flight :aircraftWithinSectorVerticallyNotApproachingSectorAltitude ?sectorWhereAircraftWithinVerticallyIsNotApproachingAltitude}
+SELECT ?flight ?sectorWhereAircraftOutsideVerticallyIsNotApproachingAltitude WHERE {?flight :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude ?sectorWhereAircraftOutsideVerticallyIsNotApproachingAltitude}
+SELECT ?flight ?sectorWhichAltitudePlannedAircraftIsApproaching WHERE {?flight :plannedAircraftIsApproachingSectorAltitude ?sectorWhichAltitudePlannedAircraftIsApproaching}
+SELECT ?flight ?sectorWhichAltitudeNotPlannedAircraftIsApproaching WHERE {?flight :notPlannedAircraftIsApproachingSectorAltitude ?sectorWhichAltitudeNotPlannedAircraftIsApproaching}
+
