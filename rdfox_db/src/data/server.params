@@ -1,4 +1,4 @@
 persistence file
-role-manager.argon2i.memory-cost 351352
+role-manager.argon2i.memory-cost 351351
 role-manager.argon2i.parallelism 32
 role-manager.argon2i.time-cost 12

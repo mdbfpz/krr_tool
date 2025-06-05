@@ -865,12 +865,14 @@
     # Extract current and cleared positions
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:lat, ?currLat],
-    [?currPosition, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?agreedElement, fx:point4D, ?agreedPoint4D], 
     [?agreedPoint4D, fx:position, ?clearedPosition],
-    [?clearedPosition, fx:lat, ?clearedLat],
-    [?clearedPosition, fx:lon, ?clearedLon],
+    [?clearedPosition, fx:pos, ?clearedPoint],
+    [?clearedPoint, fx:lat, ?clearedLat],
+    [?clearedPoint, fx:lon, ?clearedLon],
 
     BIND(2.5 * 1825 AS ?toleranceRadius),		# Tolerance radius in meters
     BIND(6371 as ?R),		# Radius of the earth in km
@@ -1240,21 +1242,21 @@
     [?flight2, :agreedElement, ?nextClearedElement],	# Cleared in curr timestamp holds information about next cleared position, comparing to current position of the plane
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
 
     [?prevClearedElement, fx:point4D, ?prevClearedPoint4D],
     [?prevClearedPoint4D, fx:position, ?prevClearedPosition],
-    [?prevClearedPosition, fx:pos, ?prevClearedLatLon],
-    [?prevClearedLatLon, fx:lat, ?prevClearedLat],
-    [?prevClearedLatLon, fx:lon, ?prevClearedLon],   
+    [?prevClearedPosition, fx:pos, ?prevClearedPoint],
+    [?prevClearedPoint, fx:lat, ?prevClearedLat],
+    [?prevClearedPoint, fx:lon, ?prevClearedLon],   
 
     [?nextClearedElement, fx:point4D, ?nextClearedPoint4D],
     [?nextClearedPoint4D, fx:position, ?nextClearedPosition],
-    [?nextClearedPosition, fx:pos, ?nextClearedLatLon],
-    [?nextClearedLatLon, fx:lat, ?nextClearedLat],
-    [?nextClearedLatLon, fx:lon, ?nextClearedLon],
+    [?nextClearedPosition, fx:pos, ?nextClearedPoint],
+    [?nextClearedPoint, fx:lat, ?nextClearedLat],
+    [?nextClearedPoint, fx:lon, ?nextClearedLon],
 
     # Convert (lat, lon) positions to Cartesian coordinates
     BIND(6371000 AS ?R),	# Earth radius in meters

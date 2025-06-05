@@ -53,7 +53,7 @@ class RDFoxQuery(RDFoxDB):
                     f"{self.endpoint}/datastores/{self.data_store}/content",
                     headers=self.headers_output_turtle
                 )
-                print("Fetched all from the datastore:\n", import_resp.content)
+                # print("Fetched all from the datastore:\n", import_resp.content)
                 if import_resp.status_code in self.valid_responses:
                     print("Query 'select_all' succeeded.")
                 else:

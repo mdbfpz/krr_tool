@@ -378,9 +378,9 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],

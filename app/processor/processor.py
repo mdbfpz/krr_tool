@@ -32,7 +32,7 @@ class DataQueue:
             return await self.queue.get()
 
 class Processor:
-    """Processor microservice that orchestrates the pipeline."""
+    """Processor class that orchestrates the pipeline."""
     
     def __init__(self):
         self.converter_queue = DataQueue()
@@ -40,7 +40,7 @@ class Processor:
         self.reverse_converter_queue = DataQueue()
         self.sender_queue = DataQueue()
 
-        self.rdfox_db = RDFoxDB()
+        self.rdfox_db = RDFoxDB()        
 
     async def fetch_and_enqueue(self):
         """
@@ -56,12 +56,24 @@ class Processor:
         """Convert data to RDF and add it to the RDFox database queue."""
 
         while True:
-            received_data = await self.converter_queue.get_from_queue()
-            print("Got from queue: ", received_data["data_type"], "\n", received_data["data"] )
-            self.rdf_converter.convert(
-                received_data["data"].decode("utf-8") # Convert bytes to string using UTF-8 encoding
-            )
-            turtle_data = self.rdf_converter.serialize().decode("utf-8")
+            fetched_data = await self.converter_queue.get_from_queue()
+            print("Got from queue: ", fetched_data["data_type"], "\n", fetched_data["data"] )
+            data_record = fetched_data["data"]
+            data_record_type = fetched_data["data_type"]
+
+            print("Previous timestamp: ", self.rdf_converter.last_timestamp)
+            if data_record_type == "json":
+                # 1. case - FIXM data
+                if "flight_plan" in data_record.keys():
+                    self.rdf_converter.convert_fixm_data(data_record)
+                    # TODO: remove this maping from here, it should be done in the RDFConverter
+                    # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
+                # 2. case - Event data
+                else:
+                    self.rdf_converter.convert_event_data(data_record)
+                    # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
+                
+            turtle_data = self.rdf_converter.serialize()
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):

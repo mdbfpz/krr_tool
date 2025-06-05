@@ -45,26 +45,26 @@
     [?flight1C, :currentElement, ?currElement1],
     [?prevElement1,fx:point4D, ?prevPoint4D1],    
     [?prevPoint4D1, fx:position, ?prevPosition1],
-    [?prevPosition1, fx:pos, ?prevLatLon1],
-    [?prevLatLon1, fx:lat, ?prevLat1],
-    [?prevLatLon1, fx:lon, ?prevLon1],
+    [?prevPosition1, fx:pos, ?prevPoint1],
+    [?prevPoint1, fx:lat, ?prevLat1],
+    [?prevPoint1, fx:lon, ?prevLon1],
     [?currElement1,fx:point4D, ?currPoint4D1],    
     [?currPoint4D1, fx:position, ?currPosition1],
-    [?currPosition1, fx:pos, ?currLatLon1],
-    [?currLatLon1, fx:lat, ?currLat1],
-    [?currLatLon1, fx:lon, ?currLon1],
+    [?currPosition1, fx:pos, ?currPoint1],
+    [?currPoint1, fx:lat, ?currLat1],
+    [?currPoint1, fx:lon, ?currLon1],
     [?flight2P, :currentElement, ?prevElement2],
     [?flight2C, :currentElement, ?currElement2],
     [?prevElement2, fx:point4D, ?prevPoint4D2],    
     [?prevPoint4D2, fx:position, ?prevPosition2],
-    [?prevPosition2, fx:pos, ?prevLatLon2],
-    [?prevLatLon2, fx:lat, ?prevLat2],
-    [?prevLatLon2, fx:lon, ?prevLon2],
+    [?prevPosition2, fx:pos, ?prevPoint2],
+    [?prevPoint2, fx:lat, ?prevLat2],
+    [?prevPoint2, fx:lon, ?prevLon2],
     [?currElement2,fx:point4D, ?currPoint4D2],    
     [?currPoint4D2, fx:position, ?currPosition2],
-    [?currPosition2, fx:pos, ?currLatLon2],
-    [?currLatLon2, fx:lat, ?currLat2],
-    [?currLatLon2, fx:lon, ?currLon2],
+    [?currPosition2, fx:pos, ?currPoint2],
+    [?currPoint2, fx:lat, ?currLat2],
+    [?currPoint2, fx:lon, ?currLon2],
 
     #calculate haversine distance
     
@@ -161,7 +161,7 @@
     
     BIND(
         IF(
-            ABS(?currPosition - ?predPosition) <= 2.5 && 
+            ABS(?currPosition - ?predPosition) <= 2.5 &&        # TOOD: ovo neće raditi jer ne možemo oduzimati čvorove, treba implementirati funkciju za oduzimanje koordinata (udalenost između dvije točke - uzmemo iz pipelinea?)
             ABS(?currTime - ?predTime) <= 30 && 
             ABS(?currFlightLevel - ?predFlightLevel) <= 100,
             1,

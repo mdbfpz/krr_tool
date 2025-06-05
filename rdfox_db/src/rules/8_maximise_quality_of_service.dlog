@@ -145,17 +145,17 @@
     [?desiredElement, fx:point4D, ?desiredPoint4D],
     [?flight, :suggestedRbtIntersectsMilitaryArea, 0],#TODO: implementirati u pipelineu provjeru prolazi li suggested rbt kroz vojnu zonu
     [?desiredPoint4D, fx:position, ?desiredPosition],
-    [?desiredPosition, fx:pos, ?desiredLatLon],
-    [?desiredLatLon, fx:lat, ?desiredLat],
-    [?desiredLatLon, fx:lon, ?desiredLon],
+    [?desiredPosition, fx:pos, ?desiredPoint],
+    [?desiredPoint, fx:lat, ?desiredLat],
+    [?desiredPoint, fx:lon, ?desiredLon],
     #ovo je samo ideja kako konflikt modul može vratiti potrebne podatke
     [?conflictModul, :firstInputFlight, ?flight],
     [?conflictModul, :closestFlight, ?flight2],
     [?flight2, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     FILTER(ABS(?desiredLon - ?currLon) <= 10 && ABS(?desiredLat - ?currLat) <= 1000).#nesto u ovom smislu?
     

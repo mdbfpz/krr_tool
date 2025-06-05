@@ -121,17 +121,17 @@
     # Extract previous and current positions and flight levels
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPosition, fx:pos, ?prevPoint],
+    [?prevPoint, fx:lat, ?prevLat],
+    [?prevPoint, fx:lon, ?prevLon],
     [?prevPoint4D, fx:level, ?prevLevel],
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
 

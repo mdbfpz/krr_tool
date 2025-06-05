@@ -27,18 +27,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPosition, fx:pos, ?prevPoint],
+    [?prevPoint, fx:lat, ?prevLat],
+    [?prevPoint, fx:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -79,18 +79,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPosition, fx:pos, ?prevPoint],
+    [?prevPoint, fx:lat, ?prevLat],
+    [?prevPoint, fx:lon, ?prevLon],
 
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
@@ -149,18 +149,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPosition, fx:pos, ?prevPoint],
+    [?prevPoint, fx:lat, ?prevLat],
+    [?prevPoint, fx:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -218,18 +218,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevLatLon],
-    [?prevLatLon, fx:lat, ?prevLat],
-    [?prevLatLon, fx:lon, ?prevLon],
+    [?prevPosition, fx:pos, ?prevPoint],
+    [?prevPoint, fx:lat, ?prevLat],
+    [?prevPoint, fx:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -330,9 +330,9 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currLatLon],
-    [?currLatLon, fx:lat, ?currLat],
-    [?currLatLon, fx:lon, ?currLon],
+    [?currPosition, fx:pos, ?currPoint],
+    [?currPoint, fx:lat, ?currLat],
+    [?currPoint, fx:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
