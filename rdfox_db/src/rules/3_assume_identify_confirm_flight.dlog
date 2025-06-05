@@ -1,6 +1,6 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
 
 # 5.3.1 Check that aircraft is incoming
 
@@ -27,18 +27,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevPoint],
-    [?prevPoint, fx:lat, ?prevLat],
-    [?prevPoint, fx:lon, ?prevLon],
+    [?prevPosition, fb:pos, ?prevPoint],
+    [?prevPoint, fb:lat, ?prevLat],
+    [?prevPoint, fb:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -79,18 +79,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevPoint],
-    [?prevPoint, fx:lat, ?prevLat],
-    [?prevPoint, fx:lon, ?prevLon],
+    [?prevPosition, fb:pos, ?prevPoint],
+    [?prevPoint, fb:lat, ?prevLat],
+    [?prevPoint, fb:lon, ?prevLon],
 
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
@@ -149,18 +149,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevPoint],
-    [?prevPoint, fx:lat, ?prevLat],
-    [?prevPoint, fx:lon, ?prevLon],
+    [?prevPosition, fb:pos, ?prevPoint],
+    [?prevPoint, fb:lat, ?prevLat],
+    [?prevPoint, fb:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -218,18 +218,18 @@
 
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevPoint],
-    [?prevPoint, fx:lat, ?prevLat],
-    [?prevPoint, fx:lon, ?prevLon],
+    [?prevPosition, fb:pos, ?prevPoint],
+    [?prevPoint, fb:lat, ?prevLat],
+    [?prevPoint, fb:lon, ?prevLon],
 
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist],
@@ -330,9 +330,9 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],

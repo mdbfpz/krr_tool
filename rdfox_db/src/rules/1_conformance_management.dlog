@@ -1,20 +1,20 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix : <https://aware-sesar.eu>.
 @prefix fb: <http://www.fixm.aero/base/4.3>.
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-@prefix hmi: <http://www.fixm.aero/hmi/1.0/>.
+@prefix hmi: <https://aware-sesar.eu/hmi>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 # 5.1.1 Check that aircraft is climbing/descending towards cleared FL
 
 # Climbing:
 [?flight, :isClimbingToCFL, ?indicator] :-
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currElement, fx:extension, ?verticalRate],
-    [?flight, fx:agreedElement, ?agreedElement],   
+    [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
 
@@ -29,11 +29,11 @@
 
 # Descending:
 [?flight, :isDescendingToCFL, ?indicator] :-
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currElement, fx:extension, ?verticalRate],
-    [?flight, fx:agreedElement, ?agreedElement],   
+    [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
 
@@ -60,7 +60,7 @@
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
-    [?flight2, fx:agreedElement, ?agreedElement],   
+    [?flight2, :agreedElement, ?agreedElement],   
     
     # Extract previous, current and agreed levels and vertical rate
     [?agreedElement, fx:point4D, ?agreedPoint4D],
@@ -94,10 +94,10 @@
 # U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
 # Rule 1: Check if current level is equal to cleared level
 [?flight, :isAtCFL, ?indicator] :-
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
-    [?flight, fx:agreedElement, ?agreedElement],   
+    [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?agreedLevel],
     BIND(
@@ -113,7 +113,7 @@
 # Rule 1: Check if aircraft is passing cleared flight level.
 [?flight, :isPassingCFL, ?indicator] :-
     [?flight, :isAtCFL, 1],
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
 
     BIND(
@@ -190,10 +190,10 @@
     # Extract current and cleared times
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:time, ?currPoint4DTime],
-    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?currPoint4DTime, fb:absoulteTime, ?currTime],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
-    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+    [?agreedPoint4DTime, fb:absoulteTime, ?agreedTime],
 
     BIND(
         IF(
@@ -365,10 +365,10 @@
     # Extract current and cleared times
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:time, ?currPoint4DTime],
-    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?currPoint4DTime, fb:absoulteTime, ?currTime],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
-    [?agreedPoint4DTime, fx:absoulteTime, ?clearedTime],
+    [?agreedPoint4DTime, fb:absoulteTime, ?clearedTime],
 
     BIND(
         IF(
@@ -642,12 +642,12 @@
     
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:time, ?currPoint4DTime],
-    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?currPoint4DTime, fb:absoulteTime, ?currTime],
 
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedElement, :isDirectTo, 1],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
-    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+    [?agreedPoint4DTime, fb:absoulteTime, ?agreedTime],
 
     BIND(
         IF(
@@ -865,14 +865,14 @@
     # Extract current and cleared positions
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?agreedElement, fx:point4D, ?agreedPoint4D], 
     [?agreedPoint4D, fx:position, ?clearedPosition],
-    [?clearedPosition, fx:pos, ?clearedPoint],
-    [?clearedPoint, fx:lat, ?clearedLat],
-    [?clearedPoint, fx:lon, ?clearedLon],
+    [?clearedPosition, fb:pos, ?clearedPoint],
+    [?clearedPoint, fb:lat, ?clearedLat],
+    [?clearedPoint, fb:lon, ?clearedLon],
 
     BIND(2.5 * 1825 AS ?toleranceRadius),		# Tolerance radius in meters
     BIND(6371 as ?R),		# Radius of the earth in km
@@ -916,9 +916,9 @@
 
 [?flight, :isAtClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:extension, ?currvRate],
-    [?flight, fx:agreedElement, ?agreedElement],
+    [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?agreedvRate],
 
     BIND(
@@ -932,9 +932,9 @@
 
 [?flight, :isVerticalRateHigherThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
-    [?flight, fx:agreedElement, ?agreedElement],
+    [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?clearedVRate],
 
     BIND(
@@ -948,9 +948,9 @@
 
 [?flight, :isVerticalRateLowerThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
-    [?flight, fx:currentElement, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
-    [?flight, fx:agreedElement, ?agreedElement],
+    [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?clearedVRate],
 
     BIND(
@@ -1037,10 +1037,10 @@
     # Extract current and cleared times
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:time, ?currPoint4DTime],
-    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?currPoint4DTime, fb:absoulteTime, ?currTime],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
-    [?agreedPoint4DTime, fx:absoulteTime, ?agreedTime],
+    [?agreedPoint4DTime, fb:absoulteTime, ?agreedTime],
 
     BIND(
         IF(
@@ -1242,21 +1242,21 @@
     [?flight2, :agreedElement, ?nextClearedElement],	# Cleared in curr timestamp holds information about next cleared position, comparing to current position of the plane
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
 
     [?prevClearedElement, fx:point4D, ?prevClearedPoint4D],
     [?prevClearedPoint4D, fx:position, ?prevClearedPosition],
-    [?prevClearedPosition, fx:pos, ?prevClearedPoint],
-    [?prevClearedPoint, fx:lat, ?prevClearedLat],
-    [?prevClearedPoint, fx:lon, ?prevClearedLon],   
+    [?prevClearedPosition, fb:pos, ?prevClearedPoint],
+    [?prevClearedPoint, fb:lat, ?prevClearedLat],
+    [?prevClearedPoint, fb:lon, ?prevClearedLon],   
 
     [?nextClearedElement, fx:point4D, ?nextClearedPoint4D],
     [?nextClearedPoint4D, fx:position, ?nextClearedPosition],
-    [?nextClearedPosition, fx:pos, ?nextClearedPoint],
-    [?nextClearedPoint, fx:lat, ?nextClearedLat],
-    [?nextClearedPoint, fx:lon, ?nextClearedLon],
+    [?nextClearedPosition, fb:pos, ?nextClearedPoint],
+    [?nextClearedPoint, fb:lat, ?nextClearedLat],
+    [?nextClearedPoint, fb:lon, ?nextClearedLon],
 
     # Convert (lat, lon) positions to Cartesian coordinates
     BIND(6371000 AS ?R),	# Earth radius in meters

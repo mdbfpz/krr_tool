@@ -1,6 +1,6 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
@@ -21,21 +21,21 @@
     AGGREGATE(
         [?timestamp, fx:flight, ?flight1],
         [?timestamp, fx:flight, ?flight2],
-        [?flight1, :aircraftIdentification, ?flightID1],
+        [?flight1, fx:aircraftIdentification, ?flightID1],
         [?flight1, :currentElement, ?currElement1],
         [?currElement1,fx:point4D, ?currPoint4D1],    
         [?currPoint4D1, fx:position, ?currPosition1],
-        [?currPosition1, fx:pos, ?currPoint1],
-        [?currPoint1, fx:lat, ?currLat1],
-        [?currPoint1, fx:lon, ?currLon1],    
+        [?currPosition1, fb:pos, ?currPoint1],
+        [?currPoint1, fb:lat, ?currLat1],
+        [?currPoint1, fb:lon, ?currLon1],    
         [?currPoint4D1, fx:level, ?currLevel1],
-        [?flight2, :aircraftIdentification, ?flightID2],
+        [?flight2, fx:aircraftIdentification, ?flightID2],
         [?flight2, :currentElement, ?currElement2],
         [?currElement2, fx:point4D, ?currPoint4D2],    
         [?currPoint4D2, fx:position, ?currPosition2],
-        [?currPosition2, fx:pos, ?currPoint2],
-        [?currPoint2, fx:lat, ?currLat2],
-        [?currPoint2, fx:lon, ?currLon2],
+        [?currPosition2, fb:pos, ?currPoint2],
+        [?currPoint2, fb:lat, ?currLat2],
+        [?currPoint2, fb:lon, ?currLon2],
         [?currPoint4D2, fx:level, ?currLevel2],
         BIND(
             ABS(?currLevel1 - ?currLevel2) AS ?verticalDistance

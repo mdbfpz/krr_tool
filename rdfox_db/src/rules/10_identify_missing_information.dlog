@@ -1,6 +1,6 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
 
 #5.10.1  Identify aircraft with possible equipment degradation
 [?flight, :hasEquipmentDegradation, ?equipmentDegradationIndicator] :-
@@ -21,8 +21,8 @@
 
 [?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-
     
-    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
-    [?airportHeliportAvailability, :operationalStatus, ?operationalStatus],    
+    [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, ax:operationalStatus, ?operationalStatus],    
     BIND(
         IF(
             ?operationalStatus = "NORMAL",
@@ -34,8 +34,8 @@
 
 [?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
     
-    [?airportHeliport, :avalaibility, ?airportHeliportAvailability],
-    [?airportHeliportAvailability, :warning, ?warning],    
+    [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
+    [?airportHeliportAvailability, ax:warning, ?warning],    
     BIND(
         IF(
             ?warning = "NO_WARNING",
@@ -47,32 +47,33 @@
 
 #spoji flight s airportheliport
 
+# TODO: može li biti isti head za 2 raličita pravila?
 [?flight, :destinationAirportHeliport, ?airportHeliport] :-
-    [?flight, :arrival, ?arrival],
-    [?arrival, :destinationAerodrome, ?aerodrome],
-    [?aerodrome, :locationIndicator, ?locationIndicator],
-    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+    [?flight, fx:arrival, ?arrival],
+    [?arrival, fx:destinationAerodrome, ?aerodrome],
+    [?aerodrome, fx:locationIndicator, ?locationIndicator],
+    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 [?flight, :departureAirportHeliport, ?airportHeliport] :-
-    [?flight, :departure, ?departure],
-    [?departure, :departureAerodrome, ?aerodrome],
-    [?aerodrome, :locationIndicator, ?locationIndicator],
-    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+    [?flight, fx:departure, ?departure],
+    [?departure, fx:departureAerodrome, ?aerodrome],
+    [?aerodrome, fx:locationIndicator, ?locationIndicator],
+    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 #5.10.3 check situation at alternate airport
 
 #spojiti flight/alternateAerodrome s airportHeliport
 [?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-
-    [?flight, :arrival, ?arrival],
-    [?arrival, :destinationAerodromeAlternate, ?aerodrome],
-    [?aerodrome, :locationIndicator, ?locationIndicator],
-    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+    [?flight, fx:arrival, ?arrival],
+    [?arrival, fx:destinationAerodromeAlternate, ?aerodrome],
+    [?aerodrome, fx:locationIndicator, ?locationIndicator],
+    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 [?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-
-    [?flight, :departure, ?departure],
-    [?departure, :departureAerodromeAlternate, ?aerodrome],
-    [?aerodrome, :locationIndicator, ?locationIndicator],
-    [?airportHeliport, :locationIndicatorICAO, ?locationIndicator].
+    [?flight, fx:departure, ?departure],
+    [?departure, fx:departureAerodromeAlternate, ?aerodrome],
+    [?aerodrome, fx:locationIndicator, ?locationIndicator],
+    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 #5.10.4  Monitor adverse weather areas
 [?flight2, :areWeatherConditionsChanged, ?changedWeatherConditionsIndicator] :-
@@ -81,8 +82,8 @@
     [?prevT, :flight, ?flight1],
     [?currT, :flight, ?flight2],
     # Extract the same flights only
-    [?flight1, :aircraftIdentification, ?flightID],
-    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -130,8 +131,8 @@
     [?prevT, :flight, ?flight1],
     [?currT, :flight, ?flight2],
     # Extract the same flights only
-    [?flight1, :aircraftIdentification, ?flightID],
-    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
     [?flight1, :withinSector, ?sector1],
     [?airspace1, ax:geometryComponent, ?sector1],
     [?airspace1, ax:activation, ?airspaceActivation1],

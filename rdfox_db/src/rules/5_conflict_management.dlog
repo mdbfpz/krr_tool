@@ -1,6 +1,6 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
 
 # Between each two flights (airplanes) there should be a predicate :conflict with the 
 # following structure:
@@ -378,9 +378,9 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],

@@ -1,5 +1,5 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix : <https://aware-sesar.eu>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 #5.11  Monitor Status of ATC Sub-systems
@@ -20,8 +20,8 @@
     [?prevT1, :flight, ?flight1P],
     [?currT1, :flight, ?flight1C],
     # Extract the same flights only
-    [?flight1P, :aircraftIdentification, ?flightID1],
-    [?flight1C, :aircraftIdentification, ?flightID1],
+    [?flight1P, fx:aircraftIdentification, ?flightID1],
+    [?flight1C, fx:aircraftIdentification, ?flightID1],
 
     # prev and curr for flight 2
     [?prevT2, :next, ?currT2],  
@@ -29,8 +29,8 @@
     [?prevT2, :flight, ?flight2P],
     [?currT2, :flight, ?flight2C],
     # Extract the same flights only
-    [?flight2P, :aircraftIdentification, ?flightID2],
-    [?flight2C, :aircraftIdentification, ?flightID2],
+    [?flight2P, fx:aircraftIdentification, ?flightID2],
+    [?flight2C, fx:aircraftIdentification, ?flightID2],
 
     [?flight1C, :conflict, ?conflict12C],
     [?flight2C, :conflict, ?conflict12C],
@@ -45,26 +45,26 @@
     [?flight1C, :currentElement, ?currElement1],
     [?prevElement1,fx:point4D, ?prevPoint4D1],    
     [?prevPoint4D1, fx:position, ?prevPosition1],
-    [?prevPosition1, fx:pos, ?prevPoint1],
-    [?prevPoint1, fx:lat, ?prevLat1],
-    [?prevPoint1, fx:lon, ?prevLon1],
+    [?prevPosition1, fb:pos, ?prevPoint1],
+    [?prevPoint1, fb:lat, ?prevLat1],
+    [?prevPoint1, fb:lon, ?prevLon1],
     [?currElement1,fx:point4D, ?currPoint4D1],    
     [?currPoint4D1, fx:position, ?currPosition1],
-    [?currPosition1, fx:pos, ?currPoint1],
-    [?currPoint1, fx:lat, ?currLat1],
-    [?currPoint1, fx:lon, ?currLon1],
+    [?currPosition1, fb:pos, ?currPoint1],
+    [?currPoint1, fb:lat, ?currLat1],
+    [?currPoint1, fb:lon, ?currLon1],
     [?flight2P, :currentElement, ?prevElement2],
     [?flight2C, :currentElement, ?currElement2],
     [?prevElement2, fx:point4D, ?prevPoint4D2],    
     [?prevPoint4D2, fx:position, ?prevPosition2],
-    [?prevPosition2, fx:pos, ?prevPoint2],
-    [?prevPoint2, fx:lat, ?prevLat2],
-    [?prevPoint2, fx:lon, ?prevLon2],
+    [?prevPosition2, fb:pos, ?prevPoint2],
+    [?prevPoint2, fb:lat, ?prevLat2],
+    [?prevPoint2, fb:lon, ?prevLon2],
     [?currElement2,fx:point4D, ?currPoint4D2],    
     [?currPoint4D2, fx:position, ?currPosition2],
-    [?currPosition2, fx:pos, ?currPoint2],
-    [?currPoint2, fx:lat, ?currLat2],
-    [?currPoint2, fx:lon, ?currLon2],
+    [?currPosition2, fb:pos, ?currPoint2],
+    [?currPoint2, fb:lat, ?currLat2],
+    [?currPoint2, fb:lon, ?currLon2],
 
     #calculate haversine distance
     

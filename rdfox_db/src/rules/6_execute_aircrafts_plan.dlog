@@ -1,6 +1,6 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
 
 #5.6 Execute Aircraft’s Plan 
 

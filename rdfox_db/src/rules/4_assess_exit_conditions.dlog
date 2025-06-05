@@ -1,8 +1,8 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 @prefix fb: <http://www.fixm.aero/base/4.3>.
+@prefix : <https://aware-sesar.eu>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 
 # 5.4.1. Check that aircraft is flying towards the exit point
 
@@ -19,7 +19,7 @@
 
     [?flight, :isFlyingTowardsClearedPoint, 1], # Task 1.10
 
-    [?flight, fx:agreedElement, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
     [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
     [?clearedDesignatedPoint, fb:designator, ?clearedDesignator],

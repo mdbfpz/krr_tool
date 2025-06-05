@@ -1,7 +1,7 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <http://www.aisa-project.eu/vocabulary/aixm_5-1-1#>.
-@prefix : <http://aisa-project.eu/adsb#>.
-@prefix hmi: <http://www.fixm.aero/hmi/1.0/>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix : <https://aware-sesar.eu>.
+@prefix hmi: <https://aware-sesar.eu/hmi>.
 
 # Helper rules
 [?flight, :qosCandidate, ?indicator] :-
@@ -31,8 +31,8 @@
     [?prevT, :flight, ?flight1],
     [?currT, :flight, ?flight2],
     # Extract the same flights only
-    [?flight1, :aircraftIdentification, ?flightID],
-    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -44,17 +44,17 @@
     # Extract previous and current positions and flight levels
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fx:pos, ?currPoint],
-    [?currPoint, fx:lat, ?currLat],
-    [?currPoint, fx:lon, ?currLon],
+    [?currPosition, fb:pos, ?currPoint],
+    [?currPoint, fb:lat, ?currLat],
+    [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
-    [?prevPosition, fx:pos, ?prevPoint],
-    [?prevPoint, fx:lat, ?prevLat],
-    [?prevPoint, fx:lon, ?prevLon],
+    [?prevPosition, fb:pos, ?prevPoint],
+    [?prevPoint, fb:lat, ?prevLat],
+    [?prevPoint, fb:lon, ?prevLon],
     [?prevPoint4D, fx:level, ?prevLevel],
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
 
