@@ -358,7 +358,7 @@
 
     # FL (requested/stated in flight plan/max?) can be higher than the current FL
     [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
+    [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
 
     [?currElement, fx:routeChange, ?currRouteChanges],

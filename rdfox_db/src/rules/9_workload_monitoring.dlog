@@ -9,7 +9,7 @@
 # svaki timestamp nam mora imati objekt/atribut koji govori koliko je trenutno assumed aircrafta
 [?timestamp, :assumedAircraftCount, ?numOfAssumedAircraft] :-
     AGGREGATE(
-        [?timestamp, fx:flight, ?flight],
+        [?timestamp, :flight, ?flight],
         [?flight, :isAircraftAlreadyAssumed, 1]
         ON ?timestamp
         BIND COUNT(?flight) AS ?numOfAssumedAircraft
@@ -18,8 +18,8 @@
 # 5.9.2 Track number of conflicts and potential conflicts
 [?timestamp, :conflictsCount, ?count]:-
     AGGREGATE(
-        [?timestamp, fx:flight, ?flight1],
-        [?timestamp, fx:flight, ?flight2],
+        [?timestamp, :flight, ?flight1],
+        [?timestamp, :flight, ?flight2],
         [?flight1, fx:aircraftIdentification, ?flightID1],
         [?flight1, :currentElement, ?currElement1],
         [?currElement1,fx:point4D, ?currPoint4D1],    

@@ -43,10 +43,10 @@
     # [?currT, :flight, ?currFlight1],
     # [?currT, :flight, ?currFlight2],
 
-    # [?prevFlight1, :aircraftIdentification, ?prevFlight1ID],
-    # [?prevFlight2, :aircraftIdentification, ?prevFlight2ID],
-    # [?currFlight1, :aircraftIdentification, ?currFlight1ID],
-    # [?currFlight2, :aircraftIdentification, ?currFlight2ID],
+    # [?prevFlight1, fx:aircraftIdentification, ?prevFlight1ID],
+    # [?prevFlight2, fx:aircraftIdentification, ?prevFlight2ID],
+    # [?currFlight1, fx:aircraftIdentification, ?currFlight1ID],
+    # [?currFlight2, fx:aircraftIdentification, ?currFlight2ID],
 
     # Avoid creation of symmetric relations within this rule. To avoid unnecessary computation, 
     # we create symmetric relations below this rule.
@@ -86,8 +86,8 @@
     [?t, :flight, ?flight1],
     [?t, :flight, ?flight2],
 
-    [?flight1, :aircraftIdentification, ?flight1ID],
-    [?flight2, :aircraftIdentification, ?flight2ID],
+    [?flight1, fx:aircraftIdentification, ?flight1ID],
+    [?flight2, fx:aircraftIdentification, ?flight2ID],
 
     FILTER(?flight1ID != ?flight2ID),
 
@@ -127,8 +127,8 @@
     [?t, :flight, ?flight1],
     [?t, :flight, ?flight2],
 
-    [?flight1, :aircraftIdentification, ?flight1ID],
-    [?flight2, :aircraftIdentification, ?flight2ID],
+    [?flight1, fx:aircraftIdentification, ?flight1ID],
+    [?flight2, fx:aircraftIdentification, ?flight2ID],
 
     FILTER(?flight1ID != ?flight2ID),
 

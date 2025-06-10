@@ -24,7 +24,7 @@
 
 [?flight, :hasToDescendFL, ?descendFLIndicator] :-
     [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
+    [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
     [?currElement, fx:routeChange, ?currRouteChanges],
     [?currRouteChanges, fx:level, ?currCruisingLevelChange],
@@ -56,7 +56,7 @@
 
 [?flight, :isAtExitFL, ?atExitFLIndicator] :-
     [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
+    [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currFlightLevel],
     [?flight, :exitPointElement, ?exitPointElement],
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -115,7 +115,7 @@
     [?airspaceActivation, ax:timeInterval, ?timesheet],
     [?timesheet, ax:startTime, ?startTime],
     [?timesheet, ax:endTime, ?endTime],
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
@@ -151,7 +151,7 @@
     [?airspaceActivation, ax:timeInterval, ?timesheet],
     [?timesheet, ax:startTime, ?startTime],
     [?timesheet, ax:endTime, ?endTime],
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],

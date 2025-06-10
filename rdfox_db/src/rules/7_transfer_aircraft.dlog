@@ -31,7 +31,7 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
@@ -75,7 +75,7 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
@@ -116,7 +116,7 @@
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 

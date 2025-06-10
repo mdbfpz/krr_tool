@@ -151,13 +151,13 @@
     [?currPoint4D, fx:level, ?currFlightLevel],
     [?currPoint4D, fx:position, ?currPosition],
     [?currPoint4D, fx:time, ?currPoint4DTime],
-    [?currPoint4DTime, fx:absoulteTime, ?currTime],
+    [?currPoint4DTime, fb:absoluteTime, ?currTime],
     [?flight, :predictedElement, ?predElement],
     [?predElement, fx:point4D, ?predPoint4D],
     [?predPoint4D, fx:level, ?predFlightLevel],
     [?predPoint4D, fx:position, ?predPosition],
     [?predPoint4D, fx:time, ?predPoint4DTime],
-    [?predPoint4DTime, fx:absoluteTime, ?predTime],
+    [?predPoint4DTime, fb:absoluteTime, ?predTime],
     
     BIND(
         IF(

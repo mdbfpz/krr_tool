@@ -42,12 +42,12 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
-    [?flight, fx:agreed, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
 
@@ -96,12 +96,12 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
-    [?flight, fx:agreed, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
 
@@ -149,12 +149,12 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
-    [?flight, fx:agreed, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
 
@@ -202,12 +202,12 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
-    [?flight, fx:agreed, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
 
@@ -255,12 +255,12 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, fx:current, ?currElement],
+    [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
-    [?flight, fx:agreed, ?clearedElement],
+    [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
 

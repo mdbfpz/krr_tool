@@ -157,5 +157,8 @@
     [?currPosition, fb:pos, ?currPoint],
     [?currPoint, fb:lat, ?currLat],
     [?currPoint, fb:lon, ?currLon],
-    FILTER(ABS(?desiredLon - ?currLon) <= 10 && ABS(?desiredLat - ?currLat) <= 1000).#nesto u ovom smislu?
+    FILTER(
+        ABS(?desiredLon - ?currLon) <= 10 && 
+        ABS(?desiredLat - ?currLat) <= 1000
+    ).#nesto u ovom smislu?
     

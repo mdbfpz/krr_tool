@@ -51,7 +51,7 @@
 [?flight, :destinationAirportHeliport, ?airportHeliport] :-
     [?flight, fx:arrival, ?arrival],
     [?arrival, fx:destinationAerodrome, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator],
+    [?aerodrome, fx:locationIndicator, ?locationIndicator], # TODO: treba li ići u "fb"?
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 [?flight, :departureAirportHeliport, ?airportHeliport] :-
@@ -109,7 +109,7 @@
     [?prevMeteorologicalData, fx:windDirection, ?prevWindDirection],
     #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
     [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
-    [?prevMeterologicalDataExtension, :icing, ?prevIcing],
+    [?prevMeterologicalDataExtension, :icing, ?prevIcing],  # TODO: trebaju li ovdje prefiksi?
     [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
     [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
     [?prevMeterologicalDataExtension, :thunder, ?prevThunder],

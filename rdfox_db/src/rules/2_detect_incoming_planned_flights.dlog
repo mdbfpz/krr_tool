@@ -107,8 +107,8 @@
     [?prevT, :flight, ?flight1],
     [?currT, :flight, ?flight2],
     # Extract the same flights only
-    [?flight1, :aircraftIdentification, ?flightID],
-    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -206,8 +206,8 @@
     [?prevT, :flight, ?flight1],
     [?currT, :flight, ?flight2],
     # Extract the same flights only
-    [?flight1, :aircraftIdentification, ?flightID],
-    [?flight2, :aircraftIdentification, ?flightID],
+    [?flight1, fx:aircraftIdentification, ?flightID],
+    [?flight2, fx:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
