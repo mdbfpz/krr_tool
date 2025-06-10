@@ -1,9 +1,5 @@
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 @prefix : <https://aware-sesar.eu>.
-@prefix fb: <http://www.fixm.aero/base/4.3>.
 @prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
-@prefix hmi: <https://aware-sesar.eu/hmi>.
 
 # Create transitivity closure between different (current, agreed, desired, predicted) 
 # route-trajectory elements and flights.

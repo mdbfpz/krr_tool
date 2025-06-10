@@ -2,7 +2,6 @@
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
 @prefix : <https://aware-sesar.eu>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
-@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.
 
 # 5.9 Workload Monitoring 
 

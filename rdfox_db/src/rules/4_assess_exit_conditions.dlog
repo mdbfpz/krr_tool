@@ -2,7 +2,6 @@
 @prefix fb: <http://www.fixm.aero/base/4.3>.
 @prefix : <https://aware-sesar.eu>.
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
-@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.
 
 # 5.4.1. Check that aircraft is flying towards the exit point
 
@@ -22,14 +21,12 @@
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
     [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
-    [?clearedDesignatedPoint, fb:designator, ?clearedDesignator],
-    [?clearedDesignator, rdf:value, ?clearValue],
+    [?clearedDesignatedPoint, fb:designator, ?clearValue],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:elementStartPoint, ?exitPointElementSP],
     [?exitPointElementSP, fb:designatedPoint, ?exitDesignatedPoint],
-    [?exitDesignatedPoint, fb:designator, ?exitDesignator],
-    [?exitDesignator, rdf:value, ?exitValue], # If this matches with ?value above, then it's flying towards exit point
+    [?exitDesignatedPoint, fb:designator, ?exitValue],
     BIND(
         IF(
             ?clearValue = ?exitValue,
