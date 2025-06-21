@@ -1,37 +1,41 @@
 from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD 
 import xml.etree.ElementTree as ET
-import json
 import copy
 
 # Define namespaces
-FIXM = Namespace("http://www.fixm.aero/flight/4.3")
-FB = Namespace("http://www.fixm.aero/base/4.3")
-XS = Namespace("http://www.w3.org/2001/XMLSchema")
-HMI = Namespace("http://www.fixm.aero/hmi/1.0/") # TODO: this should not be a part of FIXM, but a separate namespace, maybe 'plain' extension
+BASE = Namespace("https://aware-sesar.eu/")
+FIXM = Namespace("http://www.fixm.aero/flight/4.3/")
+FB = Namespace("http://www.fixm.aero/base/4.3/")
+HMI = Namespace("https://aware-sesar.eu/hmi/") # TODO: do i need this or can add to base?
+XS = Namespace("http://www.w3.org/2001/XMLSchema/")
 
 class RDFConverter:
     def __init__(self):
         """Initialize the RDF graph and bind namespaces."""
-        self.graph = Graph()
-        self.graph.bind("fx", FIXM)
-        self.graph.bind("fb", FB)
-        self.graph.bind("hmi", HMI)
-        self.graph.bind("xs", XS)
-        self.graph.bind("xsd", XSD)
-        self.graph.bind("rdf", RDF)
-        self.graph.bind("rdfs", RDFS)
 
-        # TODO: remove this if possible and use variables declared above    
-        self.fixm_namespaces = {
+        self.namespaces = {
+            "": BASE,
             "fx": FIXM,
             "fb": FB,
+            "hmi": HMI,
+            "xs": XS,
+            "xsd": XSD,
+            "rdfs": RDFS,
+            "rdf": RDF,
         }
+
+        # Initialize the RDF graph and bind prefixes
+        self.graph = Graph()
+        for prefix, ns in self.namespaces.items():
+            self.graph.bind(prefix, ns, override=True)
 
         self.data_repository = {}
         self.track_number_callsign_map = {} # key = track number; value = callsign
         self.uuid_callsign_map = {}  # key = flight plan UUID; value = callsign
         self.last_timestamp = None  # Store the last processed timestamp
+
+        self.clearance_keys = ["heading"]
 
         self.aircraft_id = ""  # Default aircraft ID
         self.id_counter = {}  # Counter for generating unique IDs for each type
@@ -50,182 +54,319 @@ class RDFConverter:
         """Add a literal triple to the graph."""
         self.graph.add((subject, predicate, Literal(value, datatype=datatype)))
 
-    def _add_uri(self, subject, predicate, obj):
-        """Add a URI triple to the graph."""
-        self.graph.add((subject, predicate, obj))
-
-    def _add_triples(self, subject, predicates):
-        for predicate_uri, objects in predicates.items():
-            predicate = URIRef(predicate_uri)
-            for obj in objects:
-                value = obj["value"]
-                if value == "literal":
-                    self._add_literal(subject, predicate, value)
-                elif value == "uri":
-                    obj_uri = URIRef(value)
-                    self._add_uri(subject, predicate, obj_uri)
-
     def _process_position(self, parent_uri, position_data, namespace):
-        """Process position data and add to the graph."""
-        position_uri = URIRef(f"{parent_uri}/position")
-        self.graph.add((position_uri, RDF.type, namespace.Position))
-        self.graph.add((parent_uri, namespace.position, position_uri))
-        for key, value in position_data.items():
-            self._add_literal(position_uri, URIRef(f"{namespace}{key}"), value)
+        """
+        Create RDF triples for a structured position object.
+        - Keys with nested dicts are processed under 'pos'
+        - All other top-level keys are added under 'position'
+        """
+        position_uri = URIRef(f"{parent_uri}_position")
+        pos_uri = URIRef(f"{position_uri}_pos")
 
-    def _process_velocity(self, point4d_uri, velocity_data):
+        # Structure: parent -> position -> pos
+        self.graph.add((parent_uri, namespace.position, position_uri))
+        self.graph.add((position_uri, RDF.type, namespace.Position))
+        self.graph.add((position_uri, namespace.pos, pos_uri))
+        self.graph.add((pos_uri, RDF.type, namespace.Pos))
+
+        for key, value in position_data.items():
+            if isinstance(value, dict):
+                # Nested dict: process its key-values under 'pos'
+                for subkey, subvalue in value.items():
+                    predicate = URIRef(f"{namespace}{subkey}")
+                    self._add_literal(pos_uri, predicate, subvalue, datatype=XSD.decimal)
+            else:
+                # All other values belong directly under 'position'
+                predicate = URIRef(f"{namespace}{key}")
+                self._add_literal(position_uri, predicate, value)
+
+    def _process_hmi_position(self, flight_uri, uri, key, value, namespace):
+        """
+        Create RDF triples for a structured HMI position object.
+        - Keys with nested dicts are processed under 'pos'
+        - All other top-level keys are added under 'position'
+        """
+
+        self.graph.add((uri, RDF.type, HMI.Label))
+        parent_predicate = URIRef(HMI[key])
+        self.graph.add((flight_uri, parent_predicate, uri))
+
+        for subkey, subvalue in value.items():
+            if subvalue:
+                predicate = URIRef(f"{namespace}{subkey}")
+                self._add_literal(uri, predicate, subvalue, datatype=XSD.integer)
+    
+    def _process_popup(self, flight_uri, uri, key, value, namespace):
+        """
+        Create RDF triples for a structured HMI popup object.
+        - Keys with nested dicts are processed under 'popup'
+        - All other top-level keys are added under 'popup'
+        """
+
+        self.graph.add((uri, RDF.type, HMI.Popup))
+        parent_predicate = URIRef(HMI[key])
+        self.graph.add((flight_uri, parent_predicate, uri))
+
+        for subkey, subvalue in value.items():
+            if subvalue:
+                predicate = URIRef(f"{namespace}{subkey}")
+                self._add_literal(uri, predicate, subvalue)
+
+    # TODO: merge popup and hmi position processing methods into one
+
+    def _process_mouse_position(self, hmi_uri, mouse_uri, hmi_entity_data):
+        self.graph.add((mouse_uri, RDF.type, HMI.MousePosition))
+        self.graph.add((hmi_uri, HMI.mousePosition, mouse_uri))
+        for key, value in hmi_entity_data.items():
+            self._add_literal(mouse_uri, URIRef(HMI[key]), value, datatype=XSD.integer)
+
+    def _process_alert(self, hmi_uri, alert_uri, hmi_entity_data):
+        self.graph.add((alert_uri, RDF.type, HMI.Alert))
+        self.graph.add((hmi_uri, HMI.alert, alert_uri))
+
+        for key, value in hmi_entity_data.items():
+            if key == "relatedFlights" and isinstance(value, dict):
+                for _, flight_id in value.items():
+                    flight_uri = URIRef(FIXM[flight_id])
+                    self.graph.add((alert_uri, HMI.relatedFlight, flight_uri))
+                    self.graph.add((flight_uri, RDF.type, FIXM.Flight))
+            else:
+                self._add_literal(alert_uri, URIRef(HMI[key]), value)
+
+    def _process_velocity_vector(self, point4d_uri, velocity_data):
         """Process velocity data and add to the graph."""
-        velocity_uri = URIRef(f"{point4d_uri}/predictedAirspeed")
+        velocity_uri = URIRef(f"{point4d_uri}_predictedAirspeed")
         self.graph.add((velocity_uri, RDF.type, FIXM.predictedAirspeed))
         self.graph.add((point4d_uri, FIXM.predictedAirspeed, velocity_uri))
-        self._add_literal(velocity_uri, FIXM.Vx, velocity_data.get("vx_ms"), XSD.decimal)
-        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("vy_ms"), XSD.decimal)
+        self._add_literal(velocity_uri, FIXM.Vx, velocity_data.get("VxMs"), datatype=XSD.decimal)
+        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("VyMs"), datatype=XSD.decimal)
+
+    def _process_clearance(self, point4d_uri, point4d_data):
+        """Process clearance info and add to the graph."""
+        print("point4d_Data: ", point4d_data)
+        for key, value in point4d_data.items():
+            print("Key in clearance: ", key)
+            if key in self.clearance_keys: # TODO: add other clearance types
+                clearance_uri = URIRef(f"{point4d_uri}_{key}")
+                self.graph.add((clearance_uri, RDF.type, URIRef(FIXM[key])))
+                self.graph.add((point4d_uri, URIRef(FIXM[key]), clearance_uri))
+                self._add_literal(clearance_uri, URIRef(FIXM[key]), value)
 
     def _process_point4d(self, element_uri, point4d_data):
         """Process point4D data and add to the graph."""
-        point4d_uri = URIRef(f"{element_uri}/point4D")
+        point4d_uri = URIRef(f"{element_uri}_point4D")
         self.graph.add((element_uri, FIXM.point4D, point4d_uri))
         self.graph.add((point4d_uri, RDF.type, FIXM.Point4D))
 
-        if "position" in point4d_data:
-            self._process_position(point4d_uri, point4d_data["position"], FIXM)
+        print("Point4d data: ", point4d_data)
 
-        if "velocity" in point4d_data:
-            self._process_velocity(point4d_uri, point4d_data["velocity"])
+        for key, value in point4d_data.items():
+            if key == "position":
+                self._process_position(point4d_uri, value, FIXM)
 
-        if "flight_level_m" in point4d_data:
-            self._add_literal(point4d_uri, FIXM.flightLevel, point4d_data["flight_level_m"], XSD.decimal)
+            elif key == "velocity":
+                self._process_velocity_vector(point4d_uri, value)
 
-        if "calculated_altitude_m" in point4d_data:
-            self._add_literal(point4d_uri, FIXM.calculatedAltitude, point4d_data["calculated_altitude_m"], XSD.decimal)
+            elif key == "flightLevelM":
+                self._add_literal(point4d_uri, FIXM.flightLevel, value, datatype=XSD.decimal)
 
-    def _process_current(self, flight_uri, current_data):
-        """Process current flight data and add to the graph."""
-        current_uri = URIRef(f"{flight_uri}/current")
-        self.graph.add((flight_uri, FIXM.current, current_uri))
-        self.graph.add((current_uri, RDF.type, FIXM.Current))
+            elif key == "calculatedAltitudeM":
+                self._add_literal(point4d_uri, FIXM.calculatedAltitude, value, datatype=XSD.decimal)
+            
+            elif key == "level":
+                pass # TODO: implement this
 
-        if "element" in current_data:
-            element_uri = URIRef(f"{current_uri}/element")
-            self.graph.add((current_uri, FIXM.element, element_uri))
-            self.graph.add((element_uri, RDF.type, FIXM.Element))
+            elif key == "time":
+                pass # TODO: implement this
 
-            if "point4D" in current_data["element"]:
-                self._process_point4d(element_uri, current_data["element"]["point4D"])
+            else:
+                # For all other keys, process as clearance or custom property
+                self._process_clearance(point4d_uri, {key: value})
+    
+    def _process_branch(self, route_trajectory_group_uri, branch_key, branch_data):
+        branch_uri = URIRef(f"{route_trajectory_group_uri}_{branch_key}")
+        self.graph.add((route_trajectory_group_uri, URIRef(FIXM[branch_key]), branch_uri))
+        self.graph.add((branch_uri, RDF.type, URIRef(FIXM[branch_key.capitalize()])))
 
-    def _process_trajectory(self, flight_uri, trajectory_data):
+        if branch_key in ["agreed", "desired"]:
+            branch_data = branch_data[0] # Take only the first point as the next point
+
+        element = branch_data.get("element", {})
+
+        element_uri = URIRef(f"{branch_uri}_element")
+        self.graph.add((branch_uri, FIXM.element, element_uri))
+        self.graph.add((element_uri, RDF.type, FIXM.Element))
+
+        designator = (
+            element
+            .get("elementStartPoint", {})
+            .get("designatedPoint", {})
+            .get("designator", None)
+        )
+        if designator:
+            self.graph.add((element_uri, FIXM.designator, Literal(designator)))
+
+        point4d = element.get("point4D", {})
+        self._process_point4d(element_uri, point4d)
+        # TODO: check if there are other fields to process besides point4D and designator!
+
+    def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
-        trajectory_uri = URIRef(f"{flight_uri}/trajectory")
-        self.graph.add((flight_uri, FIXM.predicted, trajectory_uri))
-        self.graph.add((trajectory_uri, RDF.type, FIXM.Trajectory))
+        predicted_uri = URIRef(f"{route_trajectory_group_uri}_predicted")
+        self.graph.add((route_trajectory_group_uri, FIXM.predicted, predicted_uri))
+        self.graph.add((predicted_uri, RDF.type, FIXM.Predicted))
 
         if "points" in trajectory_data:
-            lat_lon_fl_str = " ".join(
-                f"{point['lat_deg']} {point['lon_deg']} {point['flight_level']}" for point in trajectory_data["points"]
-            )
-            self._add_literal(trajectory_uri, FIXM.trajectoryPoints, lat_lon_fl_str)
+            self._add_literal(predicted_uri, FIXM.points, trajectory_data["points"])
 
     def _process_label(self, flight_uri, label_data):
         """Process label data and add to the graph."""
-        label_uri = URIRef(f"{flight_uri}/label")
+        label_uri = URIRef(f"{flight_uri}_label")
         self.graph.add((label_uri, RDF.type, HMI.Label))
         self.graph.add((flight_uri, HMI.label, label_uri))
 
         if "position" in label_data:
             self._process_position(label_uri, label_data["position"], HMI)
+    
+    def _process_route_trajectory_group(self, flight_uri, value):
+        """Process route trajectory group data and add to the graph."""
+        route_trajectory_group_uri = URIRef(f"{flight_uri}_RTG")
+        self.graph.add((flight_uri, FIXM.routeTrajectoryGroup, route_trajectory_group_uri))
+        self.graph.add((route_trajectory_group_uri, RDF.type, FIXM.RouteTrajectoryGroup))
 
-    def _process_flight(self, timestamp_uri, entity_key, entity_data):
+        for branch_key, branch_data in value.items():
+            if branch_key == "predicted":
+                self._process_predicted_trajectory(route_trajectory_group_uri, branch_data)
+            else:
+                self._process_branch(route_trajectory_group_uri, branch_key, branch_data)
+
+    def _process_non_route_data(self, uri, key, value):
+        if isinstance(value, dict):
+            # If value is a dictionary, create a new URI and process it recursively
+            sub_uri = URIRef(f"{uri}_{key}")
+            self.graph.add((uri, URIRef(FIXM[key]), sub_uri))
+            for sub_key, sub_value in value.items():
+                self._process_non_route_data(sub_uri, sub_key, sub_value)
+        else:
+            # If value is a literal, add it directly
+            self._add_literal(uri, URIRef(FIXM[key]), value)
+
+    def _process_flight(self, flight_uri, flight_data):
         """Process flight data and add to the graph."""
-        flight_id = entity_key.split("_")[1]
-        flight_uri = URIRef(FIXM[f"flight_{flight_id}"])
-        self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
-        self.graph.add((flight_uri, RDF.type, FIXM.Flight))
 
-        if "flightIdentification" in entity_data:
-            self._add_literal(flight_uri, FIXM.aircraftIdentification, entity_data["flightIdentification"])
-
-        if "current" in entity_data:
-            self._process_current(flight_uri, entity_data["current"])
-
-        if "trajectory" in entity_data:
-            self._process_trajectory(flight_uri, entity_data["trajectory"])
-
-        if "label" in entity_data:
-            self._process_label(flight_uri, entity_data["label"])
+        for key, value in flight_data.items():
+            # Main flight-related data processing
+            if key == "routeTrajectoryGroup":
+                self._process_route_trajectory_group(flight_uri, value)
+            
+            # Handle other flight-related data
+            else:
+                self._process_non_route_data(flight_uri, key, value)
 
     def _process_hmi(self, timestamp_uri, hmi_data):
         """Process HMI data and add to the graph."""
-        hmi_uri = URIRef(f"{timestamp_uri}/hmi")
+
+        hmi_uri = URIRef(f"{timestamp_uri}_hmi")
         self.graph.add((hmi_uri, RDF.type, HMI.Interface))
         self.graph.add((timestamp_uri, HMI.interface, hmi_uri))
 
         for hmi_entity_key, hmi_entity_data in hmi_data.items():
-            if hmi_entity_key.startswith("Flight_"):
-                flight_id = hmi_entity_key.split("_")[1]
-                flight_uri = URIRef(f"hmi/flight_{flight_id}")
+            if hmi_entity_key.lower().startswith("flight_"):
+                flight_id = hmi_entity_key.split("_", 1)[1]
+                flight_uri = URIRef(f"{hmi_uri}_flight_{flight_id}")
                 self.graph.add((hmi_uri, HMI.relatedFlight, flight_uri))
+                self.graph.add((flight_uri, RDF.type, HMI.FlightRepresentation))
 
-                if "track_label_position" in hmi_entity_data:
-                    label_uri = URIRef(f"{flight_uri}/label")
-                    self.graph.add((label_uri, RDF.type, HMI.Label))
-                    if "position" in hmi_entity_data["track_label_position"]:
-                        self._process_position(label_uri, hmi_entity_data["track_label_position"]["position"], HMI)
-
-                if "track_screen_position" in hmi_entity_data:
-                    label_uri = URIRef(f"{flight_uri}/screen")
-                    self.graph.add((label_uri, RDF.type, HMI.Label))
-                    if "position" in hmi_entity_data["track_screen_position"]:
-                        self._process_position(label_uri, hmi_entity_data["track_screen_position"]["position"], HMI)
-
-            elif hmi_entity_key == "mouse_position":
-                mouse_uri = URIRef(f"{hmi_uri}/mousePosition")
-                self.graph.add((mouse_uri, RDF.type, HMI.MousePosition))
-                self.graph.add((hmi_uri, HMI.mousePosition, mouse_uri))
                 for key, value in hmi_entity_data.items():
-                    self._add_literal(mouse_uri, URIRef(f"{HMI}{key}"), value)
+                    if key == "trackLabelPosition":
+                        label_uri = URIRef(f"{flight_uri}_labelPos")
+                        self._process_hmi_position(flight_uri, label_uri, key, value, HMI)
+
+                    elif key == "trackScreenPosition":
+                        screen_uri = URIRef(f"{flight_uri}_screenPos")
+                        self._process_hmi_position(flight_uri, screen_uri, key, value, HMI)
+
+                    elif key == "popup":
+                        popup_uri = URIRef(f"{flight_uri}_popup")
+                        self._process_popup(flight_uri, popup_uri, key, value, HMI)
+
+                    else:
+                        # TODO: does this case exist?
+                        self._add_literal(flight_uri, URIRef(HMI[key]), value)
+
+            elif hmi_entity_key == "mousePosition":
+                mouse_uri = URIRef(f"{hmi_uri}_mousePosition")
+                self._process_mouse_position(hmi_uri, mouse_uri, hmi_entity_data)
 
             elif hmi_entity_key == "alert":
-                alert_uri = URIRef(f"{hmi_uri}/alert")
-                self.graph.add((alert_uri, RDF.type, HMI.alert))
-                self.graph.add((hmi_uri, HMI.alert, alert_uri))
+                alert_uri = URIRef(f"{hmi_uri}_alert")
+                self._process_alert(hmi_uri, alert_uri, hmi_entity_data)
 
-                for key, value in hmi_entity_data.items():
-                    if key == "relatedFlights":
-                        related_flights_uri = URIRef(f"{alert_uri}/relatedFlights")
-                        for flight_key, flight_value in value.items():
-                            flight_uri = URIRef(FIXM[f"{flight_value}"])
-                            self.graph.add((related_flights_uri, RDF.type, flight_uri))
-                            self.graph.add((flight_uri, RDF.type, FIXM.Flight))
-                    else:
-                        self._add_literal(alert_uri, URIRef(f"{HMI}{key}"), value)
+    def _repository_to_rdf(self, timestamp_data):
+        """
+        Converts the data repository into an RDF graph.
+        This method takes the most recent timestamp from a data repository and converts data into RDF triples.
+        """
+        timestamp, data = next(iter(timestamp_data.items()))
+        timestamp = self._safe_local_name(timestamp)
+        timestamp_uri = BASE[f"{timestamp}"]
+        self.graph.add((timestamp_uri, RDF.type, BASE.Timestamp))
 
-    def _match_uuids_and_callsigns(self, uuid: str, xml_data: str) -> dict:
+        for key, key_data in data.items():
+            if key.startswith("flight_"):
+                flight_uri = URIRef(FIXM[f"{key}_{timestamp}"])
+                self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
+                self.graph.add((flight_uri, RDF.type, FIXM.Flight))
+                if "Flight" in key_data:
+                    self._process_flight(flight_uri, key_data["Flight"])
+
+            elif key == "HMI":
+                # Process HMI data
+                hmi_data = key_data
+                self._process_hmi(timestamp_uri, hmi_data)
+    
+
+    #########################################################################################################
+    ###################################     DATA REPOSITORY METHODS     #####################################
+    #########################################################################################################
+    
+    
+    def _safe_local_name(self, s):
+        return s.replace("-", "_").replace(":", "_").replace(".", "_")
+
+    def _match_uuids_and_callsigns(self, uuid: str, xml_data: str):
         """
         Parses XML data and maps flight UUID to its corresponding aircraftIdentification (callsign).
 
         Args:
             uuid (str): UUID of the flight plan to match.
-            xml_data (str): String containing the full Flight PLan XML.
-
-        Returns:
-            dict: Mapping from UUID to aircraftIdentification value.
+            xml_data (str): String containing the full Flight Plan XML.
         """
 
+        # Convert FIXM Namespace to string URI (ElementTree requires raw string URIs, not rdflib Namespace objects)
+        fixm_uri = str(self.namespaces["fx"])
+        fixm_uri = fixm_uri.rstrip("/")  # Ensure no trailing slash
+
+        # Parse XML
         root = ET.fromstring(xml_data)
-        callsign = root.find(
-            ".//fx:aircraftIdentification", self.fixm_namespaces
-        ).text
-        print("Parsed callsign: ", callsign)
-        self.uuid_callsign_map[uuid] = callsign
+
+        # Use fully qualified tag name to locate the element
+        element = root.find(f".//{{{fixm_uri}}}aircraftIdentification")
+        
+        if element is not None and element.text:
+            callsign = element.text.strip()
+            self.uuid_callsign_map[uuid] = callsign
+        else:
+            print("Warning: aircraftIdentification element not found.")
+            callsign = None
 
         self.aircraft_id = callsign  # Store the aircraft ID for later use
-    
+
     def _update_asd_event_repo(self, json_record):
         data_record = json_record.get("asd_event", {})
         timestamp = data_record.get("timestamp")  # TODO: which timestamp should we use here? asd_event or the one from the main record?
 
-        # === 1. Handle clearance ===
-        # TODO: test if this works
+        # 1. Handle clearance 
         clearance = data_record.get("clearance")
         if clearance:
             track_number = clearance.get("trackNumber")
@@ -233,20 +374,38 @@ class RDFConverter:
                 callsign = self.track_number_callsign_map.get(track_number)
                 flight_key = f"flight_{callsign}"
 
-                # Set clearance value under agreed → element → point4D → [type]
                 clearance_type = clearance.get("clearanceType")
                 clearance_value = clearance.get("clearance")
+
                 if callsign and clearance_type and clearance_value:
-                    flight_branch = self.data_repository \
+                    # Navigate safely to "agreed" list
+                    route_group = self.data_repository \
                         .setdefault(timestamp, {}) \
                         .setdefault(flight_key, {}) \
-                        .setdefault("agreed", {}) \
-                        .setdefault("element", {}) \
-                        .setdefault("point4D", {})
+                        .setdefault("Flight", {}) \
+                        .setdefault("routeTrajectoryGroup", {})
 
-                    flight_branch[clearance_type] = clearance_value
+                    agreed_list = route_group.get("agreed")
+                    if not isinstance(agreed_list, list):
+                        print(f"Warning: 'agreed' field is not a list. Skipping.")
+                        return
 
-        # === 2. Determine if there's a flight-related HMI event ===
+                    if not agreed_list:
+                        # If the list is empty, add a new element structure
+                        agreed_list.append({"element": {"point4D": {}}})
+
+                    # Use first element in the list for now
+                    first_element = agreed_list[0].get("element", {})
+                    point4d = first_element.setdefault("point4D", {})
+
+                    # Update clearance
+                    # TODO: Make sure this updates exactly a directory/subdirectory it refers to
+                    point4d[clearance_type] = clearance_value
+
+                    # Write back the updated element in case it was not present before
+                    agreed_list[0]["element"] = first_element
+
+        # 2. Determine if there's a flight-related HMI event
         track_number = (
             data_record.get("trackLabelPosition", {}).get("trackNumber")
             or data_record.get("trackScreenPosition", {}).get("trackNumber")
@@ -264,7 +423,7 @@ class RDFConverter:
 
                 hmi_branch["aircraftIdentification"] = callsign
 
-                # === 2a. trackLabelPosition ===
+                # 2a. trackLabelPosition
                 if "trackLabelPosition" in data_record:
                     tlp = data_record["trackLabelPosition"]
                     hmi_branch["trackLabelPosition"] = {
@@ -276,7 +435,7 @@ class RDFConverter:
                         "selected": tlp.get("selected"),
                     }
 
-                # === 2b. trackScreenPosition ===
+                # 2b. trackScreenPosition
                 if "trackScreenPosition" in data_record:
                     tsp = data_record["trackScreenPosition"]
                     hmi_branch["trackScreenPosition"] = {
@@ -284,7 +443,7 @@ class RDFConverter:
                         "y": tsp.get("y"),
                     }
 
-                # === 2c. popup ===
+                # 2c. popup
                 if "popup" in data_record:
                     popup = data_record["popup"]
                     hmi_branch["popup"] = {
@@ -292,7 +451,7 @@ class RDFConverter:
                         "opened": popup.get("opened"),
                     }
 
-        # === 3. Handle mousePosition (not tied to specific flight) ===
+        # 3. Handle mousePosition (not tied to specific flight)
         if "mousePosition" in data_record:
             mouse_position = data_record["mousePosition"]
             self.data_repository \
@@ -388,9 +547,7 @@ class RDFConverter:
         timestamp = json_record.get("timestamp")
         data_record = json_record.get("trajectory", {})
         flight_plan_uuid = data_record.get("flightPlanUuid")
-        print("Flight Plan UUID: ", flight_plan_uuid)
         callsign = self.uuid_callsign_map.get(flight_plan_uuid)
-        print("Callsign from UUID: ", callsign)
         
         if not callsign:
             return  # or raise a warning/log error if UUID not found
@@ -488,45 +645,48 @@ class RDFConverter:
             print(f"XML Parsing Error in _update_data_repository_fixm: {e}")
             return {}
 
-        def element_to_dict(element):
-            node = {}
+        def element_to_dict(element, parent_tag=None):
             tag = element.tag.split("}")[-1]
+            children = list(element)
 
-            # Process attributes
+            # Case: "agreed" or "desired" – treat as list of {"element": {...}}
+            if tag in {"agreed", "desired"}:
+                node = []
+                for child in children:
+                    child_tag = child.tag.split("}")[-1]
+                    child_dict = element_to_dict(child, parent_tag=tag)
+                    if child_tag == "element":
+                        node.append({child_tag: child_dict})
+                return node  # directly return the list
+
+            # Normal case
+            node = {}
             for attr_name, attr_value in element.attrib.items():
                 node[attr_name] = attr_value
 
-            # Process children elements
-            children = list(element)
             if children:
                 for child in children:
                     child_tag = child.tag.split("}")[-1]
-                    child_dict = element_to_dict(child)
+                    child_dict = element_to_dict(child, parent_tag=tag)
 
                     if child_tag not in node:
                         node[child_tag] = child_dict
                     else:
-                        # Convert to list if multiple entries for the same tag
                         if not isinstance(node[child_tag], list):
                             node[child_tag] = [node[child_tag]]
                         node[child_tag].append(child_dict)
             else:
-                # Leaf node: return text content directly if available
+                # Leaf node
                 text = element.text.strip() if element.text else ""
                 if tag == "pos" and text:
                     try:
                         lat_str, lon_str = text.split()
-                        return {
-                            "lat": float(lat_str),
-                            "lon": float(lon_str)
-                        }
+                        return {"lat": float(lat_str), "lon": float(lon_str)}
                     except ValueError:
-                        # If the split doesn't work as expected, fallback to raw text
                         return text
                 return text if text else node
 
             return node
-
 
         # Top-level dictionary with root tag
         root_tag = root.tag.split("}")[-1]
@@ -549,138 +709,51 @@ class RDFConverter:
         previous_state = self.data_repository.get(self.last_timestamp, {})
         self.data_repository[new_timestamp] = copy.deepcopy(previous_state)
 
-        print(f"Created new repository state for timestamp: {new_timestamp}, used previous state: {self.last_timestamp}")
+        # print(f"Created new repository state for timestamp: {new_timestamp}, used previous state: {self.last_timestamp}")
         
+    #########################################################################################################
+    ##########################################     MAIN METHODS     #########################################
+    #########################################################################################################
+
     def convert_event_data(self, json_record):
         """Convert non-FIXM data to RDF graph."""
 
-        # This loop handles JSON -> RDF graph conversion TODO: refactor this into a separate function
-        for key, value in json_record.items():
-            print(f"Processing key: {key}, value: {value}")
-            if key == "timestamp":
-                timestamp_uri = URIRef(value)
-                self.graph.add((timestamp_uri, RDF.type, FIXM.Timestamp))
-                self._add_literal(timestamp_uri, FIXM.timestampValue, value, XSD.dateTime)
-
-            elif key.startswith("Flight_"): # TODO: which data is this?
-                self._process_flight(timestamp_uri, key, value)
-
-            elif key == "HMI": # TODO: there is no key HMI in the original data, we should split it by alert/label_position/...
-                self._process_hmi(timestamp_uri, value)
-
-            elif key == "trajectory":
-                if "flight_plan_uuid" in value.keys():
-                    # TODO: join the flight_plan_uuid with the flights from the repository
-                    flight_uri = ... # URIRef(FIXM[f"flight_{value['flight_plan_uuid']}"])
-                    self._process_trajectory(flight_uri, value)
-
-            elif key == "track":
-                pass # TODO: implement track processing
-
         # This handles the data repository creation
-        # TODO: can we convert repository to turtle, without additional rdf graph creation?
-        self._update_data_repository_events(json_record)
-
-        print(json.dumps(self.data_repository, indent=4))
-        # print(json.dumps(self.track_number_callsign_map, indent=4))
-        # Test print
-        """for timestamp, data in self.data_repository.items():
-            print(f"Timestamp: {timestamp}")
-            for key, _ in data.items():
-                if "flight" in key.lower():
-                    print(f"{key}")"""
-        
+        self._update_data_repository_events(json_record) # TODO: can we convert repository to turtle without additional rdf graph creation?
+        # print(json.dumps(self.data_repository, indent=4))
+                
     def convert_fixm_data(self, xml_record):
         """Convert FIXM/XML data to RDF graph."""
-        
         timestamp = xml_record["timestamp"]
-
         flight_plan = xml_record["flight_plan"]
         fixm_data = flight_plan["fixm"]
         uuid = flight_plan["uuid"]
         self._match_uuids_and_callsigns(uuid, fixm_data)
-
-        # XML -> RDF graph conversion
-        def process_element(element, parent_subject=None):
-            tag = element.tag.split("}")[-1]
-            subject_tag = tag[0].upper() + tag[1:]
-            subject_id = self._generate_index(subject_tag, timestamp)
-
-            if "base" in element.tag:
-                subject = FB[subject_id]
-                self.graph.add((subject, RDF.type, URIRef(FB[subject_tag])))
-            else:
-                subject = FIXM[subject_id]
-                self.graph.add((subject, RDF.type, URIRef(FIXM[subject_tag])))
-
-            predicates = {}
-            for attr_name, attr_value in element.attrib.items():
-                attr_uri = FIXM[attr_name]
-                predicates[attr_uri] = [{"value": attr_value, "type": "literal"}]
-
-            for child in element:
-                child_tag = child.tag.split("}")[-1]
-                if "base" in child.tag:
-                    predicate_uri = FB[child_tag]
-                else:
-                    predicate_uri = FIXM[child_tag]
-
-                if list(child):  # Has sub-elements
-                    child_subject = process_element(child, subject)
-
-                    if predicate_uri not in predicates:
-                        predicates[predicate_uri] = [
-                            {"value": child_subject, "type": "uri"}
-                        ]
-                elif child.text:
-                    for attr_name, attr_value in child.attrib.items():
-                        if "base" in child.tag:
-                            attr_uri = FB[attr_name]
-                        else:
-                            attr_uri = FIXM[attr_name]
-                        predicates[attr_uri] = [
-                            {"value": attr_value, "type": "literal"}
-                        ]
-
-                    predicates[predicate_uri] = [
-                        {"value": child.text.strip(), "type": "literal"}
-                    ]
-
-            if parent_subject:
-                if "base" in element.tag:
-                    parent_predicate = FB[tag]
-                else:
-                    parent_predicate = FIXM[tag]
-                self.graph.add((parent_subject, parent_predicate, subject))
-
-            self._add_triples(subject, predicates)
-
-            return subject
-        
-        try:
-            root = ET.fromstring(fixm_data)
-        except ET.ParseError as e:
-            print(f"XML Parsing Error in _update_data_repository_fixm: {e}")
-            return {}
-        
-        process_element(root)
-        print("RDF conversion completed.")
-
-        # This handles the data repository creation
-        # TODO: can we convert repository to turtle, without additional rdf graph creation?
         matched_callsign = self.uuid_callsign_map.get(uuid)
-        self._update_data_repository_fixm(fixm_data, timestamp, matched_callsign)
+        
+        # This handles the data repository creation
+        self._update_data_repository_fixm(fixm_data, timestamp, matched_callsign) # TODO: can we convert repository to turtle without additional rdf graph creation?
+        # print(json.dumps(self.data_repository, indent=4))
 
-        print(json.dumps(self.data_repository, indent=4))
-        # print(json.dumps(self.track_number_callsign_map, indent=4))
-        # print("Timestamp repository: ", self.data_repository)
-        # print("Timestamp track_num to callsign map: ", self.track_number_callsign_map)
-        # Test print
-        """for timestamp, data in self.data_repository.items():
-            print(f"Timestamp: {timestamp}")
-            for key, _ in data.items():
-                if "flight" in key.lower():
-                    print(f"{key}")"""
+    def convert_record_data(self, data_record, data_record_type):
+        """Convert a record (either JSON or XML) to RDF graph."""
+
+        if data_record_type == "json":
+            # 1. case - FIXM data
+            if "flight_plan" in data_record.keys():
+                self.convert_fixm_data(data_record)
+                # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
+            
+            # 2. case - Event data
+            else:
+                self.convert_event_data(data_record)
+                # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
+        
+            timestamp_data = {self.last_timestamp: self.data_repository[self.last_timestamp]}
+            # Convert the repository to RDF triples
+            self._repository_to_rdf(timestamp_data)
+        else:
+            raise ValueError("Unsupported data record type. Use 'json'.")
 
     def serialize(self, format="turtle"):
         """Serialize the RDF graph to a string/turtle format."""

@@ -57,23 +57,16 @@ class Processor:
 
         while True:
             fetched_data = await self.converter_queue.get_from_queue()
-            print("Got from queue: ", fetched_data["data_type"], "\n", fetched_data["data"] )
+            # print("Got from queue: ", fetched_data["data_type"], "\n", fetched_data["data"] )
             data_record = fetched_data["data"]
             data_record_type = fetched_data["data_type"]
 
             print("Previous timestamp: ", self.rdf_converter.last_timestamp)
-            if data_record_type == "json":
-                # 1. case - FIXM data
-                if "flight_plan" in data_record.keys():
-                    self.rdf_converter.convert_fixm_data(data_record)
-                    # TODO: remove this maping from here, it should be done in the RDFConverter
-                    # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
-                # 2. case - Event data
-                else:
-                    self.rdf_converter.convert_event_data(data_record)
-                    # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
+
+            self.rdf_converter.convert_record_data(data_record, data_record_type)
                 
             turtle_data = self.rdf_converter.serialize()
+            print("Turtle data: ", turtle_data)
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):
