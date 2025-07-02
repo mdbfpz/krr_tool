@@ -54,7 +54,7 @@ class RDFConverter:
         """Add a literal triple to the graph."""
         self.graph.add((subject, predicate, Literal(value, datatype=datatype)))
 
-    def _process_position(self, parent_uri, position_data, namespace):
+    def _process_position(self, parent_uri, position_data, fx_namespace, fb_namespace):
         """
         Create RDF triples for a structured position object.
         - Keys with nested dicts are processed under 'pos'
@@ -64,21 +64,70 @@ class RDFConverter:
         pos_uri = URIRef(f"{position_uri}_pos")
 
         # Structure: parent -> position -> pos
-        self.graph.add((parent_uri, namespace.position, position_uri))
-        self.graph.add((position_uri, RDF.type, namespace.Position))
-        self.graph.add((position_uri, namespace.pos, pos_uri))
-        self.graph.add((pos_uri, RDF.type, namespace.Pos))
+        self.graph.add((parent_uri, fx_namespace.position, position_uri))
+        self.graph.add((position_uri, RDF.type, fx_namespace.Position))
+        self.graph.add((position_uri, fb_namespace.pos, pos_uri))
+        self.graph.add((pos_uri, RDF.type, fb_namespace.Pos))
 
         for key, value in position_data.items():
             if isinstance(value, dict):
                 # Nested dict: process its key-values under 'pos'
                 for subkey, subvalue in value.items():
-                    predicate = URIRef(f"{namespace}{subkey}")
+                    predicate = URIRef(f"{fb_namespace}{subkey}")
                     self._add_literal(pos_uri, predicate, subvalue, datatype=XSD.decimal)
             else:
                 # All other values belong directly under 'position'
-                predicate = URIRef(f"{namespace}{key}")
+                predicate = URIRef(f"{fb_namespace}{key}")
                 self._add_literal(position_uri, predicate, value)
+    
+    def _process_level(self, parent_uri, level_data, fx_namespace, fb_namespace):
+        """
+        Create RDF triples for a structured flight level object.
+        Handles cases where flightLevel includes both value and uom.
+        
+        Expected level_data format:
+        {
+            'flightLevel': {
+                'uom': 'FL',
+                'flightLevel': '370'  # or int
+            }
+        }
+        """
+        level_uri = URIRef(f"{parent_uri}_level")
+
+        # Link parent to level
+        self.graph.add((parent_uri, fx_namespace.level, level_uri))
+        self.graph.add((level_uri, RDF.type, fx_namespace.Level))
+
+        for key, value in level_data.items():
+            if key == "flightLevel" and isinstance(value, dict):
+                # Handle both value and uom
+                for subkey, subval in value.items():
+                    pred = URIRef(f"{fb_namespace}{subkey}")
+                    if subkey == "flightLevel":
+                        self._add_literal(level_uri, pred, subval, datatype=XSD.integer)
+                    else:
+                        self._add_literal(level_uri, pred, subval)
+            else:
+                # Handle any unexpected structure
+                pred = URIRef(f"{fb_namespace}{key}")
+                self._add_literal(level_uri, pred, value)
+
+
+    def _process_time(self, parent_uri, time_data, fx_namespace, fb_namespace):
+        """
+        Create RDF triples for a structured flight time object.
+        - Output structure: parent -> time
+        """
+        time_uri = URIRef(f"{parent_uri}_time")
+
+        # Structure: parent -> time
+        self.graph.add((parent_uri, fx_namespace.time, time_uri))
+        self.graph.add((time_uri, RDF.type, fx_namespace.Time))
+
+        for key, value in time_data.items():
+            predicate = URIRef(f"{fb_namespace}{key}")
+            self._add_literal(time_uri, predicate, value, datatype=XSD.dateTime) # dateTime
 
     def _process_hmi_position(self, flight_uri, uri, key, value, namespace):
         """
@@ -162,7 +211,13 @@ class RDFConverter:
 
         for key, value in point4d_data.items():
             if key == "position":
-                self._process_position(point4d_uri, value, FIXM)
+                self._process_position(point4d_uri, value, FIXM, FB)
+
+            elif key == "level":
+                self._process_level(point4d_uri, value, FIXM, FB)
+
+            elif key == "time":
+                self._process_time(point4d_uri, value, FIXM, FB)
 
             elif key == "velocity":
                 self._process_velocity_vector(point4d_uri, value)
@@ -173,12 +228,6 @@ class RDFConverter:
             elif key == "calculatedAltitudeM":
                 self._add_literal(point4d_uri, FIXM.calculatedAltitude, value, datatype=XSD.decimal)
             
-            elif key == "level":
-                pass # TODO: implement this
-
-            elif key == "time":
-                pass # TODO: implement this
-
             else:
                 # For all other keys, process as clearance or custom property
                 self._process_clearance(point4d_uri, {key: value})
@@ -208,7 +257,6 @@ class RDFConverter:
 
         point4d = element.get("point4D", {})
         self._process_point4d(element_uri, point4d)
-        # TODO: check if there are other fields to process besides point4D and designator!
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
@@ -635,15 +683,11 @@ class RDFConverter:
             - Repeated tags are converted to lists.
         
         The resulting dictionary is stored under a key named `flight_<callsign>`.
-
-        Args:
-            fixm_record (str): The FIXM XML string of a flight record.
-            callsign (str): The aircraft ID.
         """
 
         # Copy previous repo state to the current timestamp
         self._create_new_repo_state(timestamp)
-        # Remove copied predicted trajectories from the previous timestamp to save memmory
+        # Remove copied predicted trajectories from the previous timestamp to save memory
         self._remove_predicted_trajectories_from_last_state_repo(timestamp)
 
         try:
@@ -663,10 +707,12 @@ class RDFConverter:
                     child_dict = element_to_dict(child, parent_tag=tag)
                     if child_tag == "element":
                         node.append({child_tag: child_dict})
-                return node  # directly return the list
+                return node
 
             # Normal case
             node = {}
+
+            # Store attributes first
             for attr_name, attr_value in element.attrib.items():
                 node[attr_name] = attr_value
 
@@ -682,15 +728,26 @@ class RDFConverter:
                             node[child_tag] = [node[child_tag]]
                         node[child_tag].append(child_dict)
             else:
-                # Leaf node
                 text = element.text.strip() if element.text else ""
+
                 if tag == "pos" and text:
                     try:
                         lat_str, lon_str = text.split()
                         return {"lat": float(lat_str), "lon": float(lon_str)}
                     except ValueError:
                         return text
-                return text if text else node
+
+                # ⬇️ Merge text with attributes if both exist
+                if text:
+                    if node:  # There were attributes
+                        node[tag] = text
+                        return node
+                    else:
+                        return text
+                elif node:
+                    return node
+                else:
+                    return ""
 
             return node
 
@@ -707,8 +764,9 @@ class RDFConverter:
             self.data_repository[timestamp].update({
                 flight_key: structured_dict
             })
-        
-        self.last_timestamp = timestamp  # Store the last processed timestamp
+
+        self.last_timestamp = timestamp
+
 
     def _create_new_repo_state(self, new_timestamp):
         """Create a new repository state for the next timestamp."""
