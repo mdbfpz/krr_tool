@@ -212,12 +212,13 @@ class RDFConverter:
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
+        print("trajectory_data: ", trajectory_data)
         predicted_uri = URIRef(f"{route_trajectory_group_uri}_predicted")
         self.graph.add((route_trajectory_group_uri, FIXM.predicted, predicted_uri))
         self.graph.add((predicted_uri, RDF.type, FIXM.Predicted))
 
-        if "points" in trajectory_data:
-            self._add_literal(predicted_uri, FIXM.points, trajectory_data["points"])
+        # TODO: prefix shouldn't be fx here - update this
+        self._add_literal(predicted_uri, FIXM.points, trajectory_data)
 
     def _process_label(self, flight_uri, label_data):
         """Process label data and add to the graph."""
@@ -550,6 +551,7 @@ class RDFConverter:
         callsign = self.uuid_callsign_map.get(flight_plan_uuid)
         
         if not callsign:
+            print(f"Warning: No callsign found for UUID {flight_plan_uuid}. Skipping predicted trajectory update.")
             return  # or raise a warning/log error if UUID not found
 
         flight_key = f"flight_{callsign}"
@@ -562,9 +564,8 @@ class RDFConverter:
             .setdefault("Flight", {}) \
             .setdefault("routeTrajectoryGroup", {})
 
-        route_group["predicted"] = {
-            "element": predicted_points
-        } 
+        route_group["predicted"] = predicted_points
+        print("Route group after predicted update: ", route_group)
         
     def _update_data_repository_events(self, json_record):
         """
@@ -591,6 +592,8 @@ class RDFConverter:
 
         # Copy previous repo state to the current timestamp
         self._create_new_repo_state(timestamp)
+        # Remove copied predicted trajectories from the previous timestamp to save memmory
+        self._remove_predicted_trajectories_from_last_state_repo(timestamp)
 
         # Process track events to fill the track-callsign mapping dictionary
         track = json_record.get("track", {})
@@ -637,7 +640,11 @@ class RDFConverter:
             fixm_record (str): The FIXM XML string of a flight record.
             callsign (str): The aircraft ID.
         """
+
+        # Copy previous repo state to the current timestamp
         self._create_new_repo_state(timestamp)
+        # Remove copied predicted trajectories from the previous timestamp to save memmory
+        self._remove_predicted_trajectories_from_last_state_repo(timestamp)
 
         try:
             root = ET.fromstring(fixm_record)
@@ -649,7 +656,6 @@ class RDFConverter:
             tag = element.tag.split("}")[-1]
             children = list(element)
 
-            # Case: "agreed" or "desired" – treat as list of {"element": {...}}
             if tag in {"agreed", "desired"}:
                 node = []
                 for child in children:
@@ -710,6 +716,27 @@ class RDFConverter:
         self.data_repository[new_timestamp] = copy.deepcopy(previous_state)
 
         # print(f"Created new repository state for timestamp: {new_timestamp}, used previous state: {self.last_timestamp}")
+
+    def _remove_predicted_trajectories_from_last_state_repo(self, new_timestamp):
+        """
+        Avoid copying predicted trajectories from the previous timestamp to the new one.
+        This is to avoid copying large strings - we can look them up in history timestamps if needed.
+        This method modifies the last state in the data repository by removing the "predicted" key.
+        """
+
+        # TODO: optimise this not to check all flights (for loop below) for every new timestamp
+        # - use some flag to check if predicted trajectories were added and processed
+
+        print(f"Removing predicted trajectories from last state for timestamp: {new_timestamp}")
+
+        if new_timestamp in self.data_repository:
+            last_state = self.data_repository[new_timestamp]
+            print(f"Last state for timestamp {new_timestamp}: {last_state}")
+            for flight_key, flight_data in last_state.items():
+                if "Flight" in flight_data and "routeTrajectoryGroup" in flight_data["Flight"]:
+                    route_group = flight_data["Flight"]["routeTrajectoryGroup"]
+                    # Remove predicted trajectory from the new state if exists
+                    route_group.pop("predicted", None)
         
     #########################################################################################################
     ##########################################     MAIN METHODS     #########################################
