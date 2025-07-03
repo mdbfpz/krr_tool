@@ -2,6 +2,7 @@ from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD 
 import xml.etree.ElementTree as ET
 import copy
+import json
 
 # Define namespaces
 BASE = Namespace("https://aware-sesar.eu/")
@@ -236,34 +237,63 @@ class RDFConverter:
         branch_uri = URIRef(f"{route_trajectory_group_uri}_{branch_key}")
         self.graph.add((route_trajectory_group_uri, URIRef(FIXM[branch_key]), branch_uri))
         self.graph.add((branch_uri, RDF.type, URIRef(FIXM[branch_key.capitalize()])))
-
+        print(f"branch data= {len(branch_data)}")
         if branch_key in ["agreed", "desired"]:
-            branch_data = branch_data[0] # Take only the first point as the next point
+            remaining_branch_data = branch_data[0] # Take only the first point as the next point
+            routeInformation = branch_data[-1]
+            print(f"routeInformation = {routeInformation}")
+            element = remaining_branch_data.get("element", {})
 
-        element = branch_data.get("element", {})
+            element_uri = URIRef(f"{branch_uri}_element")
+            self.graph.add((branch_uri, FIXM.element, element_uri))
+            self.graph.add((element_uri, RDF.type, FIXM.Element))
 
-        element_uri = URIRef(f"{branch_uri}_element")
-        self.graph.add((branch_uri, FIXM.element, element_uri))
-        self.graph.add((element_uri, RDF.type, FIXM.Element))
+            designator = (
+                element
+                .get("elementStartPoint", {})
+                .get("designatedPoint", {})
+                .get("designator", None)
+            )
+            if designator:
+                self.graph.add((element_uri, FIXM.designator, Literal(designator)))
 
-        # Process elementStartPoint/designatedPoint/designator
-        element_start_point = element.get("elementStartPoint", {})
-        designated_point = element_start_point.get("designatedPoint", {})
-        designator = designated_point.get("designator", None)
+            #routeInfo processing
+            route_info_dict      = routeInformation.get("routeInformation", {})
+            cruising_level_dict  = route_info_dict.get("cruisingLevel", {})
+            flight_level_dict = cruising_level_dict.get("flightLevel", {})
+            flight_level_value = flight_level_dict.get("flightLevel")
 
-        if designator:
-            esp_uri = URIRef(f"{element_uri}_elemSP")
-            dp_uri = URIRef(f"{esp_uri}_desigPoint")
 
-            self.graph.add((element_uri, FIXM.elementStartPoint, esp_uri))
-            self.graph.add((esp_uri, RDF.type, FIXM.ElementStartPoint))
-            self.graph.add((esp_uri, FB.designatedPoint, dp_uri))
-            self.graph.add((dp_uri, RDF.type, FB.DesignatedPoint))
-            self.graph.add((dp_uri, FB.designator, Literal(designator)))
+            #routeInformation
+            route_info_uri = URIRef(f"{branch_uri}_routeInformation")
+            self.graph.add((branch_uri     , FIXM.element , route_info_uri))
+            self.graph.add((route_info_uri , RDF.type     , FIXM.RouteInformation))
 
-        # Process point4D
-        point4d = element.get("point4D", {})
-        self._process_point4d(element_uri, point4d)
+            #cruisingLevel
+            cruis_lvl_uri = URIRef(f"{route_info_uri}_cruisingLevel")
+            self.graph.add((route_info_uri , FIXM.element , cruis_lvl_uri))
+            self.graph.add((cruis_lvl_uri  , RDF.type     , FIXM.CruisingLevel))
+
+            #flightLevel
+            flight_lvl_uri = URIRef(f"{cruis_lvl_uri}_flightLevel")
+            self.graph.add((cruis_lvl_uri  , FIXM.element , flight_lvl_uri))
+            self.graph.add((flight_lvl_uri , RDF.type     , FIXM.FlightLevel))
+            #finally add value of cruising flight level
+            self.graph.add((flight_lvl_uri , RDF.value    , Literal(flight_level_value))) #promijeniti u adekvatni oblik, ne value nego fx flight ili kako već
+            
+            
+            point4d = element.get("point4D", {})
+            self._process_point4d(element_uri, point4d)
+        else:
+            element = branch_data.get("element", {})
+
+            element_uri = URIRef(f"{branch_uri}_element")
+            self.graph.add((branch_uri, FIXM.element, element_uri))
+            self.graph.add((element_uri, RDF.type, FIXM.Element))
+
+        
+            point4d = element.get("point4D", {})
+            self._process_point4d(element_uri, point4d)
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
@@ -601,7 +631,7 @@ class RDFConverter:
 
         flight_key = f"flight_{callsign}"
         predicted_points = data_record.get("points", [])
-
+        cruising_level = data_record.get("cruisingLevel")
         # Ensure the structure exists and only update the "predicted" section
         route_group = self.data_repository \
             .setdefault(timestamp, {}) \
@@ -609,7 +639,14 @@ class RDFConverter:
             .setdefault("Flight", {}) \
             .setdefault("routeTrajectoryGroup", {})
 
-        route_group["predicted"] = predicted_points
+        predicted_data = {
+            "element": predicted_points
+        }
+        
+        # Add cruisingLevel if available
+        if cruising_level:
+            predicted_data["cruisingLevel"] = cruising_level
+        route_group["predicted"] = predicted_data
         print("Route group after predicted update: ", route_group)
         
     def _update_data_repository_events(self, json_record):
@@ -666,8 +703,7 @@ class RDFConverter:
             # Process predicted trajectory records
             self._update_predicted_trajectory_repo(json_record)
 
-        self.last_timestamp = timestamp  # Store the last processed timestamp
-
+        self.last_timestamp = timestamp  # Store the last processed timestamp        
         return self.data_repository, self.track_number_callsign_map
     
     def _update_data_repository_fixm(self, fixm_record, timestamp, callsign):
@@ -702,8 +738,8 @@ class RDFConverter:
                 for child in children:
                     child_tag = child.tag.split("}")[-1]
                     child_dict = element_to_dict(child, parent_tag=tag)
-                    if child_tag == "element":
-                        node.append({child_tag: child_dict})
+                    #if child_tag == "element":
+                    node.append({child_tag: child_dict})
                 return node
 
             # Normal case
@@ -763,7 +799,8 @@ class RDFConverter:
             })
 
         self.last_timestamp = timestamp
-
+        print("HAAAAAAAAAAAAAAAAA")
+        print(json.dumps(self.data_repository, indent=4))
 
     def _create_new_repo_state(self, new_timestamp):
         """Create a new repository state for the next timestamp."""
@@ -815,7 +852,7 @@ class RDFConverter:
         
         # This handles the data repository creation
         self._update_data_repository_fixm(fixm_data, timestamp, matched_callsign) # TODO: can we convert repository to turtle without additional rdf graph creation?
-        # print(json.dumps(self.data_repository, indent=4))
+        #print(json.dumps(self.data_repository, indent=4))
 
     def convert_record_data(self, data_record, data_record_type):
         """Convert a record (either JSON or XML) to RDF graph."""
