@@ -199,7 +199,7 @@ class RDFConverter:
                 clearance_uri = URIRef(f"{point4d_uri}_{key}")
                 self.graph.add((clearance_uri, RDF.type, URIRef(FIXM[key])))
                 self.graph.add((point4d_uri, URIRef(FIXM[key]), clearance_uri))
-                self._add_literal(clearance_uri, URIRef(FIXM[key]), value)
+                self._add_literal(clearance_uri, URIRef(FB[key]), value)
 
     def _process_point4d(self, element_uri, point4d_data):
         """Process point4D data and add to the graph."""
@@ -223,10 +223,10 @@ class RDFConverter:
                 self._process_velocity_vector(point4d_uri, value)
 
             elif key == "flightLevelM":
-                self._add_literal(point4d_uri, FIXM.flightLevel, value, datatype=XSD.decimal)
+                self._add_literal(point4d_uri, FB.flightLevel, value, datatype=XSD.decimal)
 
             elif key == "calculatedAltitudeM":
-                self._add_literal(point4d_uri, FIXM.calculatedAltitude, value, datatype=XSD.decimal)
+                self._add_literal(point4d_uri, FB.calculatedAltitude, value, datatype=XSD.decimal)
             
             else:
                 # For all other keys, process as clearance or custom property
@@ -246,15 +246,22 @@ class RDFConverter:
         self.graph.add((branch_uri, FIXM.element, element_uri))
         self.graph.add((element_uri, RDF.type, FIXM.Element))
 
-        designator = (
-            element
-            .get("elementStartPoint", {})
-            .get("designatedPoint", {})
-            .get("designator", None)
-        )
-        if designator:
-            self.graph.add((element_uri, FIXM.designator, Literal(designator)))
+        # Process elementStartPoint/designatedPoint/designator
+        element_start_point = element.get("elementStartPoint", {})
+        designated_point = element_start_point.get("designatedPoint", {})
+        designator = designated_point.get("designator", None)
 
+        if designator:
+            esp_uri = URIRef(f"{element_uri}_elemSP")
+            dp_uri = URIRef(f"{esp_uri}_desigPoint")
+
+            self.graph.add((element_uri, FIXM.elementStartPoint, esp_uri))
+            self.graph.add((esp_uri, RDF.type, FIXM.ElementStartPoint))
+            self.graph.add((esp_uri, FB.designatedPoint, dp_uri))
+            self.graph.add((dp_uri, RDF.type, FB.DesignatedPoint))
+            self.graph.add((dp_uri, FB.designator, Literal(designator)))
+
+        # Process point4D
         point4d = element.get("point4D", {})
         self._process_point4d(element_uri, point4d)
 
@@ -265,17 +272,7 @@ class RDFConverter:
         self.graph.add((route_trajectory_group_uri, FIXM.predicted, predicted_uri))
         self.graph.add((predicted_uri, RDF.type, FIXM.Predicted))
 
-        # TODO: prefix shouldn't be fx here - update this
-        self._add_literal(predicted_uri, FIXM.points, trajectory_data)
-
-    def _process_label(self, flight_uri, label_data):
-        """Process label data and add to the graph."""
-        label_uri = URIRef(f"{flight_uri}_label")
-        self.graph.add((label_uri, RDF.type, HMI.Label))
-        self.graph.add((flight_uri, HMI.label, label_uri))
-
-        if "position" in label_data:
-            self._process_position(label_uri, label_data["position"], HMI)
+        self._add_literal(predicted_uri, BASE.points, trajectory_data)
     
     def _process_route_trajectory_group(self, flight_uri, value):
         """Process route trajectory group data and add to the graph."""
@@ -298,7 +295,7 @@ class RDFConverter:
                 self._process_non_route_data(sub_uri, sub_key, sub_value)
         else:
             # If value is a literal, add it directly
-            self._add_literal(uri, URIRef(FIXM[key]), value)
+            self._add_literal(uri, URIRef(FB[key]), value)
 
     def _process_flight(self, flight_uri, flight_data):
         """Process flight data and add to the graph."""
