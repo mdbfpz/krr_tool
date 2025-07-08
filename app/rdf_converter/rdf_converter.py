@@ -741,7 +741,46 @@ class RDFConverter:
                     #if child_tag == "element":
                     node.append({child_tag: child_dict})
                 return node
-
+            elif tag == "enRoute":
+                node = {}
+            
+                for child in children:
+                    child_tag = child.tag.split("}")[-1]
+                    child_dict = element_to_dict(child, parent_tag=tag)
+                    
+                    # Transformacija boundaryCrossingCoordination u exitPoint
+                    if child_tag == "boundaryCrossingCoordination":
+                        exit_point = {}
+                        
+                        # Izvuci flightLevel iz clearedLevel
+                        if "clearedLevel" in child_dict and "flightLevel" in child_dict["clearedLevel"]:
+                            flight_level_data = child_dict["clearedLevel"]["flightLevel"]
+                            if isinstance(flight_level_data, dict) and "flightLevel" in flight_level_data:
+                                exit_point["flightLevel"] = flight_level_data["flightLevel"]
+                            else:
+                                exit_point["flightLevel"] = flight_level_data
+                        
+                        # Izvuci poziciju iz crossingPoint
+                        if "crossingPoint" in child_dict and "position" in child_dict["crossingPoint"]:
+                            position_data = child_dict["crossingPoint"]["position"]
+                            if "pos" in position_data:
+                                exit_point["pos"] = position_data["pos"]
+                        
+                        # Izvuci vrijeme iz crossingTime
+                        if "crossingTime" in child_dict:
+                            exit_point["exitTime"] = child_dict["crossingTime"]
+                        
+                        node["exitPoint"] = exit_point
+                    else:
+                        # Ostali elementi se obrađuju normalno
+                        if child_tag not in node:
+                            node[child_tag] = child_dict
+                        else:
+                            if not isinstance(node[child_tag], list):
+                                node[child_tag] = [node[child_tag]]
+                            node[child_tag].append(child_dict)
+                
+                return node
             # Normal case
             node = {}
 
