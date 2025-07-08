@@ -237,11 +237,11 @@ class RDFConverter:
         branch_uri = URIRef(f"{route_trajectory_group_uri}_{branch_key}")
         self.graph.add((route_trajectory_group_uri, URIRef(FIXM[branch_key]), branch_uri))
         self.graph.add((branch_uri, RDF.type, URIRef(FIXM[branch_key.capitalize()])))
-        print(f"branch data= {len(branch_data)}")
+        
         if branch_key in ["agreed", "desired"]:
             remaining_branch_data = branch_data[0] # Take only the first point as the next point
             routeInformation = branch_data[-1]
-            print(f"routeInformation = {routeInformation}")
+            
             element = remaining_branch_data.get("element", {})
 
             element_uri = URIRef(f"{branch_uri}_element")
@@ -255,7 +255,15 @@ class RDFConverter:
                 .get("designator", None)
             )
             if designator:
-                self.graph.add((element_uri, FIXM.designator, Literal(designator)))
+                #after Marko noticed elementStartPoint processing was missing, here's updated version
+                esp_uri = URIRef(f"{element_uri}_elemSP")
+                dp_uri = URIRef(f"{esp_uri}_desigPoint")
+
+                self.graph.add((element_uri, FIXM.elementStartPoint, esp_uri))
+                self.graph.add((esp_uri, RDF.type, FIXM.ElementStartPoint))
+                self.graph.add((esp_uri, FB.designatedPoint, dp_uri))
+                self.graph.add((dp_uri, RDF.type, FB.DesignatedPoint))
+                self.graph.add((dp_uri, FB.designator, Literal(designator)))
 
             #routeInfo processing
             route_info_dict      = routeInformation.get("routeInformation", {})
@@ -279,7 +287,7 @@ class RDFConverter:
             self.graph.add((cruis_lvl_uri  , FIXM.element , flight_lvl_uri))
             self.graph.add((flight_lvl_uri , RDF.type     , FIXM.FlightLevel))
             #finally add value of cruising flight level
-            self.graph.add((flight_lvl_uri , RDF.value    , Literal(flight_level_value))) #promijeniti u adekvatni oblik, ne value nego fx flight ili kako već
+            self.graph.add((flight_lvl_uri , RDF.value    , Literal(flight_level_value))) #check if this RDF.value is used properly
             
             
             point4d = element.get("point4D", {})
@@ -839,8 +847,6 @@ class RDFConverter:
             })
 
         self.last_timestamp = timestamp
-        print("HAAAAAAAAAAAAAAAAA")
-        print(json.dumps(self.data_repository, indent=4))
 
     def _create_new_repo_state(self, new_timestamp):
         """Create a new repository state for the next timestamp."""
