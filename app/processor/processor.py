@@ -6,6 +6,7 @@ from app.data_fetcher.router import DataFetcher
 from app.data_sender.data_sender import DataSender
 from app.rdf_converter.rdf_converter import RDFConverter
 from app.reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
+from app.modules.conflicts import ConflictDetection
 import uvicorn
 
 
@@ -61,9 +62,15 @@ class Processor:
             data_record = fetched_data["data"]
             data_record_type = fetched_data["data_type"]
 
-            print("Previous timestamp: ", self.rdf_converter.last_timestamp)
+            # Convert the fetched data to RDF and update the data repo in the meantime
+            self.rdf_converter.record_data_to_rdf(data_record, data_record_type)
 
-            self.rdf_converter.convert_record_data(data_record, data_record_type)
+            # Use repo last state and pass info to the CD module
+            timestamp = self.rdf_converter.last_timestamp
+            self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
+
+            # Update the last repo state with the CD findings
+            self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
                 
             turtle_data = self.rdf_converter.serialize()
             print("Turtle data: ", turtle_data)
@@ -102,6 +109,7 @@ class Processor:
         
         self.data_fetcher = DataFetcher(self.converter_queue)
         self.rdf_converter = RDFConverter()
+        self.conflict_detection = ConflictDetection()
         self.reverse_rdf_converter = ReverseRDFConverter()
         self.data_sender = DataSender()
         self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
@@ -109,9 +117,9 @@ class Processor:
         tasks = [
             self.fetch_and_enqueue(),
             self.convert_and_enqueue(),
-            self.insert_and_enqueue(),
-            self.reverse_convert_and_enqueue()
-            #self.send_data()
+            # self.insert_and_enqueue(),
+            # self.reverse_convert_and_enqueue()
+            # self.send_data()
         ]
         await asyncio.gather(*tasks)
 

@@ -7,7 +7,7 @@ import copy
 BASE = Namespace("https://aware-sesar.eu/")
 FIXM = Namespace("http://www.fixm.aero/flight/4.3/")
 FB = Namespace("http://www.fixm.aero/base/4.3/")
-HMI = Namespace("https://aware-sesar.eu/hmi/") # TODO: do i need this or can add to base?
+HMI = Namespace("https://aware-sesar.eu/hmi/")
 XS = Namespace("http://www.w3.org/2001/XMLSchema/")
 
 class RDFConverter:
@@ -602,7 +602,8 @@ class RDFConverter:
         flight_key = f"flight_{callsign}"
         predicted_points = data_record.get("points", [])
 
-        # Ensure the structure exists and only update the "predicted" section
+        # Ensure the structure exists and only update the "predicted" section - first we look for the 
+        # appropriate timestamp. If it exists, we update the existing flight key
         route_group = self.data_repository \
             .setdefault(timestamp, {}) \
             .setdefault(flight_key, {}) \
@@ -817,8 +818,8 @@ class RDFConverter:
         self._update_data_repository_fixm(fixm_data, timestamp, matched_callsign) # TODO: can we convert repository to turtle without additional rdf graph creation?
         # print(json.dumps(self.data_repository, indent=4))
 
-    def convert_record_data(self, data_record, data_record_type):
-        """Convert a record (either JSON or XML) to RDF graph."""
+    def record_data_to_rdf(self, data_record, data_record_type):
+        """Convert a record (either FIXM or event data) to RDF graph."""
 
         if data_record_type == "json":
             # 1. case - FIXM data
@@ -836,6 +837,9 @@ class RDFConverter:
             self._repository_to_rdf(timestamp_data)
         else:
             raise ValueError("Unsupported data record type. Use 'json'.")
+    
+    def update_cd_findings(self, detections, timestamp):
+        pass
 
     def serialize(self, format="turtle"):
         """Serialize the RDF graph to a string/turtle format."""
