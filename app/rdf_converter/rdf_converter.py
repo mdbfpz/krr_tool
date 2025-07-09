@@ -269,25 +269,28 @@ class RDFConverter:
             route_info_dict      = routeInformation.get("routeInformation", {})
             cruising_level_dict  = route_info_dict.get("cruisingLevel", {})
             flight_level_dict = cruising_level_dict.get("flightLevel", {})
+            #print(f"flight level dict = {flight_level_dict}")
+            fligh_level_uom = flight_level_dict.get("uom")
             flight_level_value = flight_level_dict.get("flightLevel")
 
 
             #routeInformation
             route_info_uri = URIRef(f"{branch_uri}_routeInformation")
-            self.graph.add((branch_uri     , FIXM.element , route_info_uri))
+            self.graph.add((branch_uri     , FIXM.routeInformation , route_info_uri))
             self.graph.add((route_info_uri , RDF.type     , FIXM.RouteInformation))
 
             #cruisingLevel
             cruis_lvl_uri = URIRef(f"{route_info_uri}_cruisingLevel")
-            self.graph.add((route_info_uri , FIXM.element , cruis_lvl_uri))
+            self.graph.add((route_info_uri , FIXM.routeInformation , cruis_lvl_uri))
             self.graph.add((cruis_lvl_uri  , RDF.type     , FIXM.CruisingLevel))
 
             #flightLevel
             flight_lvl_uri = URIRef(f"{cruis_lvl_uri}_flightLevel")
-            self.graph.add((cruis_lvl_uri  , FIXM.element , flight_lvl_uri))
+            self.graph.add((cruis_lvl_uri  , FIXM.cruisingLevel , flight_lvl_uri))
             self.graph.add((flight_lvl_uri , RDF.type     , FIXM.FlightLevel))
             #finally add value of cruising flight level
-            self.graph.add((flight_lvl_uri , RDF.value    , Literal(flight_level_value))) #check if this RDF.value is used properly
+            self.graph.add((flight_lvl_uri , FB.uom    , Literal(flight_level_value))) 
+            self.graph.add((flight_lvl_uri , FB.flightLevel    , Literal(fligh_level_uom))) 
             
             
             point4d = element.get("point4D", {})
@@ -324,8 +327,41 @@ class RDFConverter:
             else:
                 self._process_branch(route_trajectory_group_uri, branch_key, branch_data)
 
+    def _process_enRoute_data(self, uri, key, value):
+        #enRoute
+        enRoute_uri = URIRef(f"{uri}_enRoute")
+        self.graph.add((uri     , FIXM.enRoute , enRoute_uri))
+        self.graph.add((enRoute_uri , RDF.type     , FIXM.enRoute))
+
+        flight_level_value = value.get("exitPoint", {}).get("flightLevel", {})
+        position_value = value.get("exitPoint", {}).get("pos", {})
+        exit_time_value = value.get("exitPoint", {}).get("exitTime")
+        current_mode_acode_value = value.get("currentModeACode")
+        
+        #exit point
+        exit_point_uri = URIRef(f"{enRoute_uri}_exitPoint")
+        self.graph.add((enRoute_uri, FIXM.boundaryCrossingCoordination, exit_point_uri))
+        self.graph.add((exit_point_uri, RDF.type, FIXM.BoundaryCrossing))
+        #flight level
+        self._process_level(exit_point_uri, flight_level_value, FIXM, FB)
+        
+        #process pos
+        self._process_position(exit_point_uri,position_value, FIXM, FB)
+    
+        #current mode acode
+        self.graph.add((enRoute_uri, FIXM.currentModeACode, Literal(current_mode_acode_value, datatype=XSD.string)))
+        """ current_mode_acode_uri = URIRef(f"{enRoute_uri}_currentModeACode")
+        self.graph.add((current_mode_acode_uri, RDF.type, Literal(current_mode_acode_value,)))
+        """
+        #crossing time
+        self.graph.add((exit_point_uri, FIXM.crossingTime, Literal(exit_time_value, datatype=XSD.dateTime)))
+        
+        
+    
     def _process_non_route_data(self, uri, key, value):
-        if isinstance(value, dict):
+        if key == "enRoute":
+            self._process_enRoute_data(uri, key, value)
+        elif isinstance(value, dict):
             # If value is a dictionary, create a new URI and process it recursively
             sub_uri = URIRef(f"{uri}_{key}")
             self.graph.add((uri, URIRef(FIXM[key]), sub_uri))
@@ -761,27 +797,24 @@ class RDFConverter:
                     if child_tag == "boundaryCrossingCoordination":
                         exit_point = {}
                         
-                        # Izvuci flightLevel iz clearedLevel
+                        # extract flightLevel
                         if "clearedLevel" in child_dict and "flightLevel" in child_dict["clearedLevel"]:
                             flight_level_data = child_dict["clearedLevel"]["flightLevel"]
-                            if isinstance(flight_level_data, dict) and "flightLevel" in flight_level_data:
-                                exit_point["flightLevel"] = flight_level_data["flightLevel"]
-                            else:
-                                exit_point["flightLevel"] = flight_level_data
+                            
+                            exit_point["flightLevel"] = flight_level_data
                         
-                        # Izvuci poziciju iz crossingPoint
+                        # extract crossingPoint
                         if "crossingPoint" in child_dict and "position" in child_dict["crossingPoint"]:
                             position_data = child_dict["crossingPoint"]["position"]
                             if "pos" in position_data:
-                                exit_point["pos"] = position_data["pos"]
+                                exit_point["pos"] = position_data#["pos"]
                         
-                        # Izvuci vrijeme iz crossingTime
+                        # extract time
                         if "crossingTime" in child_dict:
                             exit_point["exitTime"] = child_dict["crossingTime"]
                         
                         node["exitPoint"] = exit_point
-                    else:
-                        # Ostali elementi se obrađuju normalno
+                    else:                        
                         if child_tag not in node:
                             node[child_tag] = child_dict
                         else:
