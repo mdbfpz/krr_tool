@@ -289,22 +289,23 @@ class RDFConverter:
             self.graph.add((cruis_lvl_uri  , FIXM.cruisingLevel , flight_lvl_uri))
             self.graph.add((flight_lvl_uri , RDF.type     , FIXM.FlightLevel))
             #finally add value of cruising flight level
-            self.graph.add((flight_lvl_uri , FB.uom    , Literal(flight_level_value))) 
-            self.graph.add((flight_lvl_uri , FB.flightLevel    , Literal(fligh_level_uom))) 
+            self.graph.add((flight_lvl_uri , FB.uom    , Literal(fligh_level_uom))) 
+            self.graph.add((flight_lvl_uri , FB.flightLevel    , Literal(flight_level_value))) 
             
             
             point4d = element.get("point4D", {})
             self._process_point4d(element_uri, point4d)
         else:
-            element = branch_data.get("element", {})
+            if branch_data:
+                element = branch_data.get("element", {})
 
-            element_uri = URIRef(f"{branch_uri}_element")
-            self.graph.add((branch_uri, FIXM.element, element_uri))
-            self.graph.add((element_uri, RDF.type, FIXM.Element))
+                element_uri = URIRef(f"{branch_uri}_element")
+                self.graph.add((branch_uri, FIXM.element, element_uri))
+                self.graph.add((element_uri, RDF.type, FIXM.Element))
 
-        
-            point4d = element.get("point4D", {})
-            self._process_point4d(element_uri, point4d)
+            
+                point4d = element.get("point4D", {})
+                self._process_point4d(element_uri, point4d)
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""

@@ -31,15 +31,15 @@ check_health() {
 echo "0" > /var/lib/RDFox/rdf_setup_complete.txt
 
 # Check if RDFox has already been initialized by looking for the 'server.params' file
-if [ -f /var/lib/RDFox/server.params ]; then
+if [ -d /var/lib/RDFox/v00001 ]; then
     echo "RDFox already initialized, skipping initialization."
 else
     echo "Initializing RDFox..."
-    /opt/RDFox/RDFox -server-directory /var/lib/RDFox -persistence file -role "${RDFOX_ROLE}" -password "${RDFOX_PASSWORD}" init
+    /opt/RDFox/RDFox -server-directory /var/lib/RDFox -persistence file -role "${RDFOX_ROLE}" -password "${RDFOX_PASSWORD}" -channel "${RDFOX_CHANNEL}" init
 fi
 
 echo "Starting RDFox daemon..."
-/opt/RDFox/RDFox -server-directory /var/lib/RDFox daemon &
+/opt/RDFox/RDFox -server-directory /var/lib/RDFox -channel "${RDFOX_CHANNEL}" daemon &
 
 # Wait for RDFox to be ready
 if check_health; then   
