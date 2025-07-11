@@ -30,7 +30,6 @@ class RDFConverter:
         self.graph = Graph()
         for prefix, ns in self.namespaces.items():
             self.graph.bind(prefix, ns, override=True)
-
         self.data_repository = {}
         self.track_number_callsign_map = {} # key = track number; value = callsign
         self.uuid_callsign_map = {}  # key = flight plan UUID; value = callsign
@@ -42,6 +41,16 @@ class RDFConverter:
         self.id_counter = {}  # Counter for generating unique IDs for each type
 
         self.to_fl_const = 3.28084 / 100
+        self.aixm_data_repo = {
+            "designatedPoints" : {},
+            "navaids": {},
+            "sectors":{},
+            "routes":{},
+            "runways":{},
+            "airportHeliports":{},
+            
+        }
+        self.aixm_uuid_latlon_map = {}
 
     def _generate_index(self, tag, timestamp):
         """Generates a unique index for a given tag."""
@@ -99,13 +108,12 @@ class RDFConverter:
         # Link parent to level
         self.graph.add((parent_uri, fx_namespace.level, level_uri))
         self.graph.add((level_uri, RDF.type, fx_namespace.Level))
-
         for key, value in level_data.items():
             if key == "flightLevel" and isinstance(value, dict):
                 # Handle both value and uom
                 for subkey, subval in value.items():
                     pred = URIRef(f"{fb_namespace}{subkey}")
-                    if subkey == "flightLevel":
+                    if subkey == "flightLevel":                     
                         self._add_literal(level_uri, pred, subval, datatype=XSD.integer)
                     else:
                         self._add_literal(level_uri, pred, subval)
@@ -334,7 +342,7 @@ class RDFConverter:
         self.graph.add((uri     , FIXM.enRoute , enRoute_uri))
         self.graph.add((enRoute_uri , RDF.type     , FIXM.enRoute))
 
-        flight_level_value = value.get("exitPoint", {}).get("flightLevel", {})
+        flight_level_value = value.get("exitPoint", {}).get("flightLevel")
         position_value = value.get("exitPoint", {}).get("pos", {})
         exit_time_value = value.get("exitPoint", {}).get("exitTime")
         current_mode_acode_value = value.get("currentModeACode")
@@ -344,6 +352,8 @@ class RDFConverter:
         self.graph.add((enRoute_uri, FIXM.boundaryCrossingCoordination, exit_point_uri))
         self.graph.add((exit_point_uri, RDF.type, FIXM.BoundaryCrossing))
         #flight level
+        #next line is necessary because process level accepts this type of structure
+        flight_level_value = {"flightLevel":flight_level_value}
         self._process_level(exit_point_uri, flight_level_value, FIXM, FB)
         
         #process pos
@@ -800,8 +810,7 @@ class RDFConverter:
                         
                         # extract flightLevel
                         if "clearedLevel" in child_dict and "flightLevel" in child_dict["clearedLevel"]:
-                            flight_level_data = child_dict["clearedLevel"]["flightLevel"]
-                            
+                            flight_level_data = child_dict["clearedLevel"]["flightLevel"]                            
                             exit_point["flightLevel"] = flight_level_data
                         
                         # extract crossingPoint
@@ -909,7 +918,212 @@ class RDFConverter:
                     route_group = flight_data["Flight"]["routeTrajectoryGroup"]
                     # Remove predicted trajectory from the new state if exists
                     route_group.pop("predicted", None)
+    
+    #########################################################################################################
+    ##########################################     AIXM METHODS     #########################################
+    #########################################################################################################
+
+    def _process_point_data(self,point,type):
+        #points_data = {}
+        #for point in pointsData:
+        if type == "navaid":
+            destination = self.aixm_data_repo["navaids"]
+        else:
+            destination = self.aixm_data_repo["designatedPoints"]
+            
+        pointName = point['designator']
+        destination[pointName] = {
+            "uuid": point.get("uuid", {}).get("uuid"),
+            "name": point.get("name"),
+            "type": point.get("type"),
+            "country": point.get("country"),
+            "position": {
+                "lat": point.get("position", {}).get("latitude", {}).get("degrees"),
+                "lon": point.get("position", {}).get("longitude", {}).get("degrees")
+            }
+        }
         
+    
+    def _create_uuid_latlon_map(self,designatedPoints, navaidPoints):
+        uuid_latlon_map = self.aixm_uuid_latlon_map
+
+        # Dodaj sve designatedPoints
+        for dp in designatedPoints:
+            uuid_latlon_map[dp["uuid"]["uuid"]] = {
+                "lat": dp["position"]["latitude"]["degrees"],
+                "lon": dp["position"]["longitude"]["degrees"]
+            }
+
+        # Dodaj sve points
+        for point in navaidPoints:
+            uuid_latlon_map[point["uuid"]["uuid"]] = {
+                "lat": point["position"]["latitude"]["degrees"],
+                "lon": point["position"]["longitude"]["degrees"]
+            }
+
+    
+    def _process_routes(self,route, uuid_latlon_map):
+        processed_routes = self.aixm_data_repo["routes"]
+        
+        routeName = route.get('designator')
+        processed_routes[routeName] = {
+            "uuid": route.get("uuid", {}).get("uuid"),
+            "name": route.get("name"),
+            "type": route.get("type"),
+            "country": route.get("country"),
+            "routeSegments": []
+        }
+        
+        for segment in route.get("routeSegments", []):
+            start_coords = uuid_latlon_map.get(segment.get("startPoint"))
+            end_coords = uuid_latlon_map.get(segment.get("endPoint"))
+            
+            processed_segment = {
+                "uuid": segment.get("uuid", {}).get("uuid"),
+                "startPoint": start_coords,
+                "endPoint": end_coords,
+                "pathType": segment.get("pathType")
+            }
+            processed_routes[routeName]["routeSegments"].append(processed_segment)
+        
+        
+        
+    def _create_sectors_structure(self,airspace):
+        
+        sector_name = airspace["designator"]
+        sector_type = airspace["type"]
+        airspace_uuid = airspace["uuid"]["uuid"]
+        #print(f"len = {len(airspace['airspaceVolume']['addedVolumes'])}")
+        sectors = self.aixm_data_repo["sectors"]
+        # init sector
+        sectors[sector_name] = {
+            "addedVolumes" : {
+                "points": {},
+                "volumeUUID":None,
+                "volumeBoundaryUUID":None
+            },
+            "lowerLimit": None,
+            "upperLimit": None,
+            "sectorType": None,
+            "secotrUUID":None,
+            "airspaceVolumeUUID":None
+        }
+        
+        sectors[sector_name]["sectorType"]=sector_type
+        sectors[sector_name]["secotrUUID"]=airspace_uuid
+        airspaceVolume_uuid = airspace["airspaceVolume"]["uuid"]["uuid"]
+        sectors[sector_name]["airspaceVolumeUUID"]=airspaceVolume_uuid
+        
+        for volume in airspace["airspaceVolume"]["addedVolumes"]:
+            volume_uuid = volume["uuid"]["uuid"]
+            volumeBoundary_uuid = volume["boundary"]["uuid"]["uuid"]
+            
+            sectors[sector_name]["addedVolumes"]["volumeUUID"]=volume_uuid
+            sectors[sector_name]["addedVolumes"]["volumeBoundaryUUID"]=volumeBoundary_uuid
+            
+            
+            sectors[sector_name]["lowerLimit"] = volume["lowerLimit"]["value"]
+            sectors[sector_name]["upperLimit"] = volume["upperLimit"]["value"]
+            
+            
+            
+            point_counter = 1
+            for path in volume["boundary"]["pathList"]:
+                if "rhumbLinePath" in path:
+                    rhumb_path = path["rhumbLinePath"]
+                                        
+                    start_key = f"p{point_counter}"
+                    if start_key not in sectors[sector_name]["addedVolumes"]["points"]:
+                        sectors[sector_name]["addedVolumes"]["points"][start_key] = {
+                            "lat": rhumb_path["startLocation"]["latitude"]["degrees"],
+                            "lon": rhumb_path["startLocation"]["longitude"]["degrees"]
+                        }
+                        point_counter += 1
+
+                    end_key = f"p{point_counter}"
+                    sectors[sector_name]["addedVolumes"]["points"][end_key] = {
+                        "lat": rhumb_path["endLocation"]["latitude"]["degrees"],
+                        "lon": rhumb_path["endLocation"]["longitude"]["degrees"]
+                    }
+                    point_counter += 1
+        
+        
+    
+    def _process_runways(self,runway):
+        runways = self.aixm_data_repo["runways"]
+        
+        runwayName = f"{runway['airportDesignator']}_{runway['designator']}"
+        runways[runwayName] = {
+            "uuid": runway.get("uuid", {}).get("uuid"),
+            "nominalLength": runway.get("nominalLength", {}).get("metres"),
+            "nominalWidth": runway.get("nominalWidth", {}).get("metres"),
+            "lengthStrip": runway.get("lengthStrip", {}).get("metres"),
+            "widthStrip": runway.get("widthStrip", {}).get("metres"),
+            "isAbandoned": runway.get("isAbandoned"),
+            "elevationTDZ": runway.get("elevationTDZ", {}).get("metres"),
+            "trueBearing": runway.get("trueBearing", {}).get("degrees"),
+            "thresholdLocation": {
+                "lat": runway.get("thresholdLocation", {}).get("latitude", {}).get("degrees"),
+                "lon": runway.get("thresholdLocation", {}).get("longitude", {}).get("degrees")
+            },
+            "glideSlopeAngle": runway.get("glideSlopeAngle")
+        }
+        
+    
+    def _process_airportHeliports(self,airportHeliport):        
+        airportName = airportHeliport['designator']
+        self.aixm_data_repo["airportHeliports"][airportName] = {
+            "uuid": airportHeliport.get("uuid", {}).get("uuid"),
+            "name": airportHeliport.get("name"),
+            "type": airportHeliport.get("type"),
+            "fieldElevation": airportHeliport.get("fieldElevation", {}).get("metres"),
+            "position": {
+                "lat": airportHeliport.get("position", {}).get("latitude", {}).get("degrees"),
+                "lon": airportHeliport.get("position", {}).get("longitude", {}).get("degrees")
+            }
+        }
+        
+    
+    def _process_aixm_data(self,data):
+        
+        actual_data = data["aeronauticalData"]
+
+        for key, value in actual_data.items():
+            if key == "waypoints":
+                waypoints = actual_data["waypoints"]
+                
+                            
+                if "navaids" in waypoints:
+                    for navaid in waypoints["navaids"]:                
+                        self._process_point_data(navaid, "navaid")
+                
+                if "designatedPoints" in waypoints:
+                    for desPoint in waypoints["designatedPoints"]:                
+                        self._process_point_data(desPoint, "desPoint")
+                
+                self._create_uuid_latlon_map(waypoints["designatedPoints"], waypoints["navaids"])
+                """ print(f"Tip podataka self.aixm_data_repo: {type(self.aixm_data_repo['designatedPoints'])}")
+                print(f"Broj zapisa: {len(self.aixm_data_repo['designatedPoints'])}")
+                
+                for key, value in self.aixm_data_repo["designatedPoints"].items():
+                    print(f"Point :{key} value : {value}") """
+
+                airport_heliport_data = waypoints["airportHeliports"]  
+                for ah_record in airport_heliport_data:
+                    self._process_airportHeliports(ah_record)
+                
+            elif key == "airspaces":
+                for airspace in actual_data["airspaces"]:
+                    self._create_sectors_structure(airspace)
+                    
+            elif key == "routes":
+                for route in actual_data["routes"]:
+                    self._process_routes(route,self.aixm_uuid_latlon_map)
+            
+            elif key == "runways":
+                for runway in actual_data["runways"]:
+                    self._process_runways(runway)
+                    
     #########################################################################################################
     ##########################################     MAIN METHODS     #########################################
     #########################################################################################################

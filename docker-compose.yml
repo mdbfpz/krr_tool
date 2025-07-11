@@ -28,5 +28,6 @@ services:
       - krr_tool_network
     volumes:
     - ./rdfox_db/src/data:/var/lib/RDFox  # Ensure it can read the RDFox setup complete status
+    - ./app:/krr_tool/app
     ports:
       - "8000:8000"
