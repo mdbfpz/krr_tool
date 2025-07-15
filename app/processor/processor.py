@@ -1,5 +1,7 @@
 import asyncio
 import logging
+import json
+import os
 from rdfox_db.core import RDFoxDB
 from rdfox_db.queries.queries import RDFoxQuery
 from app.data_fetcher.router import DataFetcher
@@ -9,6 +11,22 @@ from app.reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 from app.modules.conflicts import ConflictDetection
 import uvicorn
 import json
+
+
+def load_static_data():
+    """Load static json data from container"""
+    
+    path = "/krr_tool/app/data/aixmData.json"
+    
+    try:
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        print(f"Uspješno učitano {len(data)} zapisa iz: {path}")
+        return data
+    except FileNotFoundError:
+        print("JSON datoteka nije pronađena ni u jednoj od očekivanih lokacija:")        
+
+    return None
 
 
 class DataQueue:
@@ -33,6 +51,7 @@ class DataQueue:
                 await self.condition.wait()  # Wait for new data
             return await self.queue.get()
 
+
 class Processor:
     """Processor class that orchestrates the pipeline."""
     
@@ -42,8 +61,8 @@ class Processor:
         self.reverse_converter_queue = DataQueue()
         self.sender_queue = DataQueue()
 
-        self.rdfox_db = RDFoxDB()        
-
+        self.rdfox_db = RDFoxDB()
+        
     async def fetch_and_enqueue(self):
         """
         Run the FastAPI server to listen for incoming POST requests.
@@ -123,6 +142,13 @@ class Processor:
         self.data_sender = DataSender()
         self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
 
+        self.static_data = load_static_data()
+                
+        if self.static_data is not None:
+            self.rdf_converter._process_aixm_data(self.static_data)
+        else:
+            print("Statički podaci nisu učitani")
+            
         tasks = [
             self.fetch_and_enqueue(),
             self.convert_and_enqueue(),
@@ -131,6 +157,7 @@ class Processor:
             # self.send_data()
         ]
         await asyncio.gather(*tasks)
+
 
 if __name__ == "__main__":
     """
