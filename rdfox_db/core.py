@@ -193,8 +193,6 @@ class RDFoxDB:
                                 "Authorization": f"Basic {self._encode_credentials()}"
                             }
                         )
-                        print("Conn response headers: ", conn_response.headers)
-                        print("Conn response content: ", conn_response.content)
                         conn_id = conn_response.headers.get("location").split("/")[-1]
                         if conn_id:
                             self.connection_id = conn_id

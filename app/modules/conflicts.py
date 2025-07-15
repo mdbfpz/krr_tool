@@ -9,87 +9,117 @@ class ConflictDetection:
         waypoints, speed, and airport information for each flight at the given timestamp.
         """
         state_data = data_repository.get(timestamp, {})
-        cd_data = {timestamp: []}
+        cd_data = {timestamp: {}} # TODO: change to list because there will be many flights used for CD
 
         for flight_key, flight_data in state_data.items():
-            rtg = flight_data["Flight"]["routeTrajectoryGroup"]
+            # Ensure essential keys exist before accessing
+            if not isinstance(flight_data, dict):
+                return
+            flight = flight_data.get("Flight")
+            if not isinstance(flight, dict):
+                return
+            rtg = flight.get("routeTrajectoryGroup")
+            if not isinstance(rtg, dict):
+                return
 
-            # Skip if 'predicted' branch doesn't exist
-            if "predicted" not in rtg:
-                continue
+            if "predicted" not in rtg or ("predicted" in rtg and not isinstance(rtg["predicted"], dict)):
+                continue # TODO: popraviti: u stvarnosti ne možemo ignorirati avione nego radimo CD za sve
+            predicted_points = rtg["predicted"].get("element", [])
 
-            current_point = rtg.get("current", {}).get("element", {}).get("point4D", {})
-            current_pos = current_point.get("position", {}).get("pos")
-            current_fl = current_point.get("level", {}).get("flightLevel")
-
-            # Predicted trajectory points
-            predicted_points = rtg["predicted"].get("points", [])
+            current_branch = rtg.get("current", {})
+            if isinstance(current_branch, dict):
+                current_point = (
+                    current_branch
+                    .get("element", {})
+                    .get("point4D", {})
+                )
+                current_pos = current_point.get("position", {}).get("pos")
+                current_fl = current_point.get("level", {}).get("flightLevel")
+                current_velocity = current_point.get("velocity", {})
+            else:
+                current_pos = current_fl = current_velocity = None
 
             cleared_branch = rtg.get("agreed", [])
-            cleared_waypoints = [entry.get("element", {}).get("point4D", {}) for entry in cleared_branch]
-            # Find the dict in the list that contains the "routeInformation" key
-            cleared_route_info_dict = next(
-                (item for item in cleared_branch if "routeInformation" in item),
+            if not isinstance(cleared_branch, list):
+                return
+            cleared_waypoints = [
+                entry.get("element", {}).get("point4D", {})
+                for entry in cleared_branch
+                if isinstance(entry, dict)
+            ]
+            if not cleared_waypoints:
+                return
+
+            cleared_route_info = next(
+                (item for item in cleared_branch if isinstance(item, dict) and "routeInformation" in item),
                 {}
             )
-            # Access flight level from the route information in cleared branch
-            cruise_level_cleared = cleared_route_info_dict.get("routeInformation", {}).get("cruisingLevel", {}).get("flightLevel")
+            cruise_level_cleared = (
+                cleared_route_info.get("routeInformation", {})
+                                .get("cruisingLevel", {})
+                                .get("flightLevel")
+            )
+            if cruise_level_cleared is None:
+                return
 
             desired_branch = rtg.get("desired", [])
-            # Find the dict in the list that contains the "routeInformation" key
-            desired_route_info_dict = next(
-                (item for item in desired_branch if "routeInformation" in item),
+            if not isinstance(desired_branch, list):
+                return
+            desired_route_info = next(
+                (item for item in desired_branch if isinstance(item, dict) and "routeInformation" in item),
                 {}
             )
-            # Access flight level from the route information in desired branch
-            cruise_level_desired = desired_route_info_dict.get("routeInformation", {}).get("cruisingLevel", {}).get("flightLevel")
+            cruise_level_desired = (
+                desired_route_info.get("routeInformation", {})
+                                .get("cruisingLevel", {})
+                                .get("flightLevel")
+            )
+            if cruise_level_desired is None:
+                return
 
-            flight = flight_data["Flight"]
             exit_point = flight.get("enRoute", {}).get("exitPoint")
+            departure_indicator = flight.get("departure", {}).get("departureAerodrome", {}).get("locationIndicator")
 
-            departure_location_indicator = flight.get("departure", {}).get("departureAerodrome", {}).get("locationIndicator")
             arrival = flight.get("arrival", {})
-            arrival_location_indicator = arrival.get("destinationAerodrome", {}).get("locationIndicator")
+            arrival_indicator = arrival.get("destinationAerodrome", {}).get("locationIndicator")
 
             alt_arrival = arrival.get("alternateAerodromeAlternate", {})
-            alt_arrival_location_indicator = alt_arrival.get("locationIndicator") if alt_arrival else None
+            alt_arrival_indicator = alt_arrival.get("locationIndicator") if isinstance(alt_arrival, dict) else None
 
-            cd_data[timestamp].append({
+            cd_data[timestamp] = {
                 "callsign": flight_key,
                 "current_pos": current_pos,
                 "current_fl": current_fl,
+                "current_velocity": current_velocity,
                 "predicted_points": predicted_points,
                 "cruise_level_cleared": cruise_level_cleared,
                 "cruise_level_desired": cruise_level_desired,
                 "exit_point": exit_point,
                 "cleared_waypoints": cleared_waypoints,
-                "departure_aerodrome_indicator": departure_location_indicator,
-                "arrival_aerodrome_indicator": arrival_location_indicator,
-                "arrival_aerodrome_alternate_indicator": alt_arrival_location_indicator
-            })
+                "departure_aerodrome_indicator": departure_indicator,
+                "arrival_aerodrome_indicator": arrival_indicator,
+                "arrival_aerodrome_alternate_indicator": alt_arrival_indicator
+            }
 
         return cd_data
 
-    
-    def _find_conflicts(self, records):
+    def _find_conflicts(self, cd_data):
         """
         This method implements the logic to identify conflicts based on the data from repository.
         """
         pass
     
-    def detect(self, data_repository, last_timestamp):
+    def detect(self, data_repository, timestamp):
         """
-        Detect conflicts in the data repository based on the last timestamp.
+        Detect conflicts in the data repository based on the timestamp.
         This method should implement the logic to identify conflicts in the data.
         """
-        # Example conflict detection logic (to be replaced with actual implementation)
-        for timestamp, records in data_repository.items():
-            if timestamp > last_timestamp:
-                # Check for conflicts in records
-                conflicts = self._find_conflicts(records)
-                if conflicts:
-                    self.detections[timestamp] = conflicts
+        cd_data = self._extract_repo_cd_data(data_repository, timestamp)
 
+        """conflicts = self._find_conflicts(cd_data)
+        if conflicts:
+            self.detections[timestamp] = conflicts"""
+        return cd_data
 
 class ConflictResolution:
     def __init__(self):

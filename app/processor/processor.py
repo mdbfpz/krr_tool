@@ -8,6 +8,7 @@ from app.rdf_converter.rdf_converter import RDFConverter
 from app.reverse_rdf_converter.reverse_rdf_converter import ReverseRDFConverter
 from app.modules.conflicts import ConflictDetection
 import uvicorn
+import json
 
 
 class DataQueue:
@@ -56,6 +57,7 @@ class Processor:
     async def convert_and_enqueue(self):
         """Convert data to RDF and add it to the RDFox database queue."""
 
+        cd_data = []  # List to store conflict detection data for Javier testing only
         while True:
             fetched_data = await self.converter_queue.get_from_queue()
             # print("Got from queue: ", fetched_data["data_type"], "\n", fetched_data["data"] )
@@ -67,13 +69,20 @@ class Processor:
 
             # Use repo last state and pass info to the CD module
             timestamp = self.rdf_converter.last_timestamp
-            self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
+            out = self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
+            # This block is for Javier to work with the CD data
+            """if len(next(iter(out.values()))) != 0:
+                cd_data.append(out)
+            if len(cd_data) == 100:
+                with open("/krr_tool/outputs/output_for_javier.json", "w") as f:
+                    print("Writing CD data to output_for_javier.json")
+                    json.dump({"data": cd_data}, f, indent=2)"""
 
             # Update the last repo state with the CD findings
             self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
                 
             turtle_data = self.rdf_converter.serialize()
-            print("Turtle data: ", turtle_data)
+            # print("Turtle data: ", turtle_data)
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):

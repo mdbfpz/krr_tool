@@ -193,9 +193,7 @@ class RDFConverter:
 
     def _process_clearance(self, point4d_uri, point4d_data):
         """Process clearance info and add to the graph."""
-        print("point4d_Data: ", point4d_data)
         for key, value in point4d_data.items():
-            print("Key in clearance: ", key)
             if key in self.clearance_keys: # TODO: add other clearance types
                 clearance_uri = URIRef(f"{point4d_uri}_{key}")
                 self.graph.add((clearance_uri, RDF.type, URIRef(FIXM[key])))
@@ -207,8 +205,6 @@ class RDFConverter:
         point4d_uri = URIRef(f"{element_uri}_point4D")
         self.graph.add((element_uri, FIXM.point4D, point4d_uri))
         self.graph.add((point4d_uri, RDF.type, FIXM.Point4D))
-
-        print("Point4d data: ", point4d_data)
 
         for key, value in point4d_data.items():
             if key == "position":
@@ -309,7 +305,6 @@ class RDFConverter:
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
-        print("trajectory_data: ", trajectory_data)
         predicted_uri = URIRef(f"{route_trajectory_group_uri}_predicted")
         self.graph.add((route_trajectory_group_uri, FIXM.predicted, predicted_uri))
         self.graph.add((predicted_uri, RDF.type, FIXM.Predicted))
@@ -688,12 +683,11 @@ class RDFConverter:
         predicted_data = {
             "element": predicted_points
         }
+        route_group["predicted"] = predicted_data
         
         # Add cruisingLevel if available
         if cruising_level:
             predicted_data["cruisingLevel"] = cruising_level
-        route_group["predicted"] = predicted_data
-        print("Route group after predicted update: ", route_group)
         
     def _update_data_repository_events(self, json_record):
         """
@@ -899,11 +893,10 @@ class RDFConverter:
         # TODO: optimise this not to check all flights (for loop below) for every new timestamp
         # - use some flag to check if predicted trajectories were added and processed
 
-        print(f"Removing predicted trajectories from last state for timestamp: {new_timestamp}")
+        # print(f"Removing predicted trajectories from last state for timestamp: {new_timestamp}")
 
         if new_timestamp in self.data_repository:
             last_state = self.data_repository[new_timestamp]
-            print(f"Last state for timestamp {new_timestamp}: {last_state}")
             for flight_key, flight_data in last_state.items():
                 if "Flight" in flight_data and "routeTrajectoryGroup" in flight_data["Flight"]:
                     route_group = flight_data["Flight"]["routeTrajectoryGroup"]

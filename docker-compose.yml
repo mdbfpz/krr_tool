@@ -27,6 +27,7 @@ services:
     networks:
       - krr_tool_network
     volumes:
-    - ./rdfox_db/src/data:/var/lib/RDFox  # Ensure it can read the RDFox setup complete status
+    - ./rdfox_db/src/data:/var/lib/RDFox  # Mounting host's rdfox_db/src/data directory to container's /var/lib/RDFox
+    - ./outputs:/krr_tool/outputs
     ports:
       - "8000:8000"
