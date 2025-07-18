@@ -1,7 +1,7 @@
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix fb: <http://www.fixm.aero/base/4.3>.
-@prefix : <https://aware-sesar.eu>.
-@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
+@prefix : <https://aware-sesar.eu/>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 
 # 5.4.1. Check that aircraft is flying towards the exit point
 

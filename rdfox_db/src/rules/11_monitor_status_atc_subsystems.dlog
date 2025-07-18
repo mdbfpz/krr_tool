@@ -1,5 +1,6 @@
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix : <https://aware-sesar.eu>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
+@prefix : <https://aware-sesar.eu/>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 #5.11  Monitor Status of ATC Sub-systems

@@ -285,12 +285,12 @@ class RDFConverter:
 
             #cruisingLevel
             cruis_lvl_uri = URIRef(f"{route_info_uri}_cruisingLevel")
-            self.graph.add((route_info_uri , FIXM.routeInformation , cruis_lvl_uri))
+            self.graph.add((route_info_uri , FIXM.cruisingLevel , cruis_lvl_uri))
             self.graph.add((cruis_lvl_uri  , RDF.type     , FIXM.CruisingLevel))
 
             #flightLevel
             flight_lvl_uri = URIRef(f"{cruis_lvl_uri}_flightLevel")
-            self.graph.add((cruis_lvl_uri  , FIXM.cruisingLevel , flight_lvl_uri))
+            self.graph.add((cruis_lvl_uri  , FIXM.level , flight_lvl_uri))
             self.graph.add((flight_lvl_uri , RDF.type     , FIXM.FlightLevel))
             #finally add value of cruising flight level
             self.graph.add((flight_lvl_uri , FB.uom    , Literal(fligh_level_uom))) 
@@ -307,7 +307,6 @@ class RDFConverter:
                 self.graph.add((branch_uri, FIXM.element, element_uri))
                 self.graph.add((element_uri, RDF.type, FIXM.Element))
 
-            
                 point4d = element.get("point4D", {})
                 self._process_point4d(element_uri, point4d)
 
@@ -434,13 +433,14 @@ class RDFConverter:
         This method takes the most recent timestamp from a data repository and converts data into RDF triples.
         """
         timestamp, data = next(iter(timestamp_data.items()))
-        timestamp = self._safe_local_name(timestamp)
-        timestamp_uri = BASE[f"{timestamp}"]
+        timestamp_snake_case = self._safe_local_name(timestamp)
+        timestamp_uri = BASE[f"{timestamp_snake_case}"]
         self.graph.add((timestamp_uri, RDF.type, BASE.Timestamp))
+        self.graph.add((timestamp_uri, BASE.timestamp, Literal(timestamp, datatype=XSD.dateTime)))
 
         for key, key_data in data.items():
             if key.startswith("flight_"):
-                flight_uri = URIRef(FIXM[f"{key}_{timestamp}"])
+                flight_uri = URIRef(FIXM[f"{key}_{timestamp_snake_case}"])
                 self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
                 self.graph.add((flight_uri, RDF.type, FIXM.Flight))
                 if "Flight" in key_data:

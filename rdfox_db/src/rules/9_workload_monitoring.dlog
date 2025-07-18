@@ -1,6 +1,7 @@
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
-@prefix : <https://aware-sesar.eu>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
+@prefix : <https://aware-sesar.eu/>.
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 # 5.9 Workload Monitoring 

@@ -1,5 +1,5 @@
-@prefix : <https://aware-sesar.eu>.
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
+@prefix : <https://aware-sesar.eu/>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
 
 # Create transitivity closure between different (current, agreed, desired, predicted) 
 # route-trajectory elements and flights.
@@ -19,25 +19,21 @@
     [?routeTrajectoryContainer, fx:desired, ?desiredRouteTrajectory],
     [?desiredRouteTrajectory, fx:element, ?desiredElement].
 
+# TODO: We probably don't need this 
 [?flight, :predictedElement, ?predictedElement] :-
     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
     [?routeTrajectoryContainer, :predicted, ?predictedRouteTrajectory],
     [?predictedRouteTrajectory, fx:element, ?predictedElement].
 
 
-# TODO: provjeriti sintaksu za ovo ispod!
 # Assign :next predicate to consecutive timestamps
 [?timestamp1, :next, ?timestamp2] :-
     [?timestamp1, :timestamp, ?time1],
     [?timestamp2, :timestamp, ?time2],
-    [?timestamp3, :timestamp, ?time3],
-    NOT EXISTS ?time3 IN(
-        [?timestamp3, :timestamp, ?time3],
-        FILTER(
-            ?time2 > ?time1 && 
-            ?time3 > ?time1 && 
-            ?time3 < ?time2
-        )
+    FILTER(?timestamp1 != ?timestamp2 && ?time1 < ?time2),
+    NOT EXISTS ?midTimestamp, ?midTime IN (
+        [?midTimestamp, :timestamp, ?midTime],
+        FILTER(?midTime > ?time1 && ?midTime < ?time2)
     ).
 
 

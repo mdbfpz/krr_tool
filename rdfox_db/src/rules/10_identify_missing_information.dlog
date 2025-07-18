@@ -1,6 +1,6 @@
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
-@prefix : <https://aware-sesar.eu>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
+@prefix : <https://aware-sesar.eu/>.
 
 #5.10.1  Identify aircraft with possible equipment degradation
 [?flight, :hasEquipmentDegradation, ?equipmentDegradationIndicator] :-

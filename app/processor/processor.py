@@ -13,7 +13,7 @@ import uvicorn
 import json
 
 
-def load_static_data():
+def load_static_data(): # TODO: make this a class method
     """Load static json data from container"""
     
     path = "/krr_tool/app/data/aixmData.json"
@@ -134,13 +134,13 @@ class Processor:
         """Run the data processing pipeline."""
 
         await self.rdfox_db.run()
+        self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
         
         self.data_fetcher = DataFetcher(self.converter_queue)
         self.rdf_converter = RDFConverter()
         self.conflict_detection = ConflictDetection()
         self.reverse_rdf_converter = ReverseRDFConverter()
         self.data_sender = DataSender()
-        self.rdfox_queries = RDFoxQuery(self.rdfox_db.connection_id)
 
         self.static_data = load_static_data()
                 
@@ -152,7 +152,7 @@ class Processor:
         tasks = [
             self.fetch_and_enqueue(),
             self.convert_and_enqueue(),
-            # self.insert_and_enqueue(),
+            self.insert_and_enqueue(),
             # self.reverse_convert_and_enqueue()
             # self.send_data()
         ]

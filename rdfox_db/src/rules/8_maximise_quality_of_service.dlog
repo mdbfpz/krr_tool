@@ -1,8 +1,10 @@
-@prefix fx: <http://www.fixm.aero/flight/4.3>.
-@prefix ax: <https://aware-sesar.eu/aixm/5.1.1>.
-@prefix : <https://aware-sesar.eu>.
+@prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
+@prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
+@prefix : <https://aware-sesar.eu/>.
 
-#5.8.1 Detect direct-to candidates 
+#5.8.1 Detect direct-to candidates
+# TODO: ovo treba doradu - pogledati u controller tools dijagram
 
 [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator] :-
     #tu nam je potreban izracun flagova u pipelineu - računaju se azimuti između parova tocaka za svaki sektor zasebno
