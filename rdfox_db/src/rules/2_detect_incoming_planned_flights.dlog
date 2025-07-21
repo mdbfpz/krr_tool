@@ -34,6 +34,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -41,8 +42,8 @@
     [?sector, ax:upperLimit, ?upperLimit],
 
     FILTER(
-        ?currLevel <= ?upperLimit*100 && 
-        ?currLevel >= ?lowerLimit*100
+        ?currFL <= ?upperLimit*100 && 
+        ?currFL >= ?lowerLimit*100
     ).
 
 # This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
@@ -58,6 +59,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?flight, :distanceToClosestHorizontalBoundary, ?minDist], # Horizontal distance to 2D sector - TODO: iskoristiti gotov kod iz jave i ubaciti u pipeline
 
@@ -72,7 +74,7 @@
     ),
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currLevel), ABS(?lowerLimit*100 - ?currLevel)
+            ABS(?upperLimit*100 - ?currFL), ABS(?lowerLimit*100 - ?currFL)
         )
         AS ?verticalDistanceToSector
     ),
@@ -126,6 +128,7 @@
     [?currPoint, fb:lat, ?currLat],
     [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
     [?prevElement, fx:point4D, ?prevPoint4D],
@@ -134,6 +137,7 @@
     [?prevPoint, fb:lat, ?prevLat],
     [?prevPoint, fb:lon, ?prevLon],
     [?prevPoint4D, fx:level, ?prevLevel],
+    [?prevLevel, fb:flightLevel, ?prevFL],
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
 
     [?aixmFeatures, :contains, ?airspace],
@@ -143,16 +147,16 @@
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currLevel), 
-            ABS(?lowerLimit*100 - ?currLevel)
+            ABS(?upperLimit*100 - ?currFL), 
+            ABS(?lowerLimit*100 - ?currFL)
         )
         AS ?currVerticalDistanceToSector
     ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?prevLevel), 
-            ABS(?lowerLimit*100 - ?prevLevel)
+            ABS(?upperLimit*100 - ?prevFL), 
+            ABS(?lowerLimit*100 - ?prevFL)
         )
         AS ?prevVerticalDistanceToSector
     ),
@@ -217,9 +221,11 @@
     # Extract previous and current positions and flight levels
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:level, ?prevLevel],
+    [?prevLevel, fb:flightLevel, ?prevFL],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -227,19 +233,19 @@
     [?sector, ax:upperLimit, ?upperLimit],
 
     BIND(
-        ABS(?lowerLimit*100 - ?currLevel)
+        ABS(?lowerLimit*100 - ?currFL)
         AS ?currLowerLevelDiff
     ),
     BIND(
-        ABS(?upperLimit*100 - ?currLevel)
+        ABS(?upperLimit*100 - ?currFL)
         AS ?currUpperLevelDiff
     ),
     BIND(
-        ABS(?lowerLimit*100 - ?prevLevel)
+        ABS(?lowerLimit*100 - ?prevFL)
         AS ?prevLowerLevelDiff
     ),
     BIND(
-        ABS(?upperLimit*100 - ?prevLevel)
+        ABS(?upperLimit*100 - ?prevFL)
         AS ?prevUpperLevelDiff
     ),
 

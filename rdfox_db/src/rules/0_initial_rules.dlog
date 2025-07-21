@@ -19,7 +19,7 @@
     [?routeTrajectoryContainer, fx:desired, ?desiredRouteTrajectory],
     [?desiredRouteTrajectory, fx:element, ?desiredElement].
 
-# TODO: We probably don't need this 
+# TODO: We probably don't need this (delete?)
 [?flight, :predictedElement, ?predictedElement] :-
     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
     [?routeTrajectoryContainer, :predicted, ?predictedRouteTrajectory],
@@ -37,5 +37,5 @@
     ).
 
 
-# When aircraft passes the planned point, we need to update the "agreed" branch to point to new 
-# planned position.
+# TODO: When aircraft passes the planned point, we need to update the "agreed" 
+# branch to point to new planned position.

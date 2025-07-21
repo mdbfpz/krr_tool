@@ -198,6 +198,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -207,8 +208,8 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - ?altStd) mod 360 && 
-            ?currLevel <= (?altMean + ?altStd) mod 360,
+            ?currFL >= (?altMean - ?altStd) mod 360 && 
+            ?currFL <= (?altMean + ?altStd) mod 360,
             1,
             0
         )
@@ -221,6 +222,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -230,8 +232,8 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - 2*?altStd) mod 360 && 
-            ?currLevel <= (?altMean + 2*?altStd) mod 360,
+            ?currFL >= (?altMean - 2*?altStd) mod 360 && 
+            ?currFL <= (?altMean + 2*?altStd) mod 360,
             2,
             0
         )
@@ -244,6 +246,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -253,8 +256,8 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - 3*?altStd) mod 360 && 
-            ?currLevel <= (?altMean + 3*?altStd) mod 360,
+            ?currFL >= (?altMean - 3*?altStd) mod 360 && 
+            ?currFL <= (?altMean + 3*?altStd) mod 360,
             3,
             0
         )
@@ -267,7 +270,8 @@
     [?flight, fx:aircraftIdentification, ?flightID],  
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],  
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 
@@ -291,6 +295,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -300,7 +305,7 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - ?altStd) && ?currLevel <= (?altMean + ?altStd),
+            ?currFL >= (?altMean - ?altStd) && ?currFL <= (?altMean + ?altStd),
             1,
             0
         )
@@ -313,6 +318,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -322,7 +328,7 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - 2*?altStd) && ?currLevel <= (?altMean + 2*?altStd),
+            ?currFL >= (?altMean - 2*?altStd) && ?currFL <= (?altMean + 2*?altStd),
             2,
             0
         )
@@ -335,6 +341,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
@@ -344,7 +351,7 @@
 
     BIND(
         IF(
-            ?currLevel >= (?altMean - 3*?altStd) && ?currLevel <= (?altMean + 3*?altStd),
+            ?currFL >= (?altMean - 3*?altStd) && ?currFL <= (?altMean + 3*?altStd),
             3,
             0
         )
@@ -356,7 +363,8 @@
     [?flight, fx:aircraftIdentification, ?flightID],  
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],  
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
     [?statistics, :statsFlight, ?flightStats],
     [?flightStats, fx:aircraftIdentification, ?flightID],
 

@@ -4,20 +4,22 @@
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 # 5.1.1 Check that aircraft is climbing/descending towards cleared FL
+# TODO: Missing - verticalRate
 
 # Climbing:
 [?flight, :isClimbingToCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currElement, fx:extension, ?verticalRate],
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
     BIND(
         IF(
-            ?currLevel < ?clearedLevel && ?verticalRate > 0,
+            ?currFL < ?clearedFL && ?verticalRate > 0,
             1,
             0
         )
@@ -29,14 +31,15 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currElement, fx:extension, ?verticalRate],
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
-
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
     BIND(
         IF(
-            ?currLevel > ?clearedLevel && ?verticalRate < 0,
+            ?currFL > ?clearedFL && ?verticalRate < 0,
             1,
             0
         )
@@ -62,20 +65,22 @@
     # Extract previous, current and agreed levels and vertical rate
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
     [?prevElement, fx:extension, ?prevVRate],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currElement, fx:extension, ?currVRate],
 
     BIND(
         IF(
             (
-                ?currLevel < ?clearedLevel && 
+                ?currFL < ?clearedFL && 
                 ?prevVRate <= 0 && 
                 ?currVRate <= 0
             ) ||
             (
-                ?currLevel > ?clearedLevel &&
+                ?currFL > ?clearedFL &&
                 ?prevVRate >= 0 &&
                 ?currVRate >= 0
             ),
@@ -86,7 +91,7 @@
     ).
 
 
-# 5.1.2 Check that aircraft is at cleared FL
+# 5.1.2 Check that aircraft is at cleared FL [DONE - 1st part]
 
 # U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
 # Rule 1: Check if current level is equal to cleared level
@@ -94,12 +99,14 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?agreedLevel],
+    [?agreedLevel, fb:flightLevel, ?agreedFL],
     BIND(
         IF(
-            ?currLevel = ?agreedLevel,
+            ?currFL = ?agreedFL,
             1,
             0
         )
@@ -107,7 +114,8 @@
     ).
 
 # Passing CFL:
-# Rule 1: Check if aircraft is passing cleared flight level.
+# Rule 2: Check if aircraft is passing cleared flight level.
+# TODO: Missing - verticalRate
 [?flight, :isPassingCFL, ?indicator] :-
     [?flight, :isAtCFL, 1],
     [?flight, :currentElement, ?currElement],
@@ -124,6 +132,7 @@
 
 
 # 5.1.3 Check that aircraft is maintaining FL
+#TODO: Missing - verticalRate
 [?flight2, :isMaintainingFL, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -140,9 +149,11 @@
 
     # Extract previous and current levels and vertical rate
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:level, ?level],
+    [?prevPoint4D, fx:level, ?prevLevel],
+    [?prevLevel, fb:flightLevel, ?level],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?level],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?level],
     [?currElement, fx:extension, ?verticalRate],
 
     BIND(
@@ -1211,12 +1222,14 @@
     # Extract current and agreed flight levels
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     BIND(
         IF(
-            ABS(?currLevel - ?clearedLevel) <= 100,
+            ABS(?currFL - ?clearedFL) <= 100,
             1,
             0
         )

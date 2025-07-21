@@ -1,4 +1,5 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 @prefix : <https://aware-sesar.eu/>.
 
@@ -34,6 +35,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
@@ -45,7 +47,7 @@
     ),
     # TODO: why looking only at the lower limit?
     BIND(
-        (?lowerLimit*100 - ?currLevel)*60 / ABS(?currVRate) # seconds
+        (?lowerLimit*100 - ?currFL)*60 / ABS(?currVRate) # seconds
         AS ?timeToLowerSectorBoundary
     ),
     BIND(2*60 AS ?x),
@@ -78,6 +80,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?currElement, fx:extension, ?currVRate],
 
@@ -89,7 +92,7 @@
     ),
     # TODO: why looking only at the lower limit?
     BIND(
-        (?lowerLimit*100 - ?currLevel)*60 / ABS(?currVRate) # seconds
+        (?lowerLimit*100 - ?currFL)*60 / ABS(?currVRate) # seconds
         AS ?timeToLowerSectorBoundary
     ),
     BIND(2*60 AS ?x),

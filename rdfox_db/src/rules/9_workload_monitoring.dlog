@@ -29,6 +29,7 @@
         [?currPoint1, fb:lat, ?currLat1],
         [?currPoint1, fb:lon, ?currLon1],    
         [?currPoint4D1, fx:level, ?currLevel1],
+        [?currLevel1, fb:flightLevel, ?currFL1],
         [?flight2, fx:aircraftIdentification, ?flightID2],
         [?flight2, :currentElement, ?currElement2],
         [?currElement2, fx:point4D, ?currPoint4D2],    
@@ -37,8 +38,9 @@
         [?currPoint2, fb:lat, ?currLat2],
         [?currPoint2, fb:lon, ?currLon2],
         [?currPoint4D2, fx:level, ?currLevel2],
+        [?currLevel2, fb:flightLevel, ?currFL2],
         BIND(
-            ABS(?currLevel1 - ?currLevel2) AS ?verticalDistance
+            ABS(?currFL1 - ?currFL2) AS ?verticalDistance
         ), 
         BIND(6371 as ?R),		# Radius of the earth in km
         BIND(

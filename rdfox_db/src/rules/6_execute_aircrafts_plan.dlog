@@ -1,4 +1,5 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 @prefix : <https://aware-sesar.eu/>.
 
@@ -8,13 +9,15 @@
 [?flight, :isAtRequestedFL, ?atRequestedFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currElement, fx:routeChange, ?currRouteChanges],
     [?currRouteChanges, fx:level, ?currCruisingLevelChange],
     [?currCruisingLevelChange, fx:level, ?changeFlightLevel],
+    [?changeFlightLevel, fb:flightLevel, ?changeFL],
     BIND(
         IF(
-            ?currFlightLevel = ?changeFlightLevel,
+            ?currFL = ?changeFL,
             1,
             0
         )
@@ -25,14 +28,16 @@
 [?flight, :hasToDescendFL, ?descendFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currElement, fx:routeChange, ?currRouteChanges],
     [?currRouteChanges, fx:level, ?currCruisingLevelChange],
     [?currCruisingLevelChange, fx:level, ?reqFlightLevel],
+    [?reqFlightLevel, fb:flightLevel, ?requestedFL],
     
     BIND(
         IF(
-            ?currFlightLevel > ?reqFlightLevel,
+            ?currFL > ?requestedFL,
             1,
             0
         )
@@ -57,13 +62,15 @@
 [?flight, :isAtExitFL, ?atExitFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?flight, :exitPointElement, ?exitPointElement],
     [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitFlightLevel],
+    [?exitPoint4D, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
     BIND(
         IF(
-            ?currFlightLevel = ?exitFlightLevel,
+            ?currFL = ?exitFL,
             1,
             0
         )
@@ -74,14 +81,16 @@
 [?flight, :hasToDescendToExitFL, ?descendToExitFLIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?flight, :exitPointElement, ?exitPointElement],
     [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitFlightLevel],
+    [?exitPoint4D, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
     
     BIND(
         IF(
-            ?currFlightLevel > ?exitFlightLevel,
+            ?currFL > ?exitFL,
             1,
             0
         )
@@ -118,6 +127,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL], #TODO: treba li ovo?
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     # gledamo kao da se pretvorba headinga obavlja u pipelineu
     #    linija 60 - linija 86
@@ -154,6 +164,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL], #TODO: treba li ovo?
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
     [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
     BIND(

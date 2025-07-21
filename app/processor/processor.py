@@ -101,7 +101,7 @@ class Processor:
             self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
                 
             turtle_data = self.rdf_converter.serialize()
-            # print("Turtle data: ", turtle_data)
+            print("Turtle data: ", turtle_data)
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):

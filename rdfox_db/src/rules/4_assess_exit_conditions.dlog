@@ -45,11 +45,13 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -60,13 +62,13 @@
     BIND(
         IF(
             ?exitLevel = 0, # TODO: perhaps it won't be zero if missing
-            ?clearedLevel,
+            ?clearedFL,
             ?exitLevel
         )
         AS ?sectorExitLevel
     ),
     BIND(
-        ?sectorExitLevel - ?currLevel
+        ?sectorExitLevel - ?currFL
         AS ?diffLevel
     ),
     BIND(
@@ -99,11 +101,13 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -114,13 +118,13 @@
     BIND(
         IF(
             ?exitLevel = 0,
-            ?clearedLevel,
+            ?clearedFL,
             ?exitLevel
         )
         AS ?sectorExitLevel
     ),
     BIND(
-        ?sectorExitLevel - ?currLevel
+        ?sectorExitLevel - ?currFL
         AS ?a
     ),
     BIND(
@@ -152,11 +156,13 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -167,13 +173,13 @@
     BIND(
         IF(
             ?exitLevel = 0,
-            ?clearedLevel,
+            ?clearedFL,
             ?exitLevel
         )
         AS ?sectorExitLevel
     ),
     BIND(
-        ?sectorExitLevel - ?currLevel
+        ?sectorExitLevel - ?currFL
         AS ?a
     ),
     BIND(
@@ -205,11 +211,13 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -220,13 +228,13 @@
     BIND(
         IF(
             ?exitLevel = 0,
-            ?clearedLevel,
+            ?clearedFL,
             ?exitLevel
         )
         AS ?sectorExitLevel
     ),
     BIND(
-        ?sectorExitLevel - ?currLevel
+        ?sectorExitLevel - ?currFL
         AS ?a
     ),
     BIND(
@@ -258,11 +266,13 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
     [?clearedPoint4D, fx:level, ?clearedLevel],
+    [?clearedLevel, fb:flightLevel, ?clearedFL],
 
     [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
     [?exitPointElement, fx:point4D, ?exitPoint4D],
@@ -273,13 +283,13 @@
     BIND(
         IF(
             ?exitLevel = 0,
-            ?clearedLevel,
+            ?clearedFL,
             ?exitLevel
         )
         AS ?sectorExitLevel
     ),
     BIND(
-        ?sectorExitLevel - ?currLevel
+        ?sectorExitLevel - ?currFL
         AS ?a
     ),
     BIND(

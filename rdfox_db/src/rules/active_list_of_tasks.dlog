@@ -12,7 +12,7 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:routeChange, ?currRouteChange],
     [?currRouteChange, fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange, fx:level, ?changeFlightLevel],
+    [?currCruisingLevelChange, fb:flightLevel, ?changeFL],  #TODO: treba li ovo?
     [?flight, :hasToClimbFL, ?hasToClimbFLIndicator],
     BIND(
         IF(
@@ -49,6 +49,7 @@
     [?currPoint, fb:lat, ?currLat],
     [?currPoint, fb:lon, ?currLon],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?flight2, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
     [?prevElement, fx:point4D, ?prevPoint4D],
@@ -57,6 +58,7 @@
     [?prevPoint, fb:lat, ?prevLat],
     [?prevPoint, fb:lon, ?prevLon],
     [?prevPoint4D, fx:level, ?prevLevel],
+    [?prevLevel, fb:flightLevel, ?prevFL],
     [?flight1, :distanceToClosestHorizontalBoundary, ?prevMinDist], # Horizontal distance to sector
 
     [?aixmFeatures, :contains, ?airspace],
@@ -66,16 +68,16 @@
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currLevel), 
-            ABS(?lowerLimit*100 - ?currLevel)
+            ABS(?upperLimit*100 - ?currFL), 
+            ABS(?lowerLimit*100 - ?currFL)
         )
         AS ?currVerticalDistanceToSector
     ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?prevLevel), 
-            ABS(?lowerLimit*100 - ?prevLevel)
+            ABS(?upperLimit*100 - ?prevFL), 
+            ABS(?lowerLimit*100 - ?prevFL)
         )
         AS ?prevVerticalDistanceToSector
     ),
@@ -360,17 +362,19 @@
     # FL (requested/stated in flight plan/max?) can be higher than the current FL
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
 
     [?currElement, fx:routeChange, ?currRouteChanges],
     [?currRouteChanges, fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange, fx:level, ?reqFlightLevel],
+    [?currCruisingLevelChange, fb:flightLevel, ?changeFL],
 
     [?flight, :desiredElement, ?desiredElement],
     [?desiredElement, fx:point4D, ?desiredPoint4D],
-    [?desiredPoint4D, fx:level, ?desiredFlightLevel],
+    [?desiredPoint4D, fx:level, ?desiredLevel],
+    [?desiredLevel, fb:flightLevel, ?desiredFL],
     FILTER(
-        ?desiredFlightLevel > ?currFlightLevel || ?reqFlightLevel > ?currFlightLevel
+        ?desiredFL > ?currFL || ?changeFL > ?currFL
     ).
 
 # 12. EXIT CONDITIONS
@@ -440,10 +444,11 @@
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
-    FILTER(?currLevel < ?lowerLimit).
+    FILTER(?currFL < ?lowerLimit).
 
 # 18. COORDINATION RESPONSE
 # TODO: Compare this with the diagram when it is finished

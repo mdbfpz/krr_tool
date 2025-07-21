@@ -149,13 +149,15 @@
 [?flight, :doesModelSatisfyTrajectoryPrediction, ?satisfactoryTrajectoryModelIndicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement,fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currFlightLevel],
+    [?currPoint4D, fx:level, ?currLevel],
+    [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:position, ?currPosition],
     [?currPoint4D, fx:time, ?currPoint4DTime],
     [?currPoint4DTime, fb:absoluteTime, ?currTime],
     [?flight, :predictedElement, ?predElement],
     [?predElement, fx:point4D, ?predPoint4D],
-    [?predPoint4D, fx:level, ?predFlightLevel],
+    [?predPoint4D, fx:level, ?predLevel],
+    [?predLevel, fb:flightLevel, ?predFL],
     [?predPoint4D, fx:position, ?predPosition],
     [?predPoint4D, fx:time, ?predPoint4DTime],
     [?predPoint4DTime, fb:absoluteTime, ?predTime],
@@ -164,7 +166,7 @@
         IF(
             ABS(?currPosition - ?predPosition) <= 2.5 &&        # TOOD: ovo neće raditi jer ne možemo oduzimati čvorove, treba implementirati funkciju za oduzimanje koordinata (udalenost između dvije točke - uzmemo iz pipelinea?)
             ABS(?currTime - ?predTime) <= 30 && 
-            ABS(?currFlightLevel - ?predFlightLevel) <= 100,
+            ABS(?currFL - ?predFL) <= 100,
             1,
             0
         )

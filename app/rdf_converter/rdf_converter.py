@@ -307,7 +307,8 @@ class RDFConverter:
                 self.graph.add((branch_uri, FIXM.element, element_uri))
                 self.graph.add((element_uri, RDF.type, FIXM.Element))
 
-                point4d = element.get("point4D", {})
+                # FIXM data uses point4d for current branch, other branches have point4D
+                point4d = element.get("point4D") or element.get("point4d") or {} # TODO: refactor this to use key mapping and not manual case handling
                 self._process_point4d(element_uri, point4d)
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
@@ -791,6 +792,7 @@ class RDFConverter:
                     #if child_tag == "element":
                     node.append({child_tag: child_dict})
                 return node
+            
             elif tag == "enRoute":
                 node = {}
             
@@ -1156,6 +1158,7 @@ class RDFConverter:
                 # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
         
             timestamp_data = {self.last_timestamp: self.data_repository[self.last_timestamp]}
+            print(f"Converted data record:", timestamp_data)
             # Convert the repository to RDF triples
             self._repository_to_rdf(timestamp_data)
         else:
