@@ -18,8 +18,8 @@
     # prev and curr for flight 1
     [?prevT1, :next, ?currT1],  
     # Bind flights at each timestamp
-    [?prevT1, :flight, ?flight1P],
-    [?currT1, :flight, ?flight1C],
+    [?prevT1, fx:flight, ?flight1P],
+    [?currT1, fx:flight, ?flight1C],
     # Extract the same flights only
     [?flight1P, fx:aircraftIdentification, ?flightID1],
     [?flight1C, fx:aircraftIdentification, ?flightID1],
@@ -27,8 +27,8 @@
     # prev and curr for flight 2
     [?prevT2, :next, ?currT2],  
     # Bind flights at each timestamp
-    [?prevT2, :flight, ?flight2P],
-    [?currT2, :flight, ?flight2C],
+    [?prevT2, fx:flight, ?flight2P],
+    [?currT2, fx:flight, ?flight2C],
     # Extract the same flights only
     [?flight2P, fx:aircraftIdentification, ?flightID2],
     [?flight2C, fx:aircraftIdentification, ?flightID2],

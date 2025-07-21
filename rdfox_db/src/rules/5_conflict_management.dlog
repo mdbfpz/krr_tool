@@ -39,10 +39,10 @@
     # Identify consecutive timestamps
     # [?prevT, :next, ?currT],  
 
-    # [?prevT, :flight, ?prevFlight1],
-    # [?prevT, :flight, ?prevFlight2],
-    # [?currT, :flight, ?currFlight1],
-    # [?currT, :flight, ?currFlight2],
+    # [?prevT, fx:flight, ?prevFlight1],
+    # [?prevT, fx:flight, ?prevFlight2],
+    # [?currT, fx:flight, ?currFlight1],
+    # [?currT, fx:flight, ?currFlight2],
 
     # [?prevFlight1, fx:aircraftIdentification, ?prevFlight1ID],
     # [?prevFlight2, fx:aircraftIdentification, ?prevFlight2ID],
@@ -84,8 +84,8 @@
 
 [?flight1, :conflictPredictionImplausible, ?flight2] :- 
     # Make sure we look for the flights in the same timestamp
-    [?t, :flight, ?flight1],
-    [?t, :flight, ?flight2],
+    [?t, fx:flight, ?flight1],
+    [?t, fx:flight, ?flight2],
 
     [?flight1, fx:aircraftIdentification, ?flight1ID],
     [?flight2, fx:aircraftIdentification, ?flight2ID],
@@ -125,8 +125,8 @@
 
 [?flight1, :conflictPredictionPlausible, ?flight2] :- 
     # Make sure we look for the flights in the same timestamp
-    [?t, :flight, ?flight1],
-    [?t, :flight, ?flight2],
+    [?t, fx:flight, ?flight1],
+    [?t, fx:flight, ?flight2],
 
     [?flight1, fx:aircraftIdentification, ?flight1ID],
     [?flight2, fx:aircraftIdentification, ?flight2ID],

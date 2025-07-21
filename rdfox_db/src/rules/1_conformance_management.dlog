@@ -51,8 +51,8 @@
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same flights only
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -137,8 +137,8 @@
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same flights only
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -174,6 +174,7 @@
 # aircraft ID. Dakle, svi ?flight su međusobno različiti unutar timestampa i između različitih timestampova!  
 
 # Case 1: Cleared heading exists
+#TODO: Missing - heading
 [?flight, :isClearedHeadingAssigned, 1] :-
     [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
@@ -181,6 +182,7 @@
     [?clearedPointExtension, :heading, ?clearedHeading].
 
 # Case 2: Cleared heading does NOT exist
+#TODO: Missing - heading
 [?flight, :isClearedHeadingAssigned, 0] :-
     [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
@@ -189,7 +191,7 @@
         [?clearedPointExtension, :heading, ?clearedHeading]
     ).
 
-
+#TODO: Missing - heading
 [?flight, :isHeadingClearenceJustReceived, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
@@ -214,7 +216,8 @@
 
 # Turning towards:
 # U javi je krivo implementirano - primjer za towards: prev=20, curr=30, clear=40 i prev=20, curr=50, clear=40. 
-# Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH 
+# Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
+#TODO: Missing - heading
 [?flight, :isTurningTowardsClearedHeading, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     [?flight, :isHeadingClearenceJustReceived, 0],
@@ -252,6 +255,7 @@
     ).
 
 
+#TODO: Missing - heading
 # Turning opposite:
 [?flight, :isTurningOppositeOfClearedHeading, ?indicator] :-
     [?flight, :isHeadingClearenceJustReceived, 0],
@@ -290,7 +294,8 @@
     ).
 
 
-# 5.1.5 Check that aircraft is at cleared heading  
+# 5.1.5 Check that aircraft is at cleared heading
+#TODO: Missing - heading
 [?flight, :isAtClearedHeading, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     [?flight, :isHeadingClearenceJustReceived, 0],
@@ -316,12 +321,13 @@
 
 
 # 5.1.6. Check that aircraft is maintaining current heading (different than cleared heading)
+#TODO: Missing - heading
 [?flight2, :isMaintainingCurrentHeading, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightIdentification],
     [?flight2, fx:aircraftIdentification, ?flightIdentification],
@@ -346,6 +352,7 @@
     ).
 
 # TODO: add ?indicator here as well?
+#TODO: Missing - heading
 [?flight, :isMaintainingClearedHeading, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :isMaintainingCurrentHeading, ?currHeadIndicator],
@@ -360,13 +367,34 @@
     ).
 
 
-
-
 # 5.1.7 Check that aircraft is accelerating/decelerating towards cleared speed
 # U java klasi je povratna vrijednost i "Speed clearance received." (pilot je upravo primio novi cleared speed pa nit ubrzava 
 # nit usporava u tom trenutku), a to u pravilima ne moramo naglasiti, obzirom da je dovoljno reći False za ubrzavanje/usporavanje 
 # ako je cleared speed instrukcija stigla u trenutnom vremenu.
-[?flight, :isSpeedClearenceJustReceived, ?indicator] :- 
+
+# ATCO cleared speed restriction
+# Case 1: Cleared speed exists
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+[?flight, :noATCOSpeedRestriction, 0] :-
+    [?flight, :agreedElement, ?agreedElement],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed].
+
+# Case 2: Cleared speed does not exist
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+[?flight, :noATCOSpeedRestriction, 1] :-
+    [?flight, :agreedElement, ?agreedElement],
+    [?agreedElement, fx:point4D, ?agreedPoint4D],
+    NOT EXISTS ?clearedSpeed IN (
+        [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
+    ).
+
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+[?flight, :isSpeedClearenceJustReceived, ?indicator] :-
+    [?flight, :noATCOSpeedRestriction, 1],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -387,29 +415,17 @@
         AS ?indicator
     ).
 
-# ATCO cleared speed restriction
-# Case 1: Cleared speed exists
-[?flight, :noATCOSpeedRestriction, 0] :-
-    [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed].
-
-# Case 2: Cleared speed does not exist
-[?flight, :noATCOSpeedRestriction, 1] :-
-    [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:point4D, ?agreedPoint4D],
-    NOT EXISTS ?clearedSpeed IN (
-        [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
-    ).
 
 # Accelerating:
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
 [?flight2, :isAcceleratingToClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -435,14 +451,16 @@
         )
         AS ?indicator
     ).
-    
+
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
 [?flight2, :isAcceleratingWithinClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -482,13 +500,15 @@
 # TODO: maknuti filter ?boundType = ... i ubaciti to u select (ako je moguće), slično kao kod provjere jednakosti dviju varijabli bez filtera.
 
 # Decelerating:
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
 [?flight2, :isDeceleratingToClearedSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightIdentification],
     [?flight2, fx:aircraftIdentification, ?flightIdentification],
@@ -514,13 +534,16 @@
         AS ?indicator
     ).
 
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+#TODO: Missing - cleared speed bound type
 [?flight2, :isDeceleratingWithinClearedSpeed, ?indicator] :-
     [?flight2, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightIdentification],
     [?flight2, fx:aircraftIdentification, ?flightIdentification],
@@ -557,8 +580,10 @@
         AS ?indicator
     ).
 
-
 # 5.1.8 Check that aircraft is flying at cleared speed
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+#TODO: Missing - cleared speed bound type
 [?flight, :isFlyingAtClearedSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Extract current and cleared elements for the flight at each timestamp
@@ -591,13 +616,15 @@
 
 
 # 5.1.9 Check that aircraft is maintaining current speed (different than cleared speed)
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
 [?flight2, :isMaintainingCurrentSpeed, ?indicator] :-
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightIdentification],
     [?flight2, fx:aircraftIdentification, ?flightIdentification],
@@ -619,8 +646,9 @@
         AS ?indicator
     ).
 
-# TODO: add ?indicator here as well?
-[?flight, :isMaintainingClearedSpeed,?indicator] :-
+#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
+#to access this information)
+[?flight, :isMaintainingClearedSpeed, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :isMaintainingCurrentSpeed, ?maintainingCurrSpeedIndicator],
     [?flight, :isFlyingAtClearedSpeed, ?flyingAtCurrSpeedIndicator],
@@ -632,7 +660,6 @@
         )
         AS ?indicator
     ).
-
 
 
 # 5.1.10  Check that aircraft is flying towards cleared point
@@ -659,7 +686,7 @@
 
     BIND(
         IF(
-            ABS(?currTime - ?agreedTime) <= 7,
+            ABS(?currTime - ?agreedTime) <= 7,  #TODO: which operator to use to compare times?
             1,
             0
         )
@@ -667,6 +694,7 @@
     ).
 
 # Case 1: Flying on cleared heading (indicator = 1)
+#TODO: Missing - heading
 [?flight, :flyingOnClearedHeading, 1] :-
     [?flight, :isHeadingClearenceJustReceived, 0],
     [?flight, :isDirectToClearenceJustReceived, 0],
@@ -682,7 +710,7 @@
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    [?flight, :toleranceAzimuth, ?toleranceAziValue],
+    [?flight, :toleranceAzimuth, ?toleranceAziValue],   #TODO: add toleranceAzimuth through the pipeline
 
     FILTER(
         ?currHeading <= ?clearedHeading + ?toleranceAziValue &&
@@ -690,6 +718,7 @@
     ).
 
 # Case 2: Not flying on cleared heading (indicator = 0)
+#TODO: Missing - heading
 [?flight, :flyingOnClearedHeading, 0] :-
     [?flight, :isHeadingClearenceJustReceived, 0],
     [?flight, :isDirectToClearenceJustReceived, 0],
@@ -705,7 +734,7 @@
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    [?flight, :toleranceAzimuth, ?toleranceAziValue],
+    [?flight, :toleranceAzimuth, ?toleranceAziValue],   #TODO: add toleranceAzimuth through the pipeline
 
     FILTER(
         ?currHeading > ?clearedHeading + ?toleranceAziValue ||
@@ -714,14 +743,16 @@
 
 
 # TODO: add directTime/headingTime check!
+#TODO: Missing - heading
+
 [?flight2, :flyingToClearedPoint, ?indicator] :-
     [?flight2, :isHeadingClearenceJustReceived, 0],
     [?flight2, :isDirectToClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same flights only
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -772,6 +803,7 @@
         AS ?indicator
     ).
 
+#TODO: Missing - heading
 [?flight2, :turningToClearedPoint, ?indicator] :-
     [?flight, :isHeadingClearenceJustReceived, 0],
     [?flight, :isDirectToClearenceJustReceived, 0],
@@ -779,8 +811,8 @@
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same flights only
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -911,17 +943,20 @@
 
 # 5.1.12 Check that aircraft’s current ROC/ROD is lower/higher than cleared
 # Positive case: 1 if exists
+#TODO: Missing - vertical rate
 [?flight, :isClearedVerticalRateAssigned, 1] :-
     [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:extension, ?clearedVRate].
 
 # Negative case: 0 if it doesn't exist
+#TODO: Missing - vertical rate
 [?flight, :isClearedVerticalRateAssigned, 0] :-
     [?flight, :agreedElement, ?agreedElement],
     NOT EXISTS ?clearedVRate IN (
         [?agreedElement, fx:extension, ?clearedVRate]
     ).
 
+#TODO: Missing - vertical rate
 [?flight, :isAtClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, :currentElement, ?currElement],
@@ -938,6 +973,7 @@
         AS ?indicator
     ).
 
+#TODO: Missing - vertical rate
 [?flight, :isVerticalRateHigherThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, :currentElement, ?currElement],
@@ -954,6 +990,7 @@
         AS ?indicator
     ).
 
+#TODO: Missing - vertical rate
 [?flight, :isVerticalRateLowerThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     [?flight, :currentElement, ?currElement],
@@ -970,6 +1007,8 @@
         AS ?indicator
     ).
 
+#TODO: Missing - vertical rate
+#TODO: Missing - cleared vertical rate bound type
 [?flight, :isVerticalRateWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
@@ -997,14 +1036,14 @@
         AS ?indicator
     ).
 
-
+#TODO: Missing - vertical rate
 # 5.1.13 Check that aircraft is maintaining cleared ROC/ROD
 [?flight2, :isMaintainingVerticalRate, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -1024,6 +1063,7 @@
         AS ?indicator
     ).
 
+#TODO: Missing - vertical rate
 [?flight, :isMaintainingClearedVerticalRate, ?indicator] :-
     [?flight, :isMaintainingVerticalRate, ?maintaining],
     [?flight, :isAtClearedVerticalRate, ?atCleared],
@@ -1038,7 +1078,9 @@
 
 
 # 5.1.14 Check that aircraft is increasing/decreasing towards/within cleared ROC/ROD
+#TODO: Missing - vertical rate
 [?flight, :isVerticalRateClearenceJustReceived, ?indicator] :-
+    [?flight, :isClearedVerticalRateAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -1060,14 +1102,15 @@
     ).
 
 # Incresing to cleared rate:
+#TODO: Missing - vertical rate
 [?flight2, :isIncreasingToClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -1091,14 +1134,15 @@
     ).	
 
 # Decresing to cleared rate:
+#TODO: Missing - vertical rate
 [?flight2, :isDecreasingToClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -1122,14 +1166,16 @@
     ).
 
 # Incresing within cleared rate:
+#TODO: Missing - vertical rate
+#TODO: Missing - cleared vertical rate bound type
 [?flight2, :isIncreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -1164,14 +1210,16 @@
     ).
 
 # Decreasing within cleared rate:
+#TODO: Missing - vertical rate
+#TODO: Missing - cleared vertical rate bound type
 [?flight2, :isDecreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
@@ -1241,8 +1289,8 @@
     # Identify consecutive timestamps
     [?prevT, :next, ?currT], 
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],

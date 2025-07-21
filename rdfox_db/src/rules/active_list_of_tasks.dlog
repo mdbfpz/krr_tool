@@ -29,8 +29,8 @@
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
-    [?prevT, :flight, ?flight1],
-    [?currT, :flight, ?flight2],
+    [?prevT, fx:flight, ?flight1],
+    [?currT, fx:flight, ?flight2],
     # Extract the same flights only
     [?flight1, fx:aircraftIdentification, ?flightID],
     [?flight2, fx:aircraftIdentification, ?flightID],
