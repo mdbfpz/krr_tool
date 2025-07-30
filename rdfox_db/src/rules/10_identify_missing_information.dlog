@@ -1,8 +1,10 @@
 @prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 @prefix : <https://aware-sesar.eu/>.
 
 #5.10.1  Identify aircraft with possible equipment degradation
+# TODO: MISSING datalink
 [?flight, :hasEquipmentDegradation, ?equipmentDegradationIndicator] :-
     [?flight, :datalink, ?datalink], #valjda je ovako definiran predikat i objekt
     [?datalink, :equipmentDegradation, ?equipmentDegradation],
@@ -48,10 +50,11 @@
 #spoji flight s airportheliport
 
 # TODO: može li biti isti head za 2 raličita pravila?
+# TODO: MISSING locationIndicatorICAO?
 [?flight, :destinationAirportHeliport, ?airportHeliport] :-
     [?flight, fx:arrival, ?arrival],
     [?arrival, fx:destinationAerodrome, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator], # TODO: treba li ići u "fb"?
+    [?aerodrome, fx:locationIndicator, ?locationIndicator], # TODO: treba li ići u "fb"? treba!
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
 [?flight, :departureAirportHeliport, ?airportHeliport] :-
@@ -75,53 +78,54 @@
     [?aerodrome, fx:locationIndicator, ?locationIndicator],
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
-#5.10.4  Monitor adverse weather areas
-[?flight2, :areWeatherConditionsChanged, ?changedWeatherConditionsIndicator] :-
-    [?prevT, :next, ?currT],  
-    # Bind flights at each timestamp
-    [?prevT, fx:flight, ?flight1],
-    [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+#5.10.4  Monitor adverse weather areas - WE WON'T USE WEATHER CONDITIONS IN AWARE!
+
+# [?flight2, :areWeatherConditionsChanged, ?changedWeatherConditionsIndicator] :-
+#     [?prevT, :next, ?currT],  
+#     # Bind flights at each timestamp
+#     [?prevT, fx:flight, ?flight1],
+#     [?currT, fx:flight, ?flight2],
+#     # Extract the same flights only
+#     [?flight1, fx:aircraftIdentification, ?flightID],
+#     [?flight2, fx:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
-    [?flight1, :currentElement, ?prevElement],
-    [?flight2, :currentElement, ?currElement],
+#     [?flight1, :currentElement, ?prevElement],
+#     [?flight2, :currentElement, ?currElement],
 
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:metData, ?currMeteorologicalData],
-    [?currMeteorologicalData, fx:temperature, ?currTemperature],
-    [?currMeteorologicalData, fx:windSpeed, ?currWindSpeed],
-    [?currMeteorologicalData, fx:windDirection, ?currWindDirection],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:metData, ?currMeteorologicalData],
+#     [?currMeteorologicalData, fx:temperature, ?currTemperature],
+#     [?currMeteorologicalData, fx:windSpeed, ?currWindSpeed],
+#     [?currMeteorologicalData, fx:windDirection, ?currWindDirection],
     #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
-    [?currMeteorologicalData, fx:extension, ?currMeterologicalDataExtension],
-    [?currMeterologicalDataExtension, :icing, ?currIcing],
-    [?currMeterologicalDataExtension, :precipitation, ?currPrecipitation],
-    [?currMeterologicalDataExtension, :cloudCoverage, ?currCloudCoverage],
-    [?currMeterologicalDataExtension, :thunder, ?currThunder],
+#     [?currMeteorologicalData, fx:extension, ?currMeterologicalDataExtension],
+#     [?currMeterologicalDataExtension, :icing, ?currIcing],
+#     [?currMeterologicalDataExtension, :precipitation, ?currPrecipitation],
+#     [?currMeterologicalDataExtension, :cloudCoverage, ?currCloudCoverage],
+#     [?currMeterologicalDataExtension, :thunder, ?currThunder],
 
 
-    [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:metData, ?prevMeteorologicalData],
-    [?prevMeteorologicalData, fx:temperature, ?prevTemperature],
-    [?prevMeteorologicalData, fx:windSpeed, ?prevWindSpeed],
-    [?prevMeteorologicalData, fx:windDirection, ?prevWindDirection],
+#     [?prevElement, fx:point4D, ?prevPoint4D],
+#     [?prevPoint4D, fx:metData, ?prevMeteorologicalData],
+#     [?prevMeteorologicalData, fx:temperature, ?prevTemperature],
+#     [?prevMeteorologicalData, fx:windSpeed, ?prevWindSpeed],
+#     [?prevMeteorologicalData, fx:windDirection, ?prevWindDirection],
     #ekstenzija na meterologicalData, dodani propertyji koji fale: icing, precipitation, cloudCoverage
-    [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
-    [?prevMeterologicalDataExtension, :icing, ?prevIcing],  # TODO: trebaju li ovdje prefiksi?
-    [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
-    [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
-    [?prevMeterologicalDataExtension, :thunder, ?prevThunder],
-    BIND(
-        IF(
-            ?currTemperature = ?prevTemperature && ?currWindSpeed && ?prevWindSpeed && ?currWindDirection = ?prevWindDirection && 
-            ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage && ?currThunder = ?prevThunder,
-            0,
-            1
-        )
-        AS ?changedWeatherConditionsIndicator
-    ).     
+#     [?prevMeteorologicalData, fx:extension, ?prevMeterologicalDataExtension],
+#     [?prevMeterologicalDataExtension, :icing, ?prevIcing],  # TODO: trebaju li ovdje prefiksi?
+#     [?prevMeterologicalDataExtension, :precipitation, ?prevPrecipitation],
+#     [?prevMeterologicalDataExtension, :cloudCoverage, ?prevCloudCoverage],
+#     [?prevMeterologicalDataExtension, :thunder, ?prevThunder],
+#     BIND(
+#         IF(
+#             ?currTemperature = ?prevTemperature && ?currWindSpeed && ?prevWindSpeed && ?currWindDirection = ?prevWindDirection && 
+#             ?currIcing = ?prevIcing && ?currPrecipitation = ?prevPrecipitation && ?currCloudCoverage = ?prevCloudCoverage && ?currThunder = ?prevThunder,
+#             0,
+#             1
+#         )
+#         AS ?changedWeatherConditionsIndicator
+#     ).     
 
 
 #5.10.5 Monitor restricted airspace 
@@ -130,9 +134,13 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
+
     [?flight1, :withinSector, ?sector1],
     [?airspace1, ax:geometryComponent, ?sector1],
     [?airspace1, ax:activation, ?airspaceActivation1],

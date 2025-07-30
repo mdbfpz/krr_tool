@@ -53,9 +53,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -139,9 +141,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -329,8 +333,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightIdentification],
-    [?flight2, fx:aircraftIdentification, ?flightIdentification],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -427,8 +433,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -462,8 +470,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -510,8 +520,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightIdentification],
-    [?flight2, fx:aircraftIdentification, ?flightIdentification],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -545,8 +557,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightIdentification],
-    [?flight2, fx:aircraftIdentification, ?flightIdentification],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -626,8 +640,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightIdentification],
-    [?flight2, fx:aircraftIdentification, ?flightIdentification],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -743,7 +759,7 @@
 
 
 # TODO: add directTime/headingTime check!
-#TODO: Missing - heading
+# TODO: Missing - heading
 
 [?flight2, :flyingToClearedPoint, ?indicator] :-
     [?flight2, :isHeadingClearenceJustReceived, 0],
@@ -753,9 +769,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?clearedElement],
@@ -813,9 +831,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -897,7 +917,7 @@
     ).
     
 
-# 5.1.11  Check that aircraft is at cleared point
+# 5.1.11  Check that aircraft is at cleared point   [DONE]
 [?flight, :isAtClearedPoint, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
@@ -916,10 +936,10 @@
 
     BIND(2.5 * 1825 AS ?toleranceRadius),		# Tolerance radius in meters
     BIND(6371 as ?R),		# Radius of the earth in km
-    BIND((?clearedLat - ?currLat) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
-    BIND((?clearedLon - ?currLon) * (math:pi/180) AS ?diffLonInRad),
-    BIND(?currLat * (math:pi/180) AS ?currLatInRad),
-    BIND(?clearedLat * (math:pi/180) AS ?clearedLatInRad),
+    BIND((?clearedLat - ?currLat) * (math:pi()/180) AS ?diffLatInRad),	# deg2rad
+    BIND((?clearedLon - ?currLon) * (math:pi()/180) AS ?diffLonInRad),
+    BIND(?currLat * (math:pi()/180) AS ?currLatInRad),
+    BIND(?clearedLat * (math:pi()/180) AS ?clearedLatInRad),
     BIND(
         (
             POW(SIN(?diffLatInRad/2), 2) + 
@@ -1045,8 +1065,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -1112,8 +1134,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -1144,8 +1168,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -1177,8 +1203,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -1221,8 +1249,10 @@
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract previous, current and cleared elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
@@ -1260,9 +1290,9 @@
 
 # 5.1.16 Check if the deviation from 3D trajectory is within tolerance
 # Ovo detaljno provjeriti i istestirati! Računamo udaljenost između točke trenutne pozicije X i segmenta AB, pri čemu su 
-# A i B prethodne i iduće cleared točke (ako nisu naznačene, onda se radi i točkama po planu leta). Također, flight level gledamo klasično.
+# A i B prethodna i iduća cleared točka (ako nisu naznačene, onda se radi o točkama po planu leta). Također, flight level gledamo klasično.
 
-# Extract previous - agreed, current - agreed and current, next - cleared elements for the flight
+# [DONE]
 [?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
 # Extract current and agreed elements for the flight
     [?flight, :currentElement, ?currElement],
@@ -1284,16 +1314,19 @@
         AS ?indicator
     ).
 
+# [DONE - but check semantic correctness with Ivan]
 [?flight2, :isDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
     [?flight2, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1],
-    # Identify consecutive timestamps
-    [?prevT, :next, ?currT], 
+    # Identify previous cleared position before next cleared position
+    [?prevT, :nextClearedPosition, ?currT], 
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
     # Extract the same FlightIdentification for both flights
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
     # Extract elements for the flights at each timestamp
     [?flight1, :agreedElement, ?prevClearedElement],
     [?flight2, :currentElement, ?currElement],

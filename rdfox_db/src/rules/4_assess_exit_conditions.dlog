@@ -23,7 +23,7 @@
     [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
     [?clearedDesignatedPoint, fb:designator, ?clearValue],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
+    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline (we have this in flight plan!)
     [?exitPointElement, fx:elementStartPoint, ?exitPointElementSP],
     [?exitPointElementSP, fb:designatedPoint, ?exitDesignatedPoint],
     [?exitDesignatedPoint, fb:designator, ?exitValue],
@@ -38,6 +38,7 @@
 
 
 # 5.4.2 Check that aircraft will reach the exit point on the required FL
+# TODO: MISSING speed
 [?flight, :aircraftWillReachExitPointOnRequiredFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],

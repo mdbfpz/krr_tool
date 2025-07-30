@@ -5,6 +5,7 @@
 @prefix hmi: <https://aware-sesar.eu/hmi/>.
 
 # Helper rules
+# TODO: MISSING routeChange
 [?flight, :qosCandidate, ?indicator] :-
     [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator], # TODO: provjeriti ovo, zar ne treba provjera za točku rute je li kandidat, a ne samo indikator?
 
@@ -31,9 +32,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],

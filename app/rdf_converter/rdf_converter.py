@@ -1158,7 +1158,7 @@ class RDFConverter:
                 # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
         
             timestamp_data = {self.last_timestamp: self.data_repository[self.last_timestamp]}
-            print(f"Converted data record:", timestamp_data)
+            # print(f"Converted data record:", timestamp_data)
             # Convert the repository to RDF triples
             self._repository_to_rdf(timestamp_data)
         else:

@@ -1,5 +1,6 @@
 @prefix : <https://aware-sesar.eu/>.
 @prefix fx: <http://www.fixm.aero/flight/4.3/>.
+@prefix fb: <http://www.fixm.aero/base/4.3/>.
 
 # Create transitivity closure between different (current, agreed, desired, predicted) 
 # route-trajectory elements and flights.
@@ -34,6 +35,77 @@
     NOT EXISTS ?midTimestamp, ?midTime IN (
         [?midTimestamp, :timestamp, ?midTime],
         FILTER(?midTime > ?time1 && ?midTime < ?time2)
+    ).
+
+# Create "nextClearedPosition" triple between the timestamps so that we connect previous
+# and next cleared elements. By default, elements are copied between timestamps, meaning
+# we can't just use the previous timestamp for some rules (e.g. 1.16.), but timestamp with
+# previous different cleared element.
+[?prevT, :nextClearedPosition, ?nextT] :-
+    [?prevT, :timestamp, ?time1],
+    [?nextT, :timestamp, ?time2],
+    FILTER(?prevT != ?nextT && ?time1 < ?time2),
+
+    [?prevT, fx:flight, ?flight1],
+    [?nextT, fx:flight, ?flight2],
+
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
+
+    [?flight1, :agreedElement, ?cleared1],
+    [?cleared1, fx:point4D, ?p4d1],
+    [?p4d1, fx:position, ?pos1],
+    [?pos1, fb:pos, ?point1],
+    [?point1, fb:lat, ?lat1],
+    [?point1, fb:lon, ?lon1],
+
+    [?flight2, :agreedElement, ?cleared2],
+    [?cleared2, fx:point4D, ?p4d2],
+    [?p4d2, fx:position, ?pos2],
+    [?pos2, fb:pos, ?point2],
+    [?point2, fb:lat, ?lat2],
+    [?point2, fb:lon, ?lon2],
+
+    FILTER(?lat1 != ?lat2 || ?lon1 != ?lon2),
+
+    # 1) Make sure no intermediate timestamp between prevT and nextT still has old position
+    NOT EXISTS ?middleT, ?middleTime, ?middleFlight, ?middleIdent, ?middleCleared, ?middleP4d, ?middlePos, ?middlePoint, ?middleLat, ?middleLon IN (
+        [?middleT, :timestamp, ?middleTime],
+        FILTER(?time1 < ?middleTime && ?middleTime < ?time2),
+
+        [?middleT, fx:flight, ?middleFlight],
+        [?middleFlight, fx:flightIdentification, ?middleIdent],
+        [?middleIdent, fb:aircraftIdentification, ?flightID],
+
+        [?middleFlight, :agreedElement, ?middleCleared],
+        [?middleCleared, fx:point4D, ?middleP4d],
+        [?middleP4d, fx:position, ?middlePos],
+        [?middlePos, fb:pos, ?middlePoint],
+        [?middlePoint, fb:lat, ?middleLat],
+        [?middlePoint, fb:lon, ?middleLon],
+
+        FILTER(?middleLat = ?lat1 && ?middleLon = ?lon1)
+    ),
+
+    # 2) Ensure there is no other later prevT2 between prevT and nextT that also differs from nextT
+    NOT EXISTS ?prevT2, ?time1b, ?flight1b, ?ident1b, ?cleared1b, ?p4d1b, ?pos1b, ?point1b, ?lat1b, ?lon1b IN (
+        [?prevT2, :timestamp, ?time1b],
+        FILTER(?time1 < ?time1b && ?time1b < ?time2),
+
+        [?prevT2, fx:flight, ?flight1b],
+        [?flight1b, fx:flightIdentification, ?ident1b],
+        [?ident1b, fb:aircraftIdentification, ?flightID],
+
+        [?flight1b, :agreedElement, ?cleared1b],
+        [?cleared1b, fx:point4D, ?p4d1b],
+        [?p4d1b, fx:position, ?pos1b],
+        [?pos1b, fb:pos, ?point1b],
+        [?point1b, fb:lat, ?lat1b],
+        [?point1b, fb:lon, ?lon1b],
+
+        FILTER(?lat1b != ?lat2 || ?lon1b != ?lon2)
     ).
 
 

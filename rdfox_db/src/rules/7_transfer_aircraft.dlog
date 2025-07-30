@@ -3,7 +3,7 @@
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 @prefix : <https://aware-sesar.eu/>.
 
-
+# TODO: MISSING coordination status
 [?flight, :aircraftNotYetAssumed, 1] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
     [?coordStatus, fx:status, "NOT_ASSUMED"].
@@ -24,6 +24,7 @@
 
 
 # 5.7.1 Check which aircraft need to be transferred
+# TODO: MISSING speed, vertical rate
 [?flight, :aircraftNeedsToBeTransferred, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],

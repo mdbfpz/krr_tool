@@ -4,6 +4,7 @@
 @prefix : <https://aware-sesar.eu/>.
 
 # 5.3.1 Check that aircraft is incoming
+# TODO: MISSING speed, vertical rate
 
 # Incoming vertically:
 [?flight2, :aircraftIncomingVerticallyFromAbove, ?sector] :-
@@ -18,9 +19,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -71,9 +74,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -129,6 +134,8 @@
     
 
 # Incoming horizontally:
+# TODO: MISSING speed, vertical rate
+
 [?flight2, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -142,9 +149,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -198,7 +207,7 @@
         )
     ).
 
-
+# TODO: MISSING speed, vertical rate
 [?flight2, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -212,9 +221,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+   # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -309,6 +320,8 @@
 # Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je li planiran. Što ako se plan mijenja?
 
 # 5.3.3 Check that aircraft has sent the initial call (via datalink)
+# TODO: MISSING datalink 
+
 [?flight, :aircrafHasSentInitialCall, ?indicator] :-
     [?flight, :datalink, ?datalink],
     [?datalink, :initialCall, ?initCall],
@@ -323,6 +336,7 @@
 
 
 # 5.3.4 Confirm that aircraft can be assumed
+# TODO: MISSING speed, vertical rate
 [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],

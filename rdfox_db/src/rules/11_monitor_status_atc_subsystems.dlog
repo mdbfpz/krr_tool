@@ -20,18 +20,24 @@
     # Bind flights at each timestamp
     [?prevT1, fx:flight, ?flight1P],
     [?currT1, fx:flight, ?flight1C],
-    # Extract the same flights only
-    [?flight1P, fx:aircraftIdentification, ?flightID1],
-    [?flight1C, fx:aircraftIdentification, ?flightID1],
+
+    # Extract the same FlightIdentification for both flights
+    [?flight1P, fx:flightIdentification, ?ident1P],
+    [?flight1C, fx:flightIdentification, ?ident1C],
+    [?ident1P, fb:aircraftIdentification, ?flightID1],
+    [?ident1C, fb:aircraftIdentification, ?flightID1],
 
     # prev and curr for flight 2
     [?prevT2, :next, ?currT2],  
     # Bind flights at each timestamp
     [?prevT2, fx:flight, ?flight2P],
     [?currT2, fx:flight, ?flight2C],
-    # Extract the same flights only
-    [?flight2P, fx:aircraftIdentification, ?flightID2],
-    [?flight2C, fx:aircraftIdentification, ?flightID2],
+
+    # Extract the same FlightIdentification for both flights
+    [?flight2P, fx:flightIdentification, ?ident2P],
+    [?flight2C, fx:flightIdentification, ?ident2C],
+    [?ident2P, fb:aircraftIdentification, ?flightID2],
+    [?ident2C, fb:aircraftIdentification, ?flightID2],
 
     [?flight1C, :conflict, ?conflict12C],
     [?flight2C, :conflict, ?conflict12C],
@@ -70,10 +76,10 @@
     #calculate haversine distance
     
     BIND(6371 as ?R),		# Radius of the earth in km
-    BIND((?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad),	# deg2rad
-    BIND((?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad),
-    BIND(?currLat1 * (math:pi/180) AS ?currLatInRad1),
-    BIND(?currLat2 * (math:pi/180) AS ?currLatInRad2),
+    BIND((?currLat2 - ?currLat1) * (math:pi()/180) AS ?diffLatInRad),	# deg2rad
+    BIND((?currLon2 - ?currLon1) * (math:pi()/180) AS ?diffLonInRad),
+    BIND(?currLat1 * (math:pi()/180) AS ?currLatInRad1),
+    BIND(?currLat2 * (math:pi()/180) AS ?currLatInRad2),
     BIND(
         POW(SIN(?diffLatInRad/2), 2) + 
         COS(?currLatInRad1) * COS(?currLatInRad2) *
@@ -83,10 +89,10 @@
     BIND(2 * ATAN2(SQRT(?aCurr), SQRT(1-?aCurr)) AS ?cCurr),
     BIND(?R * ?cCurr * 1000 AS ?currDistance),
     
-    BIND((?prevLat2 - ?prevLat1) * (math:pi/180) AS ?prevDiffLatInRad),	# deg2rad
-    BIND((?prevLon2 - ?prevLon1) * (math:pi/180) AS ?prevDiffLonInRad),
-    BIND(?prevLat1 * (math:pi/180) AS ?prevLatInRad1),
-    BIND(?prevLat2 * (math:pi/180) AS ?prevLatInRad2),
+    BIND((?prevLat2 - ?prevLat1) * (math:pi()/180) AS ?prevDiffLatInRad),	# deg2rad
+    BIND((?prevLon2 - ?prevLon1) * (math:pi()/180) AS ?prevDiffLonInRad),
+    BIND(?prevLat1 * (math:pi()/180) AS ?prevLatInRad1),
+    BIND(?prevLat2 * (math:pi()/180) AS ?prevLatInRad2),
     BIND(
         POW(SIN(?diffLatInRad/2), 2) + 
         COS(?prevLatInRad1) * COS(?prevLatInRad2) *

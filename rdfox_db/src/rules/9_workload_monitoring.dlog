@@ -21,7 +21,12 @@
     AGGREGATE(
         [?timestamp, fx:flight, ?flight1],
         [?timestamp, fx:flight, ?flight2],
-        [?flight1, fx:aircraftIdentification, ?flightID1],
+
+        [?flight1, fx:flightIdentification, ?ident1],
+        [?ident1, fb:aircraftIdentification, ?flightID1],
+        [?flight2, fx:flightIdentification, ?ident2],
+        [?ident2, fb:aircraftIdentification, ?flightID2],
+
         [?flight1, :currentElement, ?currElement1],
         [?currElement1,fx:point4D, ?currPoint4D1],    
         [?currPoint4D1, fx:position, ?currPosition1],
@@ -30,7 +35,7 @@
         [?currPoint1, fb:lon, ?currLon1],    
         [?currPoint4D1, fx:level, ?currLevel1],
         [?currLevel1, fb:flightLevel, ?currFL1],
-        [?flight2, fx:aircraftIdentification, ?flightID2],
+
         [?flight2, :currentElement, ?currElement2],
         [?currElement2, fx:point4D, ?currPoint4D2],    
         [?currPoint4D2, fx:position, ?currPosition2],
@@ -44,16 +49,16 @@
         ), 
         BIND(6371 as ?R),		# Radius of the earth in km
         BIND(
-            (?currLat2 - ?currLat1) * (math:pi/180) AS ?diffLatInRad
+            (?currLat2 - ?currLat1) * (math:pi()/180) AS ?diffLatInRad
         ), 	# deg2rad
         BIND(
-            (?currLon2 - ?currLon1) * (math:pi/180) AS ?diffLonInRad
+            (?currLon2 - ?currLon1) * (math:pi()/180) AS ?diffLonInRad
         ), 
         BIND(
-            ?currLat1 * (math:pi/180) AS ?currLatInRad1
+            ?currLat1 * (math:pi()/180) AS ?currLatInRad1
         ),
         BIND(
-            ?currLat2 * (math:pi/180) AS ?currLatInRad2
+            ?currLat2 * (math:pi()/180) AS ?currLatInRad2
         ),
         BIND(
             POW(SIN(?diffLatInRad/2), 2) + COS(?currLatInRad1) * COS(?currLatInRad2) * POW(SIN(?diffLonInRad/2), 2)

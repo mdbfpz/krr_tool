@@ -81,14 +81,17 @@
 # query in the pipeline.
 
 # 5.5.2 Check plausibility of the predicted conflicts
-
+# TODO: MISSING speed
 [?flight1, :conflictPredictionImplausible, ?flight2] :- 
     # Make sure we look for the flights in the same timestamp
     [?t, fx:flight, ?flight1],
     [?t, fx:flight, ?flight2],
 
-    [?flight1, fx:aircraftIdentification, ?flight1ID],
-    [?flight2, fx:aircraftIdentification, ?flight2ID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flight1ID],
+    [?ident2, fb:aircraftIdentification, ?flight2ID],
 
     FILTER(?flight1ID != ?flight2ID),
 
@@ -128,8 +131,11 @@
     [?t, fx:flight, ?flight1],
     [?t, fx:flight, ?flight2],
 
-    [?flight1, fx:aircraftIdentification, ?flight1ID],
-    [?flight2, fx:aircraftIdentification, ?flight2ID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flight1ID],
+    [?ident2, fb:aircraftIdentification, ?flight2ID],
 
     FILTER(?flight1ID != ?flight2ID),
 
@@ -194,14 +200,15 @@
 #TODO: these set of roules could be more efficient if there's a way to use the same rule for all sigmas?
 [?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
     
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -218,14 +225,15 @@
 
 [?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -242,14 +250,15 @@
 
 [?flight, :headingWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -267,13 +276,14 @@
 
 [?flight, :headingOutside3SigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -291,14 +301,15 @@
 #TODO: How to say which non-heading parameter is within sigma band?
 [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -314,14 +325,15 @@
 
 [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -337,14 +349,15 @@
 
 [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -360,13 +373,14 @@
 
 [?flight, :nonHeadingParameterOutside3SigmaBand, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],  
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
 
     [?flightStats, :altStd, ?altStd],
     [?flightStats, :altMean, ?altMean],
@@ -383,7 +397,8 @@
 
 [?flight, :positionWithinBoundingBox, ?indicator] :-
     [?flight, :conflict, ?conflict],
-    [?flight, fx:aircraftIdentification, ?flightID],
+    [?flight, fx:flightIdentification, ?ident],
+    [?ident, fb:aircraftIdentification, ?flightID],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:position, ?currPosition],
@@ -392,7 +407,7 @@
     [?currPoint, fb:lon, ?currLon],
     
     [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fx:aircraftIdentification, ?flightID],
+    [?flightStats, fb:aircraftIdentification, ?flightID],
     
     [?flightStats, :latMax, ?latMax],
     [?flightStats, :latMin, ?latMin],

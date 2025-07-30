@@ -4,6 +4,7 @@
 @prefix : <https://aware-sesar.eu/>.
 
 # TODO: add ?indicator to all helper rules?
+# TODO: MISSING coordination status
 [?flight, :isAircraftAlreadyAssumed, ?aircraftAlreadyAssumedIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
     [?coordStatus, fx:status, ?statusValue],
@@ -16,7 +17,7 @@
         AS ?aircraftAlreadyAssumedIndicator
     ).
 
-
+# TODO: MISSING coordination status
 [?flight, :isAircraftAlreadyTransferred, ?aircraftAlreadyTransferredIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
     [?coordStatus, fx:status, ?statusValue],
@@ -52,6 +53,7 @@
     [?flight, :withinSectorVertically, ?sector].
 
 # 5.2.1. Check that aircraft is close to Sector boundary
+# TODO: MISSING speed
 [?flight, :aircraftCloseToSectorBoundary, ?sector] :-
     [?flight, :isAircraftAlreadyAssumed, 0],
     [?flight, :isAircraftAlreadyTransferred, 0],
@@ -103,15 +105,18 @@
 
 
 # 5.2.2. Check that aircraft is approaching Sector boundary
+# TODO: MISSING coordination status
 [?flight2, :aircraftApproachingToSectorBoundary, ?sector] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -210,9 +215,11 @@
     # Bind flights at each timestamp
     [?prevT, fx:flight, ?flight1],
     [?currT, fx:flight, ?flight2],
-    # Extract the same flights only
-    [?flight1, fx:aircraftIdentification, ?flightID],
-    [?flight2, fx:aircraftIdentification, ?flightID],
+    # Extract the same FlightIdentification for both flights
+    [?flight1, fx:flightIdentification, ?ident1],
+    [?flight2, fx:flightIdentification, ?ident2],
+    [?ident1, fb:aircraftIdentification, ?flightID],
+    [?ident2, fb:aircraftIdentification, ?flightID],
 
     # Extract previous and current elements for the flight at each timestamp
     [?flight1, :currentElement, ?prevElement],
@@ -263,6 +270,7 @@
         )
     ).
 
+# TODO: MISSING vertical rate
 [?flight, :aircraftWithinSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:extension, ?currVRate],
