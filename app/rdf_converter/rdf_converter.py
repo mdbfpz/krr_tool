@@ -1,5 +1,6 @@
 from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD 
+from app.utils.utils import GeodesicService
 import xml.etree.ElementTree as ET
 import copy
 import json
@@ -10,6 +11,7 @@ FIXM = Namespace("http://www.fixm.aero/flight/4.3/")
 FB = Namespace("http://www.fixm.aero/base/4.3/")
 HMI = Namespace("https://aware-sesar.eu/hmi/")
 XS = Namespace("http://www.w3.org/2001/XMLSchema/")
+AIXM = Namespace("http://www.aixm.aero/schema/5.1.1")
 
 class RDFConverter:
     def __init__(self):
@@ -24,6 +26,7 @@ class RDFConverter:
             "xsd": XSD,
             "rdfs": RDFS,
             "rdf": RDF,
+            "ax": AIXM
         }
 
         # Initialize the RDF graph and bind prefixes
@@ -42,15 +45,16 @@ class RDFConverter:
 
         self.to_fl_const = 3.28084 / 100
         self.aixm_data_repo = {
-            "designatedPoints" : {},
-            "navaids": {},
             "sectors":{},
-            "routes":{},
-            "runways":{},
             "airportHeliports":{},
+            #"designatedPoints" : {},
+            #"navaids": {},
+            #"routes":{},
+            #"runways":{},
             
         }
-        self.aixm_uuid_latlon_map = {}
+        #self.aixm_uuid_latlon_map = {}
+        self.geodesic_service = GeodesicService()
 
     def _generate_index(self, tag, timestamp):
         """Generates a unique index for a given tag."""
@@ -309,7 +313,7 @@ class RDFConverter:
 
                 # FIXM data uses point4d for current branch, other branches have point4D
                 point4d = element.get("point4D") or element.get("point4d") or {} # TODO: refactor this to use key mapping and not manual case handling
-                self._process_point4d(element_uri, point4d)
+                self._process_point4d(element_uri, point4d)                
 
     def _process_predicted_trajectory(self, route_trajectory_group_uri, trajectory_data):
         """Process trajectory data and add to the graph."""
@@ -446,6 +450,7 @@ class RDFConverter:
                 self.graph.add((flight_uri, RDF.type, FIXM.Flight))
                 if "Flight" in key_data:
                     self._process_flight(flight_uri, key_data["Flight"])
+                    self._process_tolerance_azimuth(flight_uri, key_data["Flight"])
 
             elif key == "HMI":
                 # Process HMI data
@@ -914,11 +919,78 @@ class RDFConverter:
                     # Remove predicted trajectory from the new state if exists
                     route_group.pop("predicted", None)
     
+    def _process_direct_to_point(self,data):
+        dp_timestamp = data["timestamp"]
+        direct_to_point_lat = data["directToPoint"]["lat"]
+        direct_to_point_lon = data["directToPoint"]["lon"]
+        dp_callsign = data["directToPoint"]["callsign"]
+        flight_key = f"flight_{dp_callsign}"
+        points_list = []
+        if flight_key in self.data_repository[dp_timestamp].keys():
+            for record in self.data_repository[dp_timestamp][flight_key]["Flight"]["routeTrajectoryGroup"]["agreed"]:#valjda agreed?
+                #print(record)
+                currRecordPoint = record.get("element", {}).get("point4D")
+                if currRecordPoint is not None:
+                    currRecordPointLat,currRecordPointLon = currRecordPoint["position"]["pos"]["lat"],currRecordPoint["position"]["pos"]["lon"]
+                if currRecordPointLat is not None and currRecordPointLon is not None:
+                    points_list.append((currRecordPointLat,currRecordPointLon))
+        if (direct_to_point_lat,direct_to_point_lon) in points_list:
+            if (direct_to_point_lat,direct_to_point_lon) != points_list[0]:
+                #[?agreedElement, :isDirectTo, 1]
+                timestamp_uri = BASE[f"{dp_timestamp}"]
+                self.graph.add((timestamp_uri, RDF.type, BASE.Timestamp))
+                self.graph.add((timestamp_uri, BASE.timestamp, Literal(dp_timestamp, datatype=XSD.dateTime)))
+                flight_uri = URIRef(FIXM[f"{flight_key}_{dp_timestamp}"])
+                self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
+                self.graph.add((flight_uri, RDF.type, FIXM.Flight))
+                route_trajectory_group_uri = URIRef(f"{flight_uri}_RTG")
+                self.graph.add((flight_uri, FIXM.routeTrajectoryGroup, route_trajectory_group_uri))
+                self.graph.add((route_trajectory_group_uri, RDF.type, FIXM.RouteTrajectoryGroup))
+                branch_uri = URIRef(f"{route_trajectory_group_uri}_agreed")
+                self.graph.add((route_trajectory_group_uri, URIRef(FIXM["agreed"]), branch_uri))
+                self.graph.add((branch_uri, RDF.type, URIRef(FIXM["agreed".capitalize()])))
+                element_uri = URIRef(f"{branch_uri}_element")
+                self.graph.add((branch_uri, FIXM.element, element_uri))
+                self.graph.add((element_uri, RDF.type, FIXM.Element))
+                self.graph.add((element_uri, FIXM.isDirectTo, Literal(1, datatype=XSD.integer)))
+   
+    def _process_tolerance_azimuth(self,flight_uri, data):
+        """point1 is current position, point2 is cleared position"""
+
+        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
+        if current_point is not None:
+            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
+                
+        
+        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+        if cleared_point is not None:
+            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+         
+        if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
+            tolerance_azi = self.geodesic_service.calculate_tolerance_azi(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon,2.5*1825)
+               
+        self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
+        
+    def _process_distance_to_cleared_point(self, flight_uri,data):
+        print("HAAAAAAAAAAAAAAAAa")
+        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
+        if current_point is not None:
+            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
+                
+        
+        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+        if cleared_point is not None:
+            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+         
+        if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
+            distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)
+               
+        self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))            
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################
 
-    def _process_point_data(self,point,type):
+    """ def _process_point_data(self,point,type):
         #points_data = {}
         #for point in pointsData:
         if type == "navaid":
@@ -980,15 +1052,35 @@ class RDFConverter:
                 "pathType": segment.get("pathType")
             }
             processed_routes[routeName]["routeSegments"].append(processed_segment)
+         """
         
+    """ def _process_runways(self,runway):
+        runways = self.aixm_data_repo["runways"]
         
+        runwayName = f"{runway['airportDesignator']}_{runway['designator']}"
+        runways[runwayName] = {
+            "uuid": runway.get("uuid", {}).get("uuid"),
+            "nominalLength": runway.get("nominalLength", {}).get("metres"),
+            "nominalWidth": runway.get("nominalWidth", {}).get("metres"),
+            "lengthStrip": runway.get("lengthStrip", {}).get("metres"),
+            "widthStrip": runway.get("widthStrip", {}).get("metres"),
+            "isAbandoned": runway.get("isAbandoned"),
+            "elevationTDZ": runway.get("elevationTDZ", {}).get("metres"),
+            "trueBearing": runway.get("trueBearing", {}).get("degrees"),
+            "thresholdLocation": {
+                "lat": runway.get("thresholdLocation", {}).get("latitude", {}).get("degrees"),
+                "lon": runway.get("thresholdLocation", {}).get("longitude", {}).get("degrees")
+            },
+            "glideSlopeAngle": runway.get("glideSlopeAngle")
+        }
+         """
         
     def _create_sectors_structure(self,airspace):
         
         sector_name = airspace["designator"]
         sector_type = airspace["type"]
         airspace_uuid = airspace["uuid"]["uuid"]
-        #print(f"len = {len(airspace['airspaceVolume']['addedVolumes'])}")
+        
         sectors = self.aixm_data_repo["sectors"]
         # init sector
         sectors[sector_name] = {
@@ -1044,26 +1136,6 @@ class RDFConverter:
         
         
     
-    def _process_runways(self,runway):
-        runways = self.aixm_data_repo["runways"]
-        
-        runwayName = f"{runway['airportDesignator']}_{runway['designator']}"
-        runways[runwayName] = {
-            "uuid": runway.get("uuid", {}).get("uuid"),
-            "nominalLength": runway.get("nominalLength", {}).get("metres"),
-            "nominalWidth": runway.get("nominalWidth", {}).get("metres"),
-            "lengthStrip": runway.get("lengthStrip", {}).get("metres"),
-            "widthStrip": runway.get("widthStrip", {}).get("metres"),
-            "isAbandoned": runway.get("isAbandoned"),
-            "elevationTDZ": runway.get("elevationTDZ", {}).get("metres"),
-            "trueBearing": runway.get("trueBearing", {}).get("degrees"),
-            "thresholdLocation": {
-                "lat": runway.get("thresholdLocation", {}).get("latitude", {}).get("degrees"),
-                "lon": runway.get("thresholdLocation", {}).get("longitude", {}).get("degrees")
-            },
-            "glideSlopeAngle": runway.get("glideSlopeAngle")
-        }
-        
     
     def _process_airportHeliports(self,airportHeliport):        
         airportName = airportHeliport['designator']
@@ -1078,9 +1150,49 @@ class RDFConverter:
             }
         }
         
+    def _aixm_data_to_rdf(self,data):
+        main_aixm_uri = AIXM["AixmFeatures"]
+        self.graph.add((main_aixm_uri, RDF.type, AIXM.Features))
+        #print(data["airportHeliports"])
+        for key,value in data["airportHeliports"].items():
+            airport_heliport_uri = URIRef(AIXM[f"airportHeliport_{key}"])
+            self.graph.add((main_aixm_uri, AIXM.contains, airport_heliport_uri))
+            self.graph.add((airport_heliport_uri, RDF.type, AIXM.AirportHeliport))
+            #missing info for airportHeliport availability 
+        #process sectors
+        for key,value in data["sectors"].items():
+            sector_uri = URIRef(AIXM[f"airspace_{key}"])
+            self.graph.add((main_aixm_uri, AIXM.contains, sector_uri))
+            self.graph.add((sector_uri, RDF.type, AIXM.Airspace))
+            
+            airspace_volume_uri = URIRef(f"{sector_uri}_airspaceVolume")
+            self.graph.add((sector_uri, AIXM.geometryComponent, airspace_volume_uri))
+            self.graph.add((airspace_volume_uri, RDF.type, AIXM.AirspaceVolume))
+            
+            lower_limit_value = value["lowerLimit"]
+            upper_limit_value = value["upperLimit"]
+            self.graph.add((airspace_volume_uri, AIXM.lowerLimit, Literal(lower_limit_value, datatype=XSD.integer)))
+            self.graph.add((airspace_volume_uri, AIXM.upperLimit, Literal(upper_limit_value, datatype=XSD.integer)))
+
+            surface_uri = URIRef(f"{airspace_volume_uri}_surface")
+            self.graph.add((airspace_volume_uri, AIXM.hasBoundary, surface_uri))
+            self.graph.add((surface_uri, RDF.type, AIXM.Surface))
+            
+            for point, coords in value["addedVolumes"]["points"].items():
+                
+                lat_value = coords["lat"]
+                lon_value = coords["lon"]
+                
+                point_uri = URIRef(f"{surface_uri}_point_{point}")
+                self.graph.add((point_uri, AIXM.lat, Literal(lat_value, datatype=XSD.integer)))
+                self.graph.add((point_uri, AIXM.lon, Literal(lon_value, datatype=XSD.integer)))
+     
     
+               
     def _process_aixm_data(self,data):
-        
+        """
+        Only processing of airportHeliports and airspaces (sectors) is taken in consideration for our pipeline.
+        """
         actual_data = data["aeronauticalData"]
 
         for key, value in actual_data.items():
@@ -1088,6 +1200,8 @@ class RDFConverter:
                 waypoints = actual_data["waypoints"]
                 
                             
+                """
+                Processing of point data types is currently not needed!
                 if "navaids" in waypoints:
                     for navaid in waypoints["navaids"]:                
                         self._process_point_data(navaid, "navaid")
@@ -1096,29 +1210,29 @@ class RDFConverter:
                     for desPoint in waypoints["designatedPoints"]:                
                         self._process_point_data(desPoint, "desPoint")
                 
-                self._create_uuid_latlon_map(waypoints["designatedPoints"], waypoints["navaids"])
-                """ print(f"Tip podataka self.aixm_data_repo: {type(self.aixm_data_repo['designatedPoints'])}")
-                print(f"Broj zapisa: {len(self.aixm_data_repo['designatedPoints'])}")
+                self._create_uuid_latlon_map(waypoints["designatedPoints"], waypoints["navaids"]) """
                 
-                for key, value in self.aixm_data_repo["designatedPoints"].items():
-                    print(f"Point :{key} value : {value}") """
-
-                airport_heliport_data = waypoints["airportHeliports"]  
-                for ah_record in airport_heliport_data:
-                    self._process_airportHeliports(ah_record)
+                
+                if "airportHeliports" in waypoints:
+                    airport_heliport_data = waypoints["airportHeliports"]  
+                    for ah_record in airport_heliport_data:
+                        self._process_airportHeliports(ah_record)
                 
             elif key == "airspaces":
                 for airspace in actual_data["airspaces"]:
                     self._create_sectors_structure(airspace)
                     
+            """
+            Routes and runways are also not needed currently so their processing is ignored!
             elif key == "routes":
                 for route in actual_data["routes"]:
                     self._process_routes(route,self.aixm_uuid_latlon_map)
             
             elif key == "runways":
                 for runway in actual_data["runways"]:
-                    self._process_runways(runway)
-                    
+                    self._process_runways(runway) """
+            
+        #self._aixm_data_to_rdf(self.aixm_data_repo)      
     #########################################################################################################
     ##########################################     MAIN METHODS     #########################################
     #########################################################################################################
@@ -1151,7 +1265,8 @@ class RDFConverter:
             if "flight_plan" in data_record.keys():
                 self.convert_fixm_data(data_record)
                 # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
-            
+            elif "directToPoint" in data_record.keys():
+                self._process_direct_to_point(data_record)
             # 2. case - Event data
             else:
                 self.convert_event_data(data_record)

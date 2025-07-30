@@ -2,3 +2,7 @@ httpx
 fastapi
 uvicorn
 rdflib
+geographiclib
+shapely
+matplotlib
+pyproj
