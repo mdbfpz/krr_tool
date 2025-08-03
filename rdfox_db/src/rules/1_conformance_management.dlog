@@ -4,15 +4,15 @@
 @prefix math: <http://www.w3.org/2005/xpath-functions/math#>.
 
 # 5.1.1 Check that aircraft is climbing/descending towards cleared FL
-# TODO: Missing - verticalRate
 
 # Climbing:
 [?flight, :isClimbingToCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?verticalRate],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
-    [?currElement, fx:extension, ?verticalRate],
+    
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
@@ -30,9 +30,10 @@
 [?flight, :isDescendingToCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?verticalRate],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
-    [?currElement, fx:extension, ?verticalRate],
+
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
@@ -68,11 +69,14 @@
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
-    [?prevElement, fx:extension, ?prevVRate],
+
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+
     [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
-    [?currElement, fx:extension, ?currVRate],
 
     BIND(
         IF(
@@ -117,11 +121,11 @@
 
 # Passing CFL:
 # Rule 2: Check if aircraft is passing cleared flight level.
-# TODO: Missing - verticalRate
 [?flight, :isPassingCFL, ?indicator] :-
     [?flight, :isAtCFL, 1],
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     BIND(
         IF(
@@ -134,7 +138,6 @@
 
 
 # 5.1.3 Check that aircraft is maintaining FL
-#TODO: Missing - verticalRate
 [?flight2, :isMaintainingFL, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -156,9 +159,9 @@
     [?prevPoint4D, fx:level, ?prevLevel],
     [?prevLevel, fb:flightLevel, ?level],
     [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?verticalRate],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?level],
-    [?currElement, fx:extension, ?verticalRate],
 
     BIND(
         IF(
@@ -963,43 +966,53 @@
 
 # 5.1.12 Check that aircraft’s current ROC/ROD is lower/higher than cleared
 # Positive case: 1 if exists
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isClearedVerticalRateAssigned, 1] :-
     [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:extension, ?clearedVRate].
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?verticalRate].
 
 # Negative case: 0 if it doesn't exist
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isClearedVerticalRateAssigned, 0] :-
     [?flight, :agreedElement, ?agreedElement],
-    NOT EXISTS ?clearedVRate IN (
-        [?agreedElement, fx:extension, ?clearedVRate]
+    NOT EXISTS ?clearedPoint4D, ?verticalRate IN (
+        [?agreedElement, fx:point4D, ?clearedPoint4D],
+        [?clearedPoint4D, :verticalRate, ?verticalRate]
     ).
 
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isAtClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
+
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currvRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currvRate],
+
     [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:extension, ?agreedvRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedvRate],
 
     BIND(
         IF(
-            ?currvRate = ?agreedvRate,
+            ?currvRate = ?clearedvRate,
             1,
             0
         )
         AS ?indicator
     ).
 
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isVerticalRateHigherThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
+
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+
     [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:extension, ?clearedVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
 
     BIND(
         IF(
@@ -1010,13 +1023,17 @@
         AS ?indicator
     ).
 
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isVerticalRateLowerThanClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
+
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+
     [?flight, :agreedElement, ?agreedElement],
-    [?agreedElement, fx:extension, ?clearedVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
 
     BIND(
         IF(
@@ -1027,18 +1044,22 @@
         AS ?indicator
     ).
 
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 #TODO: Missing - cleared vertical rate bound type
 [?flight, :isVerticalRateWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
+
     # Extract current and cleared elements for the flight at each timestamp
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
+
     # Extract current and cleared vertical rates
-    [?currElement, fx:extension, ?currVRate],
-    [?agreedElement, fx:extension, ?clearedVRate],
-    [?agreedElement, fx:extension, ?clearedVerticalRateExtension],
-    [?clearedVerticalRateExtension, :clearedBoundType, ?boundType],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
+    [?clearedPoint4D, :clearedBoundType, ?boundType],
 
     BIND(
         IF(
@@ -1056,7 +1077,6 @@
         AS ?indicator
     ).
 
-#TODO: Missing - vertical rate
 # 5.1.13 Check that aircraft is maintaining cleared ROC/ROD
 [?flight2, :isMaintainingVerticalRate, ?indicator] :-
     # Identify consecutive timestamps
@@ -1073,8 +1093,10 @@
     [?flight1, :currentElement, ?prevElement],
     [?flight2, :currentElement, ?currElement],
     # Extract previous and current vertical rates
-    [?prevElement, fx:extension, ?prevVRate],
-    [?currElement, fx:extension, ?currVRate],
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     BIND(
         IF(
@@ -1085,7 +1107,6 @@
         AS ?indicator
     ).
 
-#TODO: Missing - vertical rate
 [?flight, :isMaintainingClearedVerticalRate, ?indicator] :-
     [?flight, :isMaintainingVerticalRate, ?maintaining],
     [?flight, :isAtClearedVerticalRate, ?atCleared],
@@ -1100,7 +1121,6 @@
 
 
 # 5.1.14 Check that aircraft is increasing/decreasing towards/within cleared ROC/ROD
-#TODO: Missing - vertical rate
 [?flight, :isVerticalRateClearenceJustReceived, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
@@ -1124,7 +1144,7 @@
     ).
 
 # Incresing to cleared rate:
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight2, :isIncreasingToClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
@@ -1143,9 +1163,12 @@
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared vertical rates
-    [?prevElement, fx:extension, ?prevVRate],
-    [?currElement, fx:extension, ?currVRate],
-    [?agreedElement, fx:extension, ?clearedVRate],
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
 
     BIND(
         IF(
@@ -1158,7 +1181,7 @@
     ).	
 
 # Decresing to cleared rate:
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight2, :isDecreasingToClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
     [?flight, :isClearedVerticalRateAssigned, 1],
@@ -1177,9 +1200,12 @@
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared vertical rates
-    [?prevElement, fx:extension, ?prevVRate],
-    [?currElement, fx:extension, ?currVRate],
-    [?agreedElement, fx:extension, ?clearedVRate],
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
 
     BIND(
         IF(
@@ -1192,7 +1218,7 @@
     ).
 
 # Incresing within cleared rate:
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 #TODO: Missing - cleared vertical rate bound type
 [?flight2, :isIncreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
@@ -1212,11 +1238,13 @@
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared vertical rates
-    [?prevElement, fx:extension, ?prevVRate],
-    [?currElement, fx:extension, ?currVRate],
-    [?agreedElement, fx:extension, ?clearedVRate],
-    [?agreedElement, fx:extension, ?clearedVRateExtension],
-    [?clearedVRateExtension, :clearedBoundType, ?boundType],
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
+    [?clearedPoint4D, :clearedBoundType, ?boundType],
 
     BIND(
         IF(
@@ -1238,7 +1266,7 @@
     ).
 
 # Decreasing within cleared rate:
-#TODO: Missing - vertical rate
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 #TODO: Missing - cleared vertical rate bound type
 [?flight2, :isDecreasingWithinClearedVerticalRate, ?indicator] :-
     [?flight, :isVerticalRateClearenceJustReceived, 0],
@@ -1258,11 +1286,13 @@
     [?flight2, :currentElement, ?currElement],
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared vertical rates
-    [?prevElement, fx:extension, ?prevVRate],
-    [?currElement, fx:extension, ?currVRate],
-    [?agreedElement, fx:extension, ?clearedVRate],
-    [?agreedElement, fx:extension, ?clearedVRateExtension],
-    [?clearedVRateExtension, :clearedBoundType, ?boundType],
+    [?prevElement, fx:point4D, ?prevPoint4D],
+    [?prevPoint4D, :verticalRate, ?prevVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
+    [?agreedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, :verticalRate, ?clearedVRate],
+    [?clearedPoint4D, :clearedBoundType, ?boundType],
 
     BIND(
         IF(

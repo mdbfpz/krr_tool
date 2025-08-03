@@ -4,13 +4,25 @@
 @prefix : <https://aware-sesar.eu/>.
 
 # 5.3.1 Check that aircraft is incoming
-# TODO: MISSING speed, vertical rate
+# TODO: MISSING speed
 
 # Incoming vertically:
 [?flight2, :aircraftIncomingVerticallyFromAbove, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+
     [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
 
@@ -37,7 +49,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
@@ -53,11 +65,11 @@
         AS ?timeToReachSector
     ),
     BIND(
-        ABS(((?currFL - (?upperLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?upperValue)/?timeToReachSector)*60 # ft/min
         AS ?v   # TODO: provjeriti je li u javi ovo dobro!
     ),
     FILTER(
-        ?currFL > ?upperLimit*100 &&
+        ?currFL > ?upperValue &&
         ?currVRate < 0 &&
         ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
@@ -66,6 +78,18 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
     [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
 
@@ -92,7 +116,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
@@ -109,11 +133,11 @@
         AS ?timeToReachSector
     ),
     BIND(
-        ABS(((?currFL - (?lowerLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?lowerValue)/?timeToReachSector)*60 # ft/min
         AS ?v   # TODO: provjeriti je li u javi ovo dobro!
     ),
     FILTER(
-        ?currFL < ?lowerLimit*100 &&
+        ?currFL < ?lowerValue &&
         ?currVRate > 0 &&
         ABS(?currVRate) >= ?v # TODO: provjeriti je li u javi ovo dobro!
     ).
@@ -134,13 +158,36 @@
     
 
 # Incoming horizontally:
-# TODO: MISSING speed, vertical rate
+# TODO: MISSING speed
 
 [?flight2, :aircraftIncomingHorizontallyWhenInSectorVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:upperLimit, ?upperLimit],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+    [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+    
     NOT [?flight2, :withinSectorHorizontally, ?sector],
     [?flight2, :withinSectorVertically, ?sector],
 
@@ -167,7 +214,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
@@ -183,11 +230,11 @@
         AS ?timeToReachSector
     ),
     BIND(
-        ABS(((?currFL - (?upperLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?upperValue)/?timeToReachSector)*60 # ft/min
         AS ?v1   # TODO: provjeriti je li u javi ovo dobro!
     ),
     BIND(
-        ABS(((?currFL - (?lowerLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?lowerValue)/?timeToReachSector)*60 # ft/min
         AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
@@ -207,12 +254,35 @@
         )
     ).
 
-# TODO: MISSING speed, vertical rate
+# TODO: MISSING speed
 [?flight2, :aircraftIncomingHorizontallyWhenNotInSectorVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
-    [?sector, ax:upperLimit, ?upperLimit],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+    [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+
     NOT [?flight2, :withinSectorHorizontally, ?sector],
     NOT [?flight2, :withinSectorVertically, ?sector],
 
@@ -239,7 +309,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:position, ?prevPosition],
@@ -255,11 +325,11 @@
         AS ?timeToReachSector
     ),
     BIND(
-        ABS(((?currFL - (?upperLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?upperValue)/?timeToReachSector)*60 # ft/min
         AS ?v1   # TODO: provjeriti je li u javi ovo dobro!
     ),
     BIND(
-        ABS(((?currFL - (?lowerLimit*100)))/?timeToReachSector)*60 # ft/min
+        ABS((?currFL - ?lowerValue)/?timeToReachSector)*60 # ft/min
         AS ?v2   # TODO: provjeriti je li u javi ovo dobro!
     ),
 
@@ -268,12 +338,12 @@
         ?currMinDist < ?prevMinDist &&
         (
             (
-                ?currFL > ?upperLimit * 100 &&
+                ?currFL > ?upperValue &&
                 ?currVRate < 0 &&
                 ABS(?currVRate) >= ?v1
             ) ||
             (
-                ?currFL < ?lowerLimit * 100 &&
+                ?currFL < ?lowerValue &&
                 ?currVRate > 0 &&
                 ABS(?currVRate) >= ?v2
             )
@@ -309,11 +379,10 @@
     NOT [?flight, :aircraftNotIncoming, ?sector].
 
 
-# 5.3.2 Check that aircraft is planned
+# 5.3.2 Check that aircraft is planned - TODO: pipeline implementation
 
 #The aircraft is planned if any of its planned route points lie within the given sector.
-# Obzirom da plan leta ubacujemo svake sekunde u graf (iduću planiranu točku), ne možemo odmah u startu tvrditi da je let planiran
-# ukoliko tek neka kasnija točka rute leži u sektoru obzirom da još se ne nalazi u grafu. Najbolje za svaku točku rute (plan leta dobijemo cijeli
+# Za svaku točku rute (plan leta dobijemo cijeli
 # prilikom parsiranja) unutar pipelinea provjeriti pripada li sektoru i onda tu informaciju ubaciti u graf, 
 # tj. dodati trojku [?flight, :aircraftIsPlanned, ?sector] kad postoji točka na ruti koja se nalazi u danom sektoru ?sector.
 # Eventualno, dodati cijeli plan leta u graf i onda napraviti pravilo koje za svaku točku leta provjerava nalazi li se u sektoru. 
@@ -336,12 +405,35 @@
 
 
 # 5.3.4 Confirm that aircraft can be assumed
-# TODO: MISSING speed, vertical rate
+# TODO: MISSING speed
 [?flight, :aircraftCanBeAssumedWhenInSectorHorizontallyNotVertically, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+
     [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
 
@@ -355,15 +447,15 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
     BIND(
         IF(
-            ?currFL > ?upperLimit*100,
-            ?currFL - ?upperLimit*100,
-            ?lowerLimit*100 - ?currFL
+            ?currFL > ?upperValue,
+            ?currFL - ?upperValue,
+            ?lowerValue - ?currFL
         )
         AS ?distToVerticalLimit
     ),
@@ -412,7 +504,30 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+
     NOT [?flight, :withinSectorHorizontally, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector],
 
@@ -422,7 +537,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?flight, :distanceToClosestHorizontalBoundary, ?currMinDist], # Horizontal distance to sector
 
@@ -434,9 +549,9 @@
     ),
     BIND(
         IF(
-            ?currFL > ?upperLimit*100,
-            ?currFL - ?upperLimit*100,
-            ?lowerLimit*100 - ?currFL
+            ?currFL > ?upperValue,
+            ?currFL - ?upperValue,
+            ?lowerValue - ?currFL
         )
         AS ?distToVerticalLimit
     ),

@@ -131610,7 +131610,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -133451,7 +133451,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -133628,7 +133628,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -133965,7 +133965,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -134240,7 +134240,7 @@
         }
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -134436,7 +134436,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -134838,7 +134838,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -135053,7 +135053,7 @@
         }
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -135280,7 +135280,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -135437,7 +135437,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -135614,7 +135614,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -135842,7 +135842,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -136017,7 +136017,7 @@
         }
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -136204,7 +136204,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -136601,7 +136601,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -136863,7 +136863,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -137065,7 +137065,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -137367,7 +137367,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -137669,7 +137669,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -137951,7 +137951,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -139014,7 +139014,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -139316,7 +139316,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -140040,7 +140040,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -140322,7 +140322,7 @@
         ]
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },
@@ -140597,7 +140597,7 @@
         }
        },
        "lowerLimit": {
-        "value": "GND",
+        "value": "0",
         "unitOfMeasurement": "VERTICAL_UOM_FLIGHT_LEVEL",
         "reference": "VERTICAL_REFERENCE_STANDARD_ATMOSPHERE"
        },

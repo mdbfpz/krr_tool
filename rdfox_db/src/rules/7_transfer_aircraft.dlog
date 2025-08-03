@@ -24,21 +24,33 @@
 
 
 # 5.7.1 Check which aircraft need to be transferred
-# TODO: MISSING speed, vertical rate
+# TODO: MISSING speed
 [?flight, :aircraftNeedsToBeTransferred, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :isAtExitFL, 1],
 
+    [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
 
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint],
 
@@ -48,7 +60,7 @@
     ),
     # TODO: why looking only at the lower limit?
     BIND(
-        (?lowerLimit*100 - ?currFL)*60 / ABS(?currVRate) # seconds
+        (?lowerValue - ?currFL)*60 / ABS(?currVRate) # seconds
         AS ?timeToLowerSectorBoundary
     ),
     BIND(2*60 AS ?x),
@@ -75,15 +87,27 @@
     [?flight, :aircraftNotYetAssumed, 0],
     [?flight, :isAtExitFL, 0],  # This is the only difference from the previous rule
 
+    [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
 
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?currElement, fx:extension, ?currVRate],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint],
 
@@ -93,7 +117,7 @@
     ),
     # TODO: why looking only at the lower limit?
     BIND(
-        (?lowerLimit*100 - ?currFL)*60 / ABS(?currVRate) # seconds
+        (?lowerValue - ?currFL)*60 / ABS(?currVRate) # seconds
         AS ?timeToLowerSectorBoundary
     ),
     BIND(2*60 AS ?x),

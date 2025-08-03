@@ -31,6 +31,7 @@
     ).
 
 # This checks that the aircraft's current position is within the given sector's upper and lower limit.
+# [DONE]
 [?flight, :withinSectorVertically, ?sector] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -40,11 +41,33 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
 
     FILTER(
-        ?currFL <= ?upperLimit*100 && 
-        ?currFL >= ?lowerLimit*100
+        ?currFL <= ?upperValue &&
+        ?currFL >= ?lowerValue
     ).
 
 # This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
@@ -68,7 +91,29 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
 
     BIND (
         ?minDist/(?currSpeed*0.514444444) # Speed in knots, converted to m/s - time is in seconds
@@ -76,7 +121,7 @@
     ),
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currFL), ABS(?lowerLimit*100 - ?currFL)
+            ABS(?upperValue - ?currFL), ABS(?lowerValue - ?currFL)
         )
         AS ?verticalDistanceToSector
     ),
@@ -148,20 +193,42 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currFL), 
-            ABS(?lowerLimit*100 - ?currFL)
+            ABS(?upperValue - ?currFL), 
+            ABS(?lowerValue - ?currFL)
         )
         AS ?currVerticalDistanceToSector
     ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?prevFL), 
-            ABS(?lowerLimit*100 - ?prevFL)
+            ABS(?upperValue - ?prevFL), 
+            ABS(?lowerValue - ?prevFL)
         )
         AS ?prevVerticalDistanceToSector
     ),
@@ -208,7 +275,7 @@
     NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
 
 
-# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
+# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude  [DONE]
 [?flight2, :approachingSectorAltitude, ?sector] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -237,43 +304,45 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
 
     BIND(
-        ABS(?lowerLimit*100 - ?currFL)
-        AS ?currLowerLevelDiff
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
     ),
+
     BIND(
-        ABS(?upperLimit*100 - ?currFL)
-        AS ?currUpperLevelDiff
-    ),
-    BIND(
-        ABS(?lowerLimit*100 - ?prevFL)
-        AS ?prevLowerLevelDiff
-    ),
-    BIND(
-        ABS(?upperLimit*100 - ?prevFL)
-        AS ?prevUpperLevelDiff
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
     ),
 
     FILTER(
-        (
-            (ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= ABS(?currUpperLevelDiff - ?prevUpperLevelDiff)) &&
-            ?currLowerLevelDiff < ?prevLowerLevelDiff
-        ) ||
-        (
-            !(
-                ABS(?currLowerLevelDiff - ?prevLowerLevelDiff) <= 
-                ABS(?currUpperLevelDiff - ?prevUpperLevelDiff) 
-            ) &&
-            ?currUpperLevelDiff < ?prevUpperLevelDiff
-        )
+        # 1. case: A/C is approaching the lower limit from below the sector
+        (?prevFL < ?currFL && ?prevFL < ?lowerValue && ?currFL < ?lowerValue) ||
+        # 2. case: A/C is approaching the upper limit from above the sector
+        (?prevFL > ?currFL && ?prevFL > ?upperValue && ?currFL > ?upperValue) ||
+        # 3. case: A/C is approaching the lower limit from within the sector
+        (?prevFL > ?currFL && ?prevFL > ?lowerValue && ?prevFL <= ?upperValue && ?currFL > ?lowerValue && ?currFL <= ?upperValue) ||
+        # 4. case: A/C is approaching the upper limit from within the sector
+        (?prevFL < ?currFL && ?prevFL < ?upperValue && ?prevFL >= ?lowerValue && ?currFL < ?upperValue && ?currFL >= ?lowerValue)
     ).
 
-# TODO: MISSING vertical rate
 [?flight, :aircraftWithinSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, ?currVRate],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -283,13 +352,12 @@
 
 [?flight, :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
     [?flight, :currentElement, ?currElement],
-    [?currElement, fx:extension, ?currVRate],
+    [?currElement, fx:point4D, ?currPoint4D],
+    [?currPoint4D, :verticalRate, 0],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
-    NOT [?flight, :withinSectorVertically, ?sector],
-
-    FILTER(?currVRate = 0). # TODO: move this "0" to the object ?currVRate in the second fact of the body
+    NOT [?flight, :withinSectorVertically, ?sector].
 
 [?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector] :-
     [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output

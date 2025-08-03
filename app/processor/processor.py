@@ -99,7 +99,8 @@ class Processor:
 
             # Update the last repo state with the CD findings
             self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
-                
+            
+            # print("Repo: ", self.rdf_converter.data_repository)
             turtle_data = self.rdf_converter.serialize()
             # print("Turtle data: ", turtle_data)
             await self.rdfdb_queue.add_to_queue(turtle_data)
@@ -146,6 +147,8 @@ class Processor:
                 
         if self.static_data is not None:
             self.rdf_converter._process_aixm_data(self.static_data)
+            turtle_data = self.rdf_converter.serialize()
+            await self.rdfox_queries.import_turtle_data(turtle_data)
         else:
             print("Statički podaci nisu učitani")
             

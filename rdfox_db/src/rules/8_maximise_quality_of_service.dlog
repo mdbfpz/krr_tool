@@ -140,9 +140,34 @@
     [?flight, :westMilitaryAirspace, ?airspace],
     [?flight, :isWestMilitaryAreaActive, 0],
     [?flight, :isWestMilitaryAreaInactive, 1],#gledam samo inactive radi odredivanja ima li konflikata il nema, ako je aktivna vojna zona nije prigodan rbt suggestion pa nit ne provjeravamo
+    
+    [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
+
     [?flight, :desiredElement, ?desiredElement],
     [?desiredElement, fx:point4D, ?desiredPoint4D],
     [?flight, :suggestedRbtIntersectsMilitaryArea, 0],#TODO: implementirati u pipelineu provjeru prolazi li suggested rbt kroz vojnu zonu

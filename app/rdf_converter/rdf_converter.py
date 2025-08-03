@@ -11,7 +11,7 @@ FIXM = Namespace("http://www.fixm.aero/flight/4.3/")
 FB = Namespace("http://www.fixm.aero/base/4.3/")
 HMI = Namespace("https://aware-sesar.eu/hmi/")
 XS = Namespace("http://www.w3.org/2001/XMLSchema/")
-AIXM = Namespace("http://www.aixm.aero/schema/5.1.1")
+AIXM = Namespace("https://aware-sesar.eu/aixm/5.1.1/")
 
 class RDFConverter:
     def __init__(self):
@@ -142,6 +142,15 @@ class RDFConverter:
             predicate = URIRef(f"{fb_namespace}{key}")
             self._add_literal(time_uri, predicate, value, datatype=XSD.dateTime) # dateTime
 
+    def _process_vertical_rate(self, parent_uri, vertical_rate):
+        """
+        Create RDF triples for a vertical rate object.
+        - Output structure: parent -> verticalRate
+        """
+        
+        # Add the vertical rate value
+        self._add_literal(parent_uri, BASE.verticalRate, vertical_rate, datatype=XSD.decimal)
+
     def _process_hmi_position(self, flight_uri, uri, key, value, namespace):
         """
         Create RDF triples for a structured HMI position object.
@@ -230,6 +239,9 @@ class RDFConverter:
 
             elif key == "velocity":
                 self._process_velocity_vector(point4d_uri, value)
+
+            elif key == "verticalRate":
+                self._process_vertical_rate(point4d_uri, value)
 
             elif key == "flightLevelM":
                 self._add_literal(point4d_uri, FB.flightLevel, value, datatype=XSD.decimal)
@@ -648,6 +660,11 @@ class RDFConverter:
                     point4d["velocity"]["VxMs"] = vx
                 if vy is not None:
                     point4d["velocity"]["VyMs"] = vy
+        
+        # Vertical rate
+        vertical_rate = data_record.get("calculatedRateOfClimbFtmin")
+        if vertical_rate:
+            point4d["verticalRate"] = vertical_rate
 
         # Level block (with FL values)
         flight_level_m = data_record.get("flightLevelM")
@@ -972,7 +989,6 @@ class RDFConverter:
         self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
         
     def _process_distance_to_cleared_point(self, flight_uri,data):
-        print("HAAAAAAAAAAAAAAAAa")
         current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
         if current_point is not None:
             current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
@@ -1086,14 +1102,20 @@ class RDFConverter:
         sectors[sector_name] = {
             "addedVolumes" : {
                 "points": {},
-                "volumeUUID":None,
-                "volumeBoundaryUUID":None
+                "volumeUUID": None,
+                "volumeBoundaryUUID": None
             },
-            "lowerLimit": None,
-            "upperLimit": None,
+            "lowerLimit": {
+                "value": None,
+                "unitOfMeasurement": None
+            },
+            "upperLimit": {
+                "value": None,
+                "unitOfMeasurement": None
+            },
             "sectorType": None,
-            "secotrUUID":None,
-            "airspaceVolumeUUID":None
+            "secotrUUID": None,
+            "airspaceVolumeUUID": None
         }
         
         sectors[sector_name]["sectorType"]=sector_type
@@ -1109,8 +1131,14 @@ class RDFConverter:
             sectors[sector_name]["addedVolumes"]["volumeBoundaryUUID"]=volumeBoundary_uuid
             
             
-            sectors[sector_name]["lowerLimit"] = volume["lowerLimit"]["value"]
-            sectors[sector_name]["upperLimit"] = volume["upperLimit"]["value"]
+            sectors[sector_name]["lowerLimit"] = {
+                "value": volume["lowerLimit"]["value"],
+                "unitOfMeasurement": volume["lowerLimit"]["unitOfMeasurement"]
+            }
+            sectors[sector_name]["upperLimit"] = {
+                "value": volume["upperLimit"]["value"],
+                "unitOfMeasurement": volume["upperLimit"]["unitOfMeasurement"]
+            }
             
             
             
@@ -1150,29 +1178,39 @@ class RDFConverter:
             }
         }
         
-    def _aixm_data_to_rdf(self,data):
+    def _aixm_data_to_rdf(self):
         main_aixm_uri = AIXM["AixmFeatures"]
         self.graph.add((main_aixm_uri, RDF.type, AIXM.Features))
         #print(data["airportHeliports"])
-        for key,value in data["airportHeliports"].items():
+        for key,value in self.aixm_data_repo["airportHeliports"].items():
             airport_heliport_uri = URIRef(AIXM[f"airportHeliport_{key}"])
-            self.graph.add((main_aixm_uri, AIXM.contains, airport_heliport_uri))
+            self.graph.add((main_aixm_uri, BASE.contains, airport_heliport_uri))
             self.graph.add((airport_heliport_uri, RDF.type, AIXM.AirportHeliport))
             #missing info for airportHeliport availability 
         #process sectors
-        for key,value in data["sectors"].items():
+        for key,value in self.aixm_data_repo["sectors"].items():
             sector_uri = URIRef(AIXM[f"airspace_{key}"])
-            self.graph.add((main_aixm_uri, AIXM.contains, sector_uri))
+            self.graph.add((main_aixm_uri, BASE.contains, sector_uri))
             self.graph.add((sector_uri, RDF.type, AIXM.Airspace))
             
             airspace_volume_uri = URIRef(f"{sector_uri}_airspaceVolume")
             self.graph.add((sector_uri, AIXM.geometryComponent, airspace_volume_uri))
             self.graph.add((airspace_volume_uri, RDF.type, AIXM.AirspaceVolume))
+
+            lower_limit_uri = URIRef(f"{airspace_volume_uri}_lowerLimit")
+            upper_limit_uri = URIRef(f"{airspace_volume_uri}_upperLimit")
+            self.graph.add((airspace_volume_uri, AIXM.lowerLimit, lower_limit_uri))
+            self.graph.add((airspace_volume_uri, AIXM.upperLimit, upper_limit_uri))
             
-            lower_limit_value = value["lowerLimit"]
-            upper_limit_value = value["upperLimit"]
-            self.graph.add((airspace_volume_uri, AIXM.lowerLimit, Literal(lower_limit_value, datatype=XSD.integer)))
-            self.graph.add((airspace_volume_uri, AIXM.upperLimit, Literal(upper_limit_value, datatype=XSD.integer)))
+            lower_limit_value = value["lowerLimit"]["value"]
+            upper_limit_value = value["upperLimit"]["value"]
+            self.graph.add((lower_limit_uri, BASE.limitValue, Literal(lower_limit_value, datatype=XSD.integer)))
+            self.graph.add((upper_limit_uri, BASE.limitValue, Literal(upper_limit_value, datatype=XSD.integer)))
+
+            lower_limit_uom = value["lowerLimit"]["unitOfMeasurement"]
+            upper_limit_uom = value["upperLimit"]["unitOfMeasurement"]
+            self.graph.add((lower_limit_uri, BASE.limitUoM, Literal(lower_limit_uom, datatype=XSD.string)))
+            self.graph.add((upper_limit_uri, BASE.limitUoM, Literal(upper_limit_uom, datatype=XSD.string)))
 
             surface_uri = URIRef(f"{airspace_volume_uri}_surface")
             self.graph.add((airspace_volume_uri, AIXM.hasBoundary, surface_uri))
@@ -1231,8 +1269,8 @@ class RDFConverter:
             elif key == "runways":
                 for runway in actual_data["runways"]:
                     self._process_runways(runway) """
-            
-        #self._aixm_data_to_rdf(self.aixm_data_repo)      
+        
+        self._aixm_data_to_rdf()      
     #########################################################################################################
     ##########################################     MAIN METHODS     #########################################
     #########################################################################################################

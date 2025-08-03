@@ -67,20 +67,42 @@
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
     [?sector, ax:upperLimit, ?upperLimit],
+    [?upperLimit, :limitValue, ?upperLimitValue],
+    [?upperLimit, :limitUoM, ?upperLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    BIND(
+        IF(
+            ?upperLimitUoM = "VERTICAL_UOM_FEET",
+            ?upperLimitValue/100, # Convert to FL
+            ?upperLimitValue # Already in FL
+        )
+        AS ?upperValue
+    ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?currFL), 
-            ABS(?lowerLimit*100 - ?currFL)
+            ABS(?upperValue - ?currFL), 
+            ABS(?lowerValue - ?currFL)
         )
         AS ?currVerticalDistanceToSector
     ),
 
     BIND(
         MINFN(
-            ABS(?upperLimit*100 - ?prevFL), 
-            ABS(?lowerLimit*100 - ?prevFL)
+            ABS(?upperValue - ?prevFL), 
+            ABS(?lowerValue - ?prevFL)
         )
         AS ?prevVerticalDistanceToSector
     ),
@@ -448,10 +470,23 @@
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
+
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?sector, ax:lowerLimit, ?lowerLimit],
-    FILTER(?currFL < ?lowerLimit).
+    [?lowerLimit, :limitValue, ?lowerLimitValue],
+    [?lowerLimit, :limitUoM, ?lowerLimitUoM],
+
+    BIND(
+        IF(
+            ?lowerLimitUoM = "VERTICAL_UOM_FEET",
+            ?lowerLimitValue/100, # Convert to FL
+            ?lowerLimitValue # Already in FL
+        )
+        AS ?lowerValue
+    ),
+
+    FILTER(?currFL < ?lowerValue).
 
 # 18. COORDINATION RESPONSE
 # TODO: Compare this with the diagram when it is finished
