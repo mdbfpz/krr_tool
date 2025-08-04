@@ -5,7 +5,7 @@
 
 # 5.1.1 Check that aircraft is climbing/descending towards cleared FL
 
-# Climbing:
+# Climbing:   [DONE]
 [?flight, :isClimbingToCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -17,6 +17,7 @@
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
+
     BIND(
         IF(
             ?currFL < ?clearedFL && ?verticalRate > 0,
@@ -26,7 +27,7 @@
         AS ?indicator
     ).
 
-# Descending:
+# Descending:   [DONE]
 [?flight, :isDescendingToCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
@@ -38,6 +39,7 @@
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
+
     BIND(
         IF(
             ?currFL > ?clearedFL && ?verticalRate < 0,
@@ -47,7 +49,7 @@
         AS ?indicator
     ).
 
-#Level bust:
+#Level bust:    [DONE]
 [?flight2, :isFlightLevelBust, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -97,19 +99,20 @@
     ).
 
 
-# 5.1.2 Check that aircraft is at cleared FL [DONE - 1st part]
+# 5.1.2 Check that aircraft is at cleared FL
 
-# U java klasi se "pasing CFL" gledat us sklopu 5.1.1 taska, ovdje je razdvojeno u zasebno pravilo.
-# Rule 1: Check if current level is equal to cleared level
+# Rule 1: Check if current level is equal to cleared level    [DONE]
 [?flight, :isAtCFL, ?indicator] :-
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
+
     [?flight, :agreedElement, ?agreedElement],   
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:level, ?agreedLevel],
     [?agreedLevel, fb:flightLevel, ?agreedFL],
+
     BIND(
         IF(
             ?currFL = ?agreedFL,
@@ -120,7 +123,7 @@
     ).
 
 # Passing CFL:
-# Rule 2: Check if aircraft is passing cleared flight level.
+# Rule 2: Check if aircraft is passing cleared flight level.    [DONE]
 [?flight, :isPassingCFL, ?indicator] :-
     [?flight, :isAtCFL, 1],
     [?flight, :currentElement, ?currElement],
@@ -137,7 +140,7 @@
     ).
 
 
-# 5.1.3 Check that aircraft is maintaining FL
+# 5.1.3 Check that aircraft is maintaining FL   [DONE]
 [?flight2, :isMaintainingFL, ?indicator] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -158,6 +161,7 @@
     [?prevElement, fx:point4D, ?prevPoint4D],
     [?prevPoint4D, fx:level, ?prevLevel],
     [?prevLevel, fb:flightLevel, ?level],
+
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, :verticalRate, ?verticalRate],
     [?currPoint4D, fx:level, ?currLevel],
@@ -1078,7 +1082,8 @@
     ).
 
 # 5.1.13 Check that aircraft is maintaining cleared ROC/ROD
-[?flight2, :isMaintainingVerticalRate, ?indicator] :-
+
+[?flight2, :isMaintainingVerticalRate, ?indicator] :-   # [DONE]
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -1108,11 +1113,11 @@
     ).
 
 [?flight, :isMaintainingClearedVerticalRate, ?indicator] :-
-    [?flight, :isMaintainingVerticalRate, ?maintaining],
-    [?flight, :isAtClearedVerticalRate, ?atCleared],
+    [?flight, :isMaintainingVerticalRate, ?ind1],
+    [?flight, :isAtClearedVerticalRate, ?ind2],
     BIND(
         IF(
-            ?maintaining = 1 && ?atCleared = 1, 
+            ?ind1 = 1 && ?ind2 = 1, 
             1, 
             0
         )
@@ -1121,6 +1126,7 @@
 
 
 # 5.1.14 Check that aircraft is increasing/decreasing towards/within cleared ROC/ROD
+#TODO: Missing - vertical rate in agreedElement of a flight plan - ask Gunnar
 [?flight, :isVerticalRateClearenceJustReceived, ?indicator] :-
     [?flight, :isClearedVerticalRateAssigned, 1],
     # Extract current and cleared elements for the flight at each timestamp
@@ -1130,6 +1136,7 @@
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:time, ?currPoint4DTime],
     [?currPoint4DTime, fb:absoulteTime, ?currTime],
+
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     [?agreedPoint4D, fx:time, ?agreedPoint4DTime],
     [?agreedPoint4DTime, fb:absoulteTime, ?agreedTime],
@@ -1315,7 +1322,7 @@
 
 
 # 5.1.15 Check that aircraft is following the 3D trajectory
-# Won't be implementing this. Instead we always look if the aircraft is following the trajectory within some tolerance.
+# --> Won't be implementing this. Instead we always look if the aircraft is following the trajectory within some tolerance.
 
 
 # 5.1.16 Check if the deviation from 3D trajectory is within tolerance

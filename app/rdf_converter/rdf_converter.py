@@ -98,34 +98,40 @@ class RDFConverter:
         """
         Create RDF triples for a structured flight level object.
         Handles cases where flightLevel includes both value and uom.
-        
-        Expected level_data format:
-        {
-            'flightLevel': {
-                'uom': 'FL',
-                'flightLevel': '370'  # or int
-            }
-        }
         """
         level_uri = URIRef(f"{parent_uri}_level")
 
         # Link parent to level
         self.graph.add((parent_uri, fx_namespace.level, level_uri))
         self.graph.add((level_uri, RDF.type, fx_namespace.Level))
-        for key, value in level_data.items():
-            if key == "flightLevel" and isinstance(value, dict):
-                # Handle both value and uom
-                for subkey, subval in value.items():
-                    pred = URIRef(f"{fb_namespace}{subkey}")
-                    if subkey == "flightLevel":                     
-                        self._add_literal(level_uri, pred, subval, datatype=XSD.integer)
-                    else:
-                        self._add_literal(level_uri, pred, subval)
-            else:
-                # Handle any unexpected structure
-                pred = URIRef(f"{fb_namespace}{key}")
-                self._add_literal(level_uri, pred, value)
 
+        for key, value in level_data.items():            
+            pred = URIRef(f"{fb_namespace}{key}")
+
+            if isinstance(value, dict):
+                # Nested structure, like {'uom': 'FL', 'flightLevel': '370'}
+                for subkey, subval in value.items():
+                    sub_pred = URIRef(f"{fb_namespace}{subkey}")
+                    if subkey == "flightLevel" and isinstance(subval, str):
+                        try:
+                            subval_int = int(subval)
+                            self._add_literal(level_uri, sub_pred, subval_int, datatype=XSD.integer)
+                        except ValueError:
+                            self._add_literal(level_uri, sub_pred, subval)  # keep as string
+                    else:
+                        self._add_literal(level_uri, sub_pred, subval)
+            else:
+                # Single value
+                if isinstance(value, str):
+                    try:
+                        value_int = int(value)
+                        self._add_literal(level_uri, pred, value_int, datatype=XSD.integer)
+                    except ValueError:
+                        self._add_literal(level_uri, pred, value)  # keep as string
+                elif isinstance(value, int):
+                    self._add_literal(level_uri, pred, value, datatype=XSD.integer)
+                else:
+                    self._add_literal(level_uri, pred, value)
 
     def _process_time(self, parent_uri, time_data, fx_namespace, fb_namespace):
         """
@@ -662,8 +668,8 @@ class RDFConverter:
                     point4d["velocity"]["VyMs"] = vy
         
         # Vertical rate
-        vertical_rate = data_record.get("calculatedRateOfClimbFtmin")
-        if vertical_rate:
+        vertical_rate = data_record.get("calculatedRateOfClimbFtmin", None)
+        if vertical_rate is not None:
             point4d["verticalRate"] = vertical_rate
 
         # Level block (with FL values)
@@ -974,34 +980,44 @@ class RDFConverter:
     def _process_tolerance_azimuth(self,flight_uri, data):
         """point1 is current position, point2 is cleared position"""
 
-        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
-        if current_point is not None:
-            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
+        current_point_lat = current_point_lon = None
+        cleared_point_lat = cleared_point_lon = None
+
+        current_branch = data["routeTrajectoryGroup"].get("current", {})
+        if current_branch:
+            current_point = current_branch.get("element", {}).get("point4D", {}) 
+            if current_point is not None:
+                current_point_lat, current_point_lon = current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"]
                 
-        
-        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D", {})
         if cleared_point is not None:
-            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+            cleared_point_lat, cleared_point_lon = cleared_point["position"]["pos"]["lat"], cleared_point["position"]["pos"]["lon"] 
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             tolerance_azi = self.geodesic_service.calculate_tolerance_azi(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon,2.5*1825)
-               
-        self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
+            self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
         
     def _process_distance_to_cleared_point(self, flight_uri,data):
-        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
-        if current_point is not None:
-            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
-                
+        """point1 is current position, point2 is cleared position"""
+
+        current_point_lat = current_point_lon = None
+        cleared_point_lat = cleared_point_lon = None
+
+        current_branch = data["routeTrajectoryGroup"].get("current", {})
+        if current_branch:
+            current_point = current_branch.get("element", {}).get("point4D", {}) 
+            if current_point is not None:
+                current_point_lat, current_point_lon = current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"]     
         
-        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D", {})
         if cleared_point is not None:
-            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+            cleared_point_lat, cleared_point_lon = cleared_point["position"]["pos"]["lat"], cleared_point["position"]["pos"]["lon"] 
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
-            distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)
-               
-        self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))            
+            distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)    
+            self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))      
+
+
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################

@@ -110,6 +110,8 @@
         
         AS ?climbExitIndicator
     ).
+
+
 #5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module)   - not implemented in Java
 
 #5.6.4 Detect if planned trajectory passes through restricted airspace

@@ -275,8 +275,8 @@
     NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
 
 
-# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude  [DONE]
-[?flight2, :approachingSectorAltitude, ?sector] :-
+# 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
+[?flight2, :approachingSectorAltitude, ?sector] :-  # [DONE]
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -339,21 +339,21 @@
         (?prevFL < ?currFL && ?prevFL < ?upperValue && ?prevFL >= ?lowerValue && ?currFL < ?upperValue && ?currFL >= ?lowerValue)
     ).
 
-[?flight, :aircraftWithinSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
+[?flight, :aircraftWithinSectorVerticallyNotApproachingSectorAltitude, ?sector] :-  # [DONE]
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, :verticalRate, ?currVRate],
+    [?currPoint4D, :verticalRate, "0"^^xsd:decimal],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
-    [?flight, :withinSectorVertically, ?sector],
+    [?flight, :withinSectorVertically, ?sector].
 
-    FILTER(?currVRate = 0).
-
-[?flight, :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude, ?sector] :-
+[?flight, :aircraftOutsideSectorVerticallyNotApproachingSectorAltitude, ?sector] :-  # [DONE]
+    [?flight, :isAircraftAlreadyAssumed, 0],
+    [?flight, :isAircraftAlreadyTransferred, 0],
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, :verticalRate, 0],
+    [?currPoint4D, :verticalRate, "0"^^xsd:decimal],
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
