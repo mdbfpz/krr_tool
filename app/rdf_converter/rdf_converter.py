@@ -55,6 +55,7 @@ class RDFConverter:
         }
         #self.aixm_uuid_latlon_map = {}
         self.geodesic_service = GeodesicService()
+        self.sector_points_cache = {}
 
     def _generate_index(self, tag, timestamp):
         """Generates a unique index for a given tag."""
@@ -463,6 +464,11 @@ class RDFConverter:
                 if "Flight" in key_data:
                     self._process_flight(flight_uri, key_data["Flight"])
                     self._process_tolerance_azimuth(flight_uri, key_data["Flight"])
+                    self._process_distance_to_cleared_point(flight_uri, key_data["Flight"])
+                    self._create_flight_sector_connection(flight_uri, key_data["Flight"])
+                    self._calculate_distance_to_sector(flight_uri, key_data["Flight"])
+                    self._check_aircraft_is_planned(flight_uri, key_data["Flight"])
+                    self._distance_to_intersection_point(flight_uri, key_data["Flight"])
 
             elif key == "HMI":
                 # Process HMI data
@@ -973,10 +979,11 @@ class RDFConverter:
    
     def _process_tolerance_azimuth(self,flight_uri, data):
         """point1 is current position, point2 is cleared position"""
-
-        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
-        if current_point is not None:
-            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
+        current_point_lat = current_point_lon = None
+        if "current" in data["routeTrajectoryGroup"].keys():
+            current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
+            if current_point is not None:
+                current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
                 
         
         cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
@@ -985,13 +992,15 @@ class RDFConverter:
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             tolerance_azi = self.geodesic_service.calculate_tolerance_azi(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon,2.5*1825)
-               
-        self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
+            self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
         
     def _process_distance_to_cleared_point(self, flight_uri,data):
-        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
-        if current_point is not None:
-            current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
+        """dist between curr and clear point - used in 1.10 """  
+        current_point_lat = current_point_lon = None      
+        if "current" in data["routeTrajectoryGroup"].keys():
+            current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D") 
+            if current_point is not None:
+                current_point_lat,current_point_lon = current_point["position"]["pos"]["lat"],current_point["position"]["pos"]["lon"]
                 
         
         cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
@@ -1000,8 +1009,135 @@ class RDFConverter:
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)
-               
-        self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))            
+            self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))            
+    def _get_current_point_coords(self, data):
+        """Helper metoda za dohvaćanje trenutnih koordinata"""
+        if "current" not in data["routeTrajectoryGroup"]:
+            return None, None
+            
+        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D")
+        if current_point is None:
+            return None, None
+            
+        return (current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"])
+    
+    def _create_flight_sector_connection(self, flight_uri, data):
+        current_point_lat, current_point_lon = self._get_current_point_coords(data)
+        
+        if current_point_lat is None or current_point_lon is None:
+            return
+        """  
+        # Koristimo cache za brže pristupanje
+        if not hasattr(self, 'sector_points_cache'):
+            self.sector_points_cache = {} """
+        
+        for sector_name in self.aixm_data_repo["sectors"].keys():
+            # Ako cache nije napunjen za ovaj sektor, napravi ga
+            """ if sector_name not in self.sector_points_cache:
+                sector_data = self.aixm_data_repo["sectors"][sector_name]
+                points_list = []
+                for point_data in sector_data["addedVolumes"]["points"].values():
+                    points_list.append((point_data["lat"], point_data["lon"]))
+                self.sector_points_cache[sector_name] = points_list """
+            
+            points_list = self.sector_points_cache[sector_name]
+            
+            if points_list and self.geodesic_service.check_if_point_in_polygon(
+                current_point_lat, current_point_lon, points_list):
+                data["withinSector"] = sector_name
+                airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
+                self.graph.add((flight_uri, FIXM.withinSectorHorizontally, airspace_volume_uri))
+                break  # Prekidamo jer smo našli sektor
+
+                
+    #calculate_distance_to_sector
+    def _calculate_distance_to_sector(self, flight_uri, data):
+        if "withinSector" not in data:
+            return
+            
+        sector_name = data["withinSector"]
+        current_point_lat, current_point_lon = self._get_current_point_coords(data)
+        
+        if current_point_lat is None or current_point_lon is None:
+            return
+        
+        # Koristimo cache
+        points_list = self.sector_points_cache[sector_name]
+        """ if hasattr(self, 'sector_points_cache') and sector_name in self.sector_points_cache:
+        else:
+            
+            sector_data = self.aixm_data_repo["sectors"][sector_name]
+            points_list = []
+            for point_data in sector_data["addedVolumes"]["points"].values():
+                points_list.append((point_data["lat"], point_data["lon"])) """
+        
+        if points_list:
+            dist = self.geodesic_service.calculate_distance_to_sector(
+                current_point_lat, current_point_lon, points_list)
+            self.graph.add((flight_uri, FIXM.distanceToClosestHorizontalBoundary, 
+                        Literal(dist, datatype=XSD.float)))
+            
+    
+    def _check_aircraft_is_planned(self, flight_uri, data):
+        if "agreed" not in data["routeTrajectoryGroup"]:
+            return
+        
+        """ # Koristimo cache za sve sektore
+        if not hasattr(self, 'sector_points_cache'):
+            self.sector_points_cache = {}
+        
+        # Napuni cache ako nije
+        for sector_name in self.aixm_data_repo["sectors"].keys():
+            if sector_name not in self.sector_points_cache:
+                sector_data = self.aixm_data_repo["sectors"][sector_name]
+                points_list = []
+                for point_data in sector_data["addedVolumes"]["points"].values():
+                    points_list.append((point_data["lat"], point_data["lon"]))
+                self.sector_points_cache[sector_name] = points_list """
+        
+        # Set za praćenje već obrađenih sektora
+        processed_sectors = set()
+        
+        for record in data["routeTrajectoryGroup"]["agreed"]:
+            curr_record_point = record.get("element", {}).get("point4D")
+            if curr_record_point is None:
+                continue
+                
+            curr_record_point_lat = curr_record_point["position"]["pos"]["lat"]
+            curr_record_point_lon = curr_record_point["position"]["pos"]["lon"]
+            
+            if curr_record_point_lat is None or curr_record_point_lon is None:
+                continue
+            
+            for sector_name, points_list in self.sector_points_cache.items():
+                # Preskačemo već obrađene sektore
+                if sector_name in processed_sectors:
+                    continue
+                    
+                if (points_list and 
+                    self.geodesic_service.check_if_point_in_polygon(
+                        curr_record_point_lat, curr_record_point_lon, points_list)):
+                    
+                    airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
+                    self.graph.add((flight_uri, FIXM.aircraftIsPlanned, airspace_volume_uri))
+                    processed_sectors.add(sector_name)       
+                    
+    def _distance_to_intersection_point(self, flight_uri, data):
+        sector_name = data["withinSector"]
+        sector_coords = self.sector_points_cache[sector_name]  
+        current_point_lat, current_point_lon = self._get_current_point_coords(data)        
+        if current_point_lat is None or current_point_lon is None:
+            return   
+        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+        if cleared_point is not None:
+            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+        line = [(current_point_lat,current_point_lon), (cleared_point_lat,cleared_point_lon)]                     
+        intersection = self.geodesic_service.f(line, sector_coords)
+        
+        dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,intersection[0][1], intersection[0][0])
+        #print(f"distance to intersect = {dist}")
+        self.graph.add((flight_uri, FIXM.distanceToIntersectionPoint, 
+                        Literal(dist, datatype=XSD.float)))
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################
@@ -1091,8 +1227,7 @@ class RDFConverter:
         }
          """
         
-    def _create_sectors_structure(self,airspace):
-        
+    def _create_sectors_structure(self, airspace):
         sector_name = airspace["designator"]
         sector_type = airspace["type"]
         airspace_uuid = airspace["uuid"]["uuid"]
@@ -1100,7 +1235,7 @@ class RDFConverter:
         sectors = self.aixm_data_repo["sectors"]
         # init sector
         sectors[sector_name] = {
-            "addedVolumes" : {
+            "addedVolumes": {
                 "points": {},
                 "volumeUUID": None,
                 "volumeBoundaryUUID": None
@@ -1118,19 +1253,17 @@ class RDFConverter:
             "airspaceVolumeUUID": None
         }
         
-        sectors[sector_name]["sectorType"]=sector_type
-        sectors[sector_name]["secotrUUID"]=airspace_uuid
+        sectors[sector_name]["sectorType"] = sector_type
+        sectors[sector_name]["secotrUUID"] = airspace_uuid
         airspaceVolume_uuid = airspace["airspaceVolume"]["uuid"]["uuid"]
-        sectors[sector_name]["airspaceVolumeUUID"]=airspaceVolume_uuid
+        sectors[sector_name]["airspaceVolumeUUID"] = airspaceVolume_uuid
         
         for volume in airspace["airspaceVolume"]["addedVolumes"]:
             volume_uuid = volume["uuid"]["uuid"]
             volumeBoundary_uuid = volume["boundary"]["uuid"]["uuid"]
             
-            sectors[sector_name]["addedVolumes"]["volumeUUID"]=volume_uuid
-            sectors[sector_name]["addedVolumes"]["volumeBoundaryUUID"]=volumeBoundary_uuid
-            
-            
+            sectors[sector_name]["addedVolumes"]["volumeUUID"] = volume_uuid
+            sectors[sector_name]["addedVolumes"]["volumeBoundaryUUID"] = volumeBoundary_uuid
             sectors[sector_name]["lowerLimit"] = {
                 "value": volume["lowerLimit"]["value"],
                 "unitOfMeasurement": volume["lowerLimit"]["unitOfMeasurement"]
@@ -1139,8 +1272,6 @@ class RDFConverter:
                 "value": volume["upperLimit"]["value"],
                 "unitOfMeasurement": volume["upperLimit"]["unitOfMeasurement"]
             }
-            
-            
             
             point_counter = 1
             for path in volume["boundary"]["pathList"]:
@@ -1161,6 +1292,15 @@ class RDFConverter:
                         "lon": rhumb_path["endLocation"]["longitude"]["degrees"]
                     }
                     point_counter += 1
+        
+        
+        if not hasattr(self, 'sector_points_cache'):
+            self.sector_points_cache = {}
+        
+        points_list = []
+        for point_data in sectors[sector_name]["addedVolumes"]["points"].values():
+            points_list.append((point_data["lat"], point_data["lon"]))
+        self.sector_points_cache[sector_name] = points_list
         
         
     
