@@ -1022,17 +1022,22 @@ class RDFConverter:
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)
-            self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))            
+            self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))
+
     def _get_current_point_coords(self, data):
         """Helper metoda za dohvaćanje trenutnih koordinata"""
         if "current" not in data["routeTrajectoryGroup"]:
             return None, None
-            
-        current_point = data["routeTrajectoryGroup"]["current"].get("element", {}).get("point4D")
-        if current_point is None:
+        
+        current_point = data["routeTrajectoryGroup"].get("current", {})
+        # We might receive empty current branch -> evaluates to empty string, or no branch at all
+        if current_point in [None, ""]:
             return None, None
             
-        return (current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"])
+        return (
+            current_point.get("element", {}).get("point4D", {})["position"]["pos"]["lat"], 
+            current_point.get("element", {}).get("point4D", {})["position"]["pos"]["lon"]
+        )
     
     def _create_flight_sector_connection(self, flight_uri, data):
         current_point_lat, current_point_lon = self._get_current_point_coords(data)
@@ -1136,21 +1141,26 @@ class RDFConverter:
                     processed_sectors.add(sector_name)       
                     
     def _distance_to_intersection_point(self, flight_uri, data):
-        sector_name = data["withinSector"]
-        sector_coords = self.sector_points_cache[sector_name]  
-        current_point_lat, current_point_lon = self._get_current_point_coords(data)        
-        if current_point_lat is None or current_point_lon is None:
-            return   
-        cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
-        if cleared_point is not None:
-            cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
-        line = [(current_point_lat,current_point_lon), (cleared_point_lat,cleared_point_lon)]                     
-        intersection = self.geodesic_service.f(line, sector_coords)
+        if "withinSector" in data:
+            sector_name = data["withinSector"]
+            sector_coords = self.sector_points_cache[sector_name]  
+            current_point_lat, current_point_lon = self._get_current_point_coords(data)        
+            if current_point_lat is None or current_point_lon is None:
+                return   
+            cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D")
+            if cleared_point is not None:
+                cleared_point_lat,cleared_point_lon = cleared_point["position"]["pos"]["lat"],cleared_point["position"]["pos"]["lon"] 
+            line = [(current_point_lat,current_point_lon), (cleared_point_lat,cleared_point_lon)]                     
+            intersection = self.geodesic_service.f(line, sector_coords)
+            
+            dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,intersection[0][1], intersection[0][0])
+            #print(f"distance to intersect = {dist}")
+            self.graph.add((flight_uri, FIXM.distanceToIntersectionPoint, 
+                            Literal(dist, datatype=XSD.float)))
         
-        dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,intersection[0][1], intersection[0][0])
-        #print(f"distance to intersect = {dist}")
-        self.graph.add((flight_uri, FIXM.distanceToIntersectionPoint, 
-                        Literal(dist, datatype=XSD.float)))
+        return
+        
+
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################
