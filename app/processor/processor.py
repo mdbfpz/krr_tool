@@ -102,7 +102,7 @@ class Processor:
             
             # print("Repo: ", self.rdf_converter.data_repository)
             turtle_data = self.rdf_converter.serialize()
-            # print("Turtle data: ", turtle_data)
+            print("Turtle data: ", turtle_data)
             await self.rdfdb_queue.add_to_queue(turtle_data)
     
     async def insert_and_enqueue(self):
