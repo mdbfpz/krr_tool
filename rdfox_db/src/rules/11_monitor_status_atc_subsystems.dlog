@@ -6,10 +6,7 @@
 #5.11  Monitor Status of ATC Sub-systems
 
 #5.11.1  Monitor performance of ATC conflict detection module
-#TODO
-# need previous and current position of two fligths (each pair)
-# need output from module (let's say we have a node in graph representing module's output)
-# need distance between two flights' positions - pretend we have function implemented in python put in a graph
+#TODO: need output from module (let's say we have a node in graph representing module's output)
 
 [?conflictModule, :isSatisfactoryConflictModel, ?satisfactoryConflictModelIndicator]:-
     # vidi s ivanom za ovaj task

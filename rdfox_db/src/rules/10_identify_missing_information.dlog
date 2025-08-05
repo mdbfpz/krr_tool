@@ -20,9 +20,7 @@
 
 
 #5.10.2 Check situation at destination airport
-
-[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-
-    
+[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-   
     [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:operationalStatus, ?operationalStatus],    
     BIND(
@@ -35,7 +33,6 @@
     ).
 
 [?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
-    
     [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:warning, ?warning],    
     BIND(
@@ -128,7 +125,8 @@
 #     ).     
 
 
-#5.10.5 Monitor restricted airspace 
+#5.10.5 Monitor restricted airspace
+# TODO: MISSING airspaceActivation, status
 [?flight2, :canNewActionsBeTaken, ?noNewActionsIndicator] :- 
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp

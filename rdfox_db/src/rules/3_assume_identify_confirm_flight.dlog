@@ -379,7 +379,7 @@
     NOT [?flight, :aircraftNotIncoming, ?sector].
 
 
-# 5.3.2 Check that aircraft is planned - TODO: pipeline implementation
+# 5.3.2 Check that aircraft is planned [DONE - pipeline]
 
 #The aircraft is planned if any of its planned route points lie within the given sector.
 # Za svaku točku rute (plan leta dobijemo cijeli
@@ -387,6 +387,7 @@
 # tj. dodati trojku [?flight, :aircraftIsPlanned, ?sector] kad postoji točka na ruti koja se nalazi u danom sektoru ?sector.
 # Eventualno, dodati cijeli plan leta u graf i onda napraviti pravilo koje za svaku točku leta provjerava nalazi li se u sektoru. 
 # Sve to prije prvog timestampa u sklopu inicijalnih pravila. Tad za let znamo je li planiran. Što ako se plan mijenja?
+
 
 # 5.3.3 Check that aircraft has sent the initial call (via datalink)
 # TODO: MISSING datalink 

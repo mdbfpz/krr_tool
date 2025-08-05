@@ -82,14 +82,16 @@
 
 # TODO- za potetntial conflicts treba u pipelineu implementirati skriptu jer je potrebno usporediti svaki par točaka
 
+
 # 5.9.3 Determine future number of sector entries 
 # todo - prekomplicirano za datalog
 
+
 # 5.9.4 Determine sector air traffic complexity (ML module) 
-# trebamo li opce pravilo za ovo?
+# Možemo li integrirati SKAI labsov modul u pipeline?
+
 
 # 5.9.5 Determine plausibility of traffic complexity assessment 
-
 [?timestamp2, :hasHighPlausibilty, ?highPlausibilityIndicator] :-
     [?timestamp1, :next, ?timestamp2],
     [?timestamp1, :assumedAircraft, ?prevNumOfAssumedAircraft], # prev

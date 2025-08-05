@@ -165,8 +165,8 @@
     ).
 
 
-# TODO: add ?indicator to the rules below?
 # 5.7.2 Check if change of frequency is issued to A/C (via datalink)
+# TODO: MISSING datalink
 [?flight, :changeOfFrequencyIssuedToAC, ?indicator] :-
     [?flight, :datalink, ?frequencyChange],
     [?frequencyChange, :status, ?value],
@@ -180,8 +180,8 @@
     ).
 
 
-
-# 5.7.3 Change aircraft status to transferred 
+# 5.7.3 Change aircraft status to transferred
+# TODO: MISSING coordination status
 [?flight, :coordinationStatusCanBeChangedToTransferred, ?indicator] :- 
     [?flight, fx:coordinationStatus, ?coordStatus],
     BIND(

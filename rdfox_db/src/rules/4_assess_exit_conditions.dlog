@@ -4,14 +4,6 @@
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 
 # 5.4.1. Check that aircraft is flying towards the exit point
-
-# It only makes sense to look if the A/C is flying towards exit point of a sector when it 
-# is inside this sector, otherwise we look if it's flying towards entry point.
-
-# TODO: we need to add triple [?flight, :exitPoint, ?point] to the graph using the pipilene.
-# This point is the last point in the desired branch of the given flight plan. ?point will be a node 
-# inside desired or agreed branch (in case there is a change of exit point during the flight)
-
 [?flight, :isFlyingTowardsExitPoint, ?flyingTowardsExitPointIndicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -19,17 +11,26 @@
     [?flight, :isFlyingTowardsClearedPoint, 1], # Task 1.10
 
     [?flight, :agreedElement, ?clearedElement],
-    [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
-    [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
-    [?clearedDesignatedPoint, fb:designator, ?clearValue],
+    [?clearedElement, fx:point4D, ?clearedPoint4D],
+    [?clearedPoint4D, fx:position, ?clearedPosition],
+    [?clearedPosition, fb:pos, ?clearedPos],
+    [?clearedPos, fb:lat, ?clearedLat],
+    [?clearedPos, fb:lon, ?clearedLon],
+    # [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
+    # [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
+    # [?clearedDesignatedPoint, fb:designator, ?clearValue],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline (we have this in flight plan!)
-    [?exitPointElement, fx:elementStartPoint, ?exitPointElementSP],
-    [?exitPointElementSP, fb:designatedPoint, ?exitDesignatedPoint],
-    [?exitDesignatedPoint, fb:designator, ?exitValue],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:position, ?exitPosition],
+    [?exitPosition, fb:pos, ?exitPos],
+    [?exitPos, fb:lat, ?exitLat],
+    [?exitPos, fb:lon, ?exitLon],
+
+    # TODO: Ask Ivan - do we need to have some tolerance (e.g. distance between the points is below some threshold)?
     BIND(
         IF(
-            ?clearValue = ?exitValue,
+            ?clearedLat = ?exitLat && ?clearedLon = ?exitLon,
             1,
             0
         )
@@ -54,22 +55,23 @@
     [?clearedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
 
     BIND(
         IF(
-            ?exitLevel = 0, # TODO: perhaps it won't be zero if missing
+            ?exitFL = 0, # TODO: perhaps it won't be zero if missing
             ?clearedFL,
-            ?exitLevel
+            ?exitFL
         )
-        AS ?sectorExitLevel
+        AS ?sectorExitFL
     ),
     BIND(
-        ?sectorExitLevel - ?currFL
+        ?sectorExitFL - ?currFL
         AS ?diffLevel
     ),
     BIND(
@@ -110,22 +112,23 @@
     [?clearedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
 
     BIND(
         IF(
-            ?exitLevel = 0,
+            ?exitFL = 0,
             ?clearedFL,
-            ?exitLevel
+            ?exitFL
         )
-        AS ?sectorExitLevel
+        AS ?sectorExitFL
     ),
     BIND(
-        ?sectorExitLevel - ?currFL
+        ?sectorExitFL - ?currFL
         AS ?a
     ),
     BIND(
@@ -165,22 +168,23 @@
     [?clearedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
 
     BIND(
         IF(
-            ?exitLevel = 0,
+            ?exitFL = 0,
             ?clearedFL,
-            ?exitLevel
+            ?exitFL
         )
-        AS ?sectorExitLevel
+        AS ?sectorExitFL
     ),
     BIND(
-        ?sectorExitLevel - ?currFL
+        ?sectorExitFL - ?currFL
         AS ?a
     ),
     BIND(
@@ -220,22 +224,23 @@
     [?clearedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
 
     BIND(
         IF(
-            ?exitLevel = 0,
+            ?exitFL = 0,
             ?clearedFL,
-            ?exitLevel
+            ?exitFL
         )
-        AS ?sectorExitLevel
+        AS ?sectorExitFL
     ),
     BIND(
-        ?sectorExitLevel - ?currFL
+        ?sectorExitFL - ?currFL
         AS ?a
     ),
     BIND(
@@ -275,22 +280,23 @@
     [?clearedPoint4D, fx:level, ?clearedLevel],
     [?clearedLevel, fb:flightLevel, ?clearedFL],
 
-    [?flight, :exitPointElement, ?exitPointElement], # TODO: create this in pipeline
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
+    [?exitLevel, fb:flightLevel, ?exitFL],
 
     [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
 
     BIND(
         IF(
-            ?exitLevel = 0,
+            ?exitFL = 0,
             ?clearedFL,
-            ?exitLevel
+            ?exitFL
         )
-        AS ?sectorExitLevel
+        AS ?sectorExitFL
     ),
     BIND(
-        ?sectorExitLevel - ?currFL
+        ?sectorExitFL - ?currFL
         AS ?a
     ),
     BIND(

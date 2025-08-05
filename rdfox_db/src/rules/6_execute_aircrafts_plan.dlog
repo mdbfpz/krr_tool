@@ -57,6 +57,7 @@
         AS ?climbIndicator
     ).
 
+
 #5.6.2 Detect aircraft that have to climb/descend to exit FL 
 
 [?flight, :isAtExitFL, ?atExitFLIndicator] :-
@@ -64,10 +65,12 @@
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
-    [?flight, :exitPointElement, ?exitPointElement],
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
+
     BIND(
         IF(
             ?currFL = ?exitFL,
@@ -83,9 +86,10 @@
     [?currElement,fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
-    [?flight, :exitPointElement, ?exitPointElement],
-    [?exitPointElement, fx:point4D, ?exitPoint4D],
-    [?exitPoint4D, fx:level, ?exitLevel],
+
+    [?flight, fx:enRoute, ?enRoute],
+    [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
+    [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
     
     BIND(
@@ -101,6 +105,7 @@
 [?flight, :hasToClimbToExitFL,?climbExitIndicator] :- 
     [?flight, :isAtExitFL,?atExitFLIndicator],
     [?flight, :hasToDescendFL,?descendFLIndicator],
+    
     BIND(
         IF(
             ?atExitFLIndicator = 0 && ?descendFLIndicator = 0,
@@ -112,7 +117,7 @@
     ).
 
 
-#5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module)   - not implemented in Java
+#5.6.3 Detect aircraft that will reach top of descent within the Sector (ML module) - not implemented in Java
 
 #5.6.4 Detect if planned trajectory passes through restricted airspace
 # TODO: MISSING speed
