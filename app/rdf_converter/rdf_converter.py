@@ -475,6 +475,7 @@ class RDFConverter:
                     self._calculate_distance_to_sector(flight_uri, key_data["Flight"])
                     self._check_aircraft_is_planned(flight_uri, key_data["Flight"])
                     self._distance_to_intersection_point(flight_uri, key_data["Flight"])
+                    self._distance_to_exit_point(flight_uri, key_data["Flight"])
 
             elif key == "HMI":
                 # Process HMI data
@@ -1159,8 +1160,17 @@ class RDFConverter:
                             Literal(dist, datatype=XSD.float)))
         
         return
+    def _distance_to_exit_point(self,flight_uri, data):
+        current_point_lat, current_point_lon = self._get_current_point_coords(data)        
+        if current_point_lat is None or current_point_lon is None:
+            return   
+        print(data.keys())
+        exit_position = data.get("enRoute", {}).get("exitPoint", {}).get("pos", {})         
+        exit_lat, exit_lon = exit_position["pos"]["lat"], exit_position["pos"]["lon"]                      
+        dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,exit_lat,exit_lon)
+        self.graph.add((flight_uri, FIXM.distanceToExitPoint, 
+                            Literal(dist, datatype=XSD.float)))
         
-
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################
@@ -1385,6 +1395,7 @@ class RDFConverter:
                 lon_value = coords["lon"]
                 
                 point_uri = URIRef(f"{surface_uri}_point_{point}")
+                self.graph.add((surface_uri, AIXM.point, point_uri))
                 self.graph.add((point_uri, AIXM.lat, Literal(lat_value, datatype=XSD.integer)))
                 self.graph.add((point_uri, AIXM.lon, Literal(lon_value, datatype=XSD.integer)))
      
