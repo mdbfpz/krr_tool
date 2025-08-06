@@ -5,30 +5,30 @@
 # Create transitivity closure between different (current, agreed, desired, predicted) 
 # route-trajectory elements and flights.
 
-[?flight, :currentElement, ?currentElement] :-
+[?flight, :currentElement, ?currentElement] :-  # [DONE]
     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
     [?routeTrajectoryContainer, fx:current, ?currentRouteTrajectory],
     [?currentRouteTrajectory, fx:element, ?currentElement].
 
-[?flight, :agreedElement, ?agreedElement] :-
+[?flight, :agreedElement, ?agreedElement] :-  # [DONE]
     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
     [?routeTrajectoryContainer, fx:agreed, ?agreedRouteTrajectory],
     [?agreedRouteTrajectory, fx:element, ?agreedElement].
 
-[?flight, :desiredElement, ?desiredElement] :-
+[?flight, :desiredElement, ?desiredElement] :-  # [DONE]
     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
     [?routeTrajectoryContainer, fx:desired, ?desiredRouteTrajectory],
     [?desiredRouteTrajectory, fx:element, ?desiredElement].
 
 # TODO: We probably don't need this (delete?)
-[?flight, :predictedElement, ?predictedElement] :-
-    [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
-    [?routeTrajectoryContainer, :predicted, ?predictedRouteTrajectory],
-    [?predictedRouteTrajectory, fx:element, ?predictedElement].
+# [?flight, :predictedElement, ?predictedElement] :-
+#     [?flight, fx:routeTrajectoryGroup, ?routeTrajectoryContainer],
+#     [?routeTrajectoryContainer, :predicted, ?predictedRouteTrajectory],
+#     [?predictedRouteTrajectory, fx:element, ?predictedElement].
 
 
 # Assign :next predicate to consecutive timestamps
-[?timestamp1, :next, ?timestamp2] :-
+[?timestamp1, :next, ?timestamp2] :-    # [DONE]
     [?timestamp1, :timestamp, ?time1],
     [?timestamp2, :timestamp, ?time2],
     FILTER(?timestamp1 != ?timestamp2 && ?time1 < ?time2),
@@ -41,7 +41,7 @@
 # and next cleared elements. By default, elements are copied between timestamps, meaning
 # we can't just use the previous timestamp for some rules (e.g. 1.16.), but timestamp with
 # previous different cleared element.
-[?prevT, :nextClearedPosition, ?nextT] :-
+[?prevT, :nextClearedPosition, ?nextT] :-   # [DONE]
     [?prevT, :timestamp, ?time1],
     [?nextT, :timestamp, ?time2],
     FILTER(?prevT != ?nextT && ?time1 < ?time2),

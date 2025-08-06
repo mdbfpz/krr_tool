@@ -59,8 +59,7 @@
 
 
 #5.6.2 Detect aircraft that have to climb/descend to exit FL 
-
-[?flight, :isAtExitFL, ?atExitFLIndicator] :-
+[?flight, :isAtExitFL, ?atExitFLIndicator] :-   # [DONE]
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
@@ -80,10 +79,9 @@
         AS ?atExitFLIndicator
     ).
 
-
-[?flight, :hasToDescendToExitFL, ?descendToExitFLIndicator] :-
+[?flight, :hasToDescendToExitFL, ?descendToExitFLIndicator] :-  # [DONE]
     [?flight, :currentElement, ?currElement],
-    [?currElement,fx:point4D, ?currPoint4D],
+    [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
 
@@ -101,10 +99,9 @@
         AS ?descendToExitFLIndicator
     ).
 
-
-[?flight, :hasToClimbToExitFL,?climbExitIndicator] :- 
-    [?flight, :isAtExitFL,?atExitFLIndicator],
-    [?flight, :hasToDescendFL,?descendFLIndicator],
+[?flight, :hasToClimbToExitFL,?climbExitIndicator] :-   # [DONE]
+    [?flight, :isAtExitFL, ?atExitFLIndicator],
+    [?flight, :hasToDescendToExitFL, ?descendFLIndicator],
     
     BIND(
         IF(
@@ -139,7 +136,7 @@
     # gledamo kao da se pretvorba headinga obavlja u pipelineu
     #    linija 60 - linija 86
     # 
-    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint],
     BIND(
         ?currSpeed * 0.514444444
         AS ?currSpeedInMS
@@ -173,7 +170,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL], #TODO: treba li ovo?
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToIntersectionPoint, ?distToIntersectionPoint],
     BIND(
         ?currSpeed * 0.514444444
         AS ?currSpeedInMS

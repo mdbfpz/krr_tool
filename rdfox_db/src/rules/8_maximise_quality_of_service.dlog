@@ -4,8 +4,7 @@
 @prefix : <https://aware-sesar.eu/>.
 
 #5.8.1 Detect direct-to candidates
-# TODO: ovo treba doradu - pogledati u controller tools dijagram
-
+# TODO: ovo treba doradu - pogledati u controller tools dijagram + vidjeti s Ivanom
 [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator] :-
     #tu nam je potreban izracun flagova u pipelineu - računaju se azimuti između parova tocaka za svaki sektor zasebno
     #pravim se da u east i west flag imam rezultate
@@ -38,6 +37,8 @@
    
 
 #5.8.2 Determine military airspace availability
+# TODO: vidjet s Ivanom - imamo slične podatke u AIXMu
+# TODO: Missing - activation status
 [?flight, :westMilitaryAirspace, ?airspace] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -63,6 +64,7 @@
         AS ?westMilitaryAreaActiveIndicator
     ).
 
+# TODO: Missing - activation status
 [?flight, :isEastMilitaryAreaActive,?eastMilitaryAreaActiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
@@ -76,8 +78,7 @@
         AS ?eastMilitaryAreaActiveIndicator
     ).
 
-
-
+# TODO: Missing - activation status
 [?flight, :isWestMilitaryAreaInactive,?westMilitaryAreaInactiveIndicator] :-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
@@ -91,6 +92,7 @@
         AS ?westMilitaryAreaInactiveIndicator
     ).
 
+# TODO: Missing - activation status
 [?flight, :isEastMilitaryAreaInactive,?eastMilitaryAreaInactiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],

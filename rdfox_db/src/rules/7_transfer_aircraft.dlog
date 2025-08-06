@@ -80,6 +80,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :warnATCOAboutXFLBeforeTransferringFlight, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],
@@ -137,6 +138,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :aircraftDoesNotNeedToBeTransfeered, ?indicator] :-
     [?flight, :aircraftAlreadyTransferred, 0],
     [?flight, :aircraftNotYetAssumed, 0],

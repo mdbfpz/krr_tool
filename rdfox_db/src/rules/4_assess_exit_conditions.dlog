@@ -8,7 +8,7 @@
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
 
-    [?flight, :isFlyingTowardsClearedPoint, 1], # Task 1.10
+    [?flight, :flyingToClearedPoint, 1], # Task 1.10
 
     [?flight, :agreedElement, ?clearedElement],
     [?clearedElement, fx:point4D, ?clearedPoint4D],
@@ -16,9 +16,6 @@
     [?clearedPosition, fb:pos, ?clearedPos],
     [?clearedPos, fb:lat, ?clearedLat],
     [?clearedPos, fb:lon, ?clearedLon],
-    # [?clearedElement, fx:elementStartPoint, ?clearedElementSP],
-    # [?clearedElementSP, fb:designatedPoint, ?clearedDesignatedPoint],
-    # [?clearedDesignatedPoint, fb:designator, ?clearValue],
 
     [?flight, fx:enRoute, ?enRoute],
     [?enRoute, fx:boundaryCrossingCoordination, ?boundaryCrossingCoordination],
@@ -60,7 +57,7 @@
     [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
 
-    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
 
     BIND(
         IF(
@@ -97,6 +94,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :climbToExitFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -117,7 +115,7 @@
     [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
 
-    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
 
     BIND(
         IF(
@@ -153,6 +151,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :aircraftWillNotReachExitPointOnRequiredFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -173,7 +172,7 @@
     [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
 
-    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
 
     BIND(
         IF(
@@ -209,6 +208,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :descendToExitFL, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -229,7 +229,7 @@
     [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
 
-    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
 
     BIND(
         IF(
@@ -265,6 +265,7 @@
         AS ?indicator
     ).
 
+# TODO: MISSING speed
 [?flight, :expediteDescend, ?indicator] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -285,7 +286,7 @@
     [?boundaryCrossingCoordination, fx:level, ?exitLevel],
     [?exitLevel, fb:flightLevel, ?exitFL],
 
-    [?flight, :distanceToExitPoint, ?distToExitPoint], # TODO: implement this in pipeline
+    [?flight, :distanceToExitPoint, ?distToExitPoint],
 
     BIND(
         IF(

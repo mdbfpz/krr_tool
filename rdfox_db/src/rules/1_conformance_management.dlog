@@ -228,7 +228,8 @@
 # Turning towards:
 # U javi je krivo implementirano - primjer za towards: prev=20, curr=30, clear=40 i prev=20, curr=50, clear=40. 
 # Izmjena: prevH < currH < clearedH   OR   prevH > currH > clearedH
-#TODO: Missing - heading
+
+# TODO: Missing - heading
 [?flight, :isTurningTowardsClearedHeading, ?indicator] :-
     [?flight, :isClearedHeadingAssigned, 1],
     [?flight, :isHeadingClearenceJustReceived, 0],
@@ -364,7 +365,6 @@
         AS ?indicator
     ).
 
-# TODO: add ?indicator here as well?
 #TODO: Missing - heading
 [?flight, :isMaintainingClearedHeading, ?indicator] :-
     # Extract current and cleared elements for the flight at each timestamp
@@ -733,7 +733,7 @@
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    [?flight, :toleranceAzimuth, ?toleranceAziValue],   #TODO: add toleranceAzimuth through the pipeline
+    [?flight, :toleranceAzimuth, ?toleranceAziValue],
 
     FILTER(
         ?currHeading <= ?clearedHeading + ?toleranceAziValue &&
@@ -757,7 +757,7 @@
     [?clearedPoint4D, fx:extension, ?clearedPointExtension],
     [?clearedPointExtension, :heading, ?clearedHeading],
 
-    [?flight, :toleranceAzimuth, ?toleranceAziValue],   #TODO: add toleranceAzimuth through the pipeline
+    [?flight, :toleranceAzimuth, ?toleranceAziValue],
 
     FILTER(
         ?currHeading > ?clearedHeading + ?toleranceAziValue ||
@@ -811,10 +811,8 @@
         AS ?clrHeading
     ),
     
-    # TODO: add this through the pipeline (dist between curr and clear point)
     [?flight2, :distanceToClearedPoint, ?currDistToClearedPoint],
     [?flight1, :distanceToClearedPoint, ?prevDistToClearedPoint],
-    # TODO: add toleranceAzimuth through the pipeline
     [?flight2, :toleranceAzimuth, ?toleranceAziValue],
     BIND(
         IF(
@@ -864,7 +862,7 @@
     # This should be present in the Cleared branch if ?clearedHeading doesn't exist 
     [?clearedPointExtension, :calculatedHeading, ?calculatedHeading],
 
-    [?flight2, :turningToClearedPoint, 0],
+    [?flight2, :turningToClearedPoint, 0],  # TODO: ovdje je nešto krivo, to se pokušava definirati u headu pravila.
 
     BIND(
         COALESCE(?clearedHeading, ?calculatedHeading) 
@@ -1329,8 +1327,7 @@
 # Ovo detaljno provjeriti i istestirati! Računamo udaljenost između točke trenutne pozicije X i segmenta AB, pri čemu su 
 # A i B prethodna i iduća cleared točka (ako nisu naznačene, onda se radi o točkama po planu leta). Također, flight level gledamo klasično.
 
-# [DONE]
-[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
+[?flight, :isFLDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-     # [DONE]
 # Extract current and agreed elements for the flight
     [?flight, :currentElement, ?currElement],
     [?flight, :agreedElement, ?agreedElement],
@@ -1351,8 +1348,7 @@
         AS ?indicator
     ).
 
-# [DONE - but check semantic correctness with Ivan]
-[?flight2, :isDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-
+[?flight2, :isDeviationFrom3DtrajectoryWithinTolerance, ?indicator] :-  # [DONE - but check semantic correctness with Ivan]
     [?flight2, :isFLDeviationFrom3DtrajectoryWithinTolerance, 1],
     # Identify previous cleared position before next cleared position
     [?prevT, :nextClearedPosition, ?currT], 

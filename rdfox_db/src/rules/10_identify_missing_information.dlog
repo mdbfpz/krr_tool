@@ -18,8 +18,8 @@
     ).
 
 
-
 #5.10.2 Check situation at destination airport
+# TODO: Missing - operational status
 [?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-   
     [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:operationalStatus, ?operationalStatus],    
@@ -32,6 +32,7 @@
         AS ?airportOpStatusIndicator
     ).
 
+# TODO: Missing - airport availability
 [?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
     [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:warning, ?warning],    
@@ -54,21 +55,24 @@
     [?aerodrome, fx:locationIndicator, ?locationIndicator], # TODO: treba li ići u "fb"? treba!
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
+# TODO: MISSING locationIndicatorICAO?
 [?flight, :departureAirportHeliport, ?airportHeliport] :-
     [?flight, fx:departure, ?departure],
     [?departure, fx:departureAerodrome, ?aerodrome],
     [?aerodrome, fx:locationIndicator, ?locationIndicator],
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
-#5.10.3 check situation at alternate airport
 
+#5.10.3 check situation at alternate airport
 #spojiti flight/alternateAerodrome s airportHeliport
+# TODO: MISSING locationIndicatorICAO?
 [?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-
     [?flight, fx:arrival, ?arrival],
     [?arrival, fx:destinationAerodromeAlternate, ?aerodrome],
     [?aerodrome, fx:locationIndicator, ?locationIndicator],
     [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
 
+# TODO: MISSING locationIndicatorICAO?
 [?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-
     [?flight, fx:departure, ?departure],
     [?departure, fx:departureAerodromeAlternate, ?aerodrome],

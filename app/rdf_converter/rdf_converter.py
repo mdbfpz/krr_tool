@@ -216,8 +216,8 @@ class RDFConverter:
         velocity_uri = URIRef(f"{point4d_uri}_predictedAirspeed")
         self.graph.add((velocity_uri, RDF.type, FIXM.predictedAirspeed))
         self.graph.add((point4d_uri, FIXM.predictedAirspeed, velocity_uri))
-        self._add_literal(velocity_uri, FIXM.Vx, velocity_data.get("VxMs"), datatype=XSD.decimal)
-        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("VyMs"), datatype=XSD.decimal)
+        self._add_literal(velocity_uri, FIXM.Vx, velocity_data.get("VxMs"), datatype=XSD.decimal)   # TODO: this is not FIXM
+        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("VyMs"), datatype=XSD.decimal)   # TODO: this is not FIXM
 
     def _process_clearance(self, point4d_uri, point4d_data):
         """Process clearance info and add to the graph."""
@@ -981,9 +981,9 @@ class RDFConverter:
                 element_uri = URIRef(f"{branch_uri}_element")
                 self.graph.add((branch_uri, FIXM.element, element_uri))
                 self.graph.add((element_uri, RDF.type, FIXM.Element))
-                self.graph.add((element_uri, FIXM.isDirectTo, Literal(1, datatype=XSD.integer)))
+                self.graph.add((element_uri, BASE.isDirectTo, Literal(1, datatype=XSD.integer)))
    
-    def _process_tolerance_azimuth(self,flight_uri, data):
+    def _process_tolerance_azimuth(self, flight_uri, data):
         """point1 is current position, point2 is cleared position"""
 
         current_point_lat = current_point_lon = None
@@ -994,15 +994,15 @@ class RDFConverter:
             current_point = current_branch.get("element", {}).get("point4D", {}) 
             if current_point is not None:
                 current_point_lat, current_point_lon = current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"]
-                
+
         cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D", {})
         if cleared_point is not None:
             cleared_point_lat, cleared_point_lon = cleared_point["position"]["pos"]["lat"], cleared_point["position"]["pos"]["lon"] 
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             tolerance_azi = self.geodesic_service.calculate_tolerance_azi(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon,2.5*1825)
-            self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
-            self.graph.add((flight_uri, FIXM.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
+            self.graph.add((flight_uri, BASE.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
+            self.graph.add((flight_uri, BASE.toleranceAzimuth, Literal(tolerance_azi, datatype=XSD.float)))
         
     def _process_distance_to_cleared_point(self, flight_uri,data):
         """dist between curr and clear point - used in 1.10 """
@@ -1022,7 +1022,7 @@ class RDFConverter:
          
         if current_point_lat is not None and current_point_lon is not None and cleared_point_lat is not None and cleared_point_lon is not None:                   
             distance = self.geodesic_service.geodesic_distance(current_point_lat, current_point_lon, cleared_point_lat,cleared_point_lon)
-            self.graph.add((flight_uri, FIXM.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))
+            self.graph.add((flight_uri, BASE.distanceToClearedPoint, Literal(distance, datatype=XSD.float)))
 
     def _get_current_point_coords(self, data):
         """Helper metoda za dohvaćanje trenutnih koordinata"""
@@ -1064,7 +1064,7 @@ class RDFConverter:
                 current_point_lat, current_point_lon, points_list):
                 data["withinSector"] = sector_name
                 airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
-                self.graph.add((flight_uri, FIXM.withinSectorHorizontally, airspace_volume_uri))
+                self.graph.add((flight_uri, BASE.withinSectorHorizontally, airspace_volume_uri))
                 break  # Prekidamo jer smo našli sektor
 
                 
@@ -1092,7 +1092,7 @@ class RDFConverter:
         if points_list:
             dist = self.geodesic_service.calculate_distance_to_sector(
                 current_point_lat, current_point_lon, points_list)
-            self.graph.add((flight_uri, FIXM.distanceToClosestHorizontalBoundary, 
+            self.graph.add((flight_uri, BASE.distanceToClosestHorizontalBoundary, 
                         Literal(dist, datatype=XSD.float)))
             
     
@@ -1137,7 +1137,7 @@ class RDFConverter:
                         curr_record_point_lat, curr_record_point_lon, points_list)):
                     
                     airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
-                    self.graph.add((flight_uri, FIXM.aircraftIsPlanned, airspace_volume_uri))
+                    self.graph.add((flight_uri, BASE.aircraftIsPlanned, airspace_volume_uri))
                     processed_sectors.add(sector_name)       
                     
     def _distance_to_intersection_point(self, flight_uri, data):
@@ -1155,7 +1155,7 @@ class RDFConverter:
             
             dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,intersection[0][1], intersection[0][0])
             #print(f"distance to intersect = {dist}")
-            self.graph.add((flight_uri, FIXM.distanceToIntersectionPoint, 
+            self.graph.add((flight_uri, BASE.distanceToIntersectionPoint, 
                             Literal(dist, datatype=XSD.float)))
         
         return

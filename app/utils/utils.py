@@ -373,7 +373,7 @@ class GeodesicService:
         polygon, _ = GeodesicService.create_polygon_from_coords(polygon_coords)
         normalized_line_coords = [(coord[1], coord[0]) for coord in line_coords]
         line = LineString(normalized_line_coords) # TODO: create a method for line creation since it is used often everywhere
-        print(f"polygon.area ={polygon.area}")
+        # print(f"polygon.area ={polygon.area}")
         """ # Visualization
         # Plot the polygon
         poly_x, poly_y = zip(*polygon.exterior.coords)
@@ -422,8 +422,8 @@ class GeodesicService:
         elif intersection.geom_type == 'LineString':
             list_of_intersection_candidates = list(intersection.coords)  # bez dodatnih zagrada
             
-        print(f"Final result structure: {list_of_intersection_candidates}")
-        print(f"First element type: {type(list_of_intersection_candidates[0]) if list_of_intersection_candidates else 'Empty'}")
+        # print(f"Final result structure: {list_of_intersection_candidates}")
+        # print(f"First element type: {type(list_of_intersection_candidates[0]) if list_of_intersection_candidates else 'Empty'}")
         return list_of_intersection_candidates
 
     @staticmethod

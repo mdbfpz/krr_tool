@@ -167,7 +167,7 @@
     
     BIND(
         IF(
-            ABS(?currPosition - ?predPosition) <= 2.5 &&        # TOOD: ovo neće raditi jer ne možemo oduzimati čvorove, treba implementirati funkciju za oduzimanje koordinata (udalenost između dvije točke - uzmemo iz pipelinea?)
+            ABS(?currPosition - ?predPosition) <= 2.5 &&        # TODO: ovo neće raditi jer ne možemo oduzimati čvorove, treba implementirati funkciju za oduzimanje koordinata (udalenost između dvije točke - uzmemo iz pipelinea?)
             ABS(?currTime - ?predTime) <= 30 && 
             ABS(?currFL - ?predFL) <= 100,
             1,

@@ -3,7 +3,6 @@
 @prefix ax: <https://aware-sesar.eu/aixm/5.1.1/>.
 @prefix : <https://aware-sesar.eu/>.
 
-# TODO: add ?indicator to all helper rules?
 # TODO: MISSING coordination status
 [?flight, :isAircraftAlreadyAssumed, ?aircraftAlreadyAssumedIndicator] :-
     [?flight, fx:coordinationStatus, ?coordStatus],
@@ -31,8 +30,7 @@
     ).
 
 # This checks that the aircraft's current position is within the given sector's upper and lower limit.
-# [DONE]
-[?flight, :withinSectorVertically, ?sector] :-
+[?flight, :withinSectorVertically, ?sector] :-  # [DONE]
     [?flight, :currentElement, ?currElement],
     [?currElement, fx:point4D, ?currPoint4D],
     [?currPoint4D, fx:level, ?currLevel],
@@ -71,8 +69,8 @@
     ).
 
 # This checks that the aircraft's current position is within the 3D sector - both horizontally and vertically.
-[?flight, :withinSector, ?sector] :-
-    [?flight, :withinSectorHorizontally, ?sector], # TODO: ovo implementirati u pipelineu (je li točka unutar poligona)
+[?flight, :withinSector, ?sector] :-    # [DONE]
+    [?flight, :withinSectorHorizontally, ?sector],
     [?flight, :withinSectorVertically, ?sector].
 
 # 5.2.1. Check that aircraft is close to Sector boundary
@@ -86,7 +84,7 @@
     [?currPoint4D, fx:level, ?currLevel],
     [?currLevel, fb:flightLevel, ?currFL],
     [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
-    [?flight, :distanceToClosestHorizontalBoundary, ?minDist], # Horizontal distance to 2D sector - TODO: iskoristiti gotov kod iz jave i ubaciti u pipeline
+    [?flight, :distanceToClosestHorizontalBoundary, ?minDist], # Horizontal distance to 2D sector
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -133,14 +131,15 @@
 
 # When the aircraft is planned:
 [?flight, :plannedAircraftCloseToSectorBoundary, ?sector] :-
-    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output
+    [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :aircraftCloseToSectorBoundary, ?sector].
 
 # When the aircraft is not planned:
 [?flight, :notPlannedAircraftCloseToSectorBoundary, ?sector] :-
-    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output
+    NOT [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :aircraftCloseToSectorBoundary, ?sector].
 
+# TODO: Check if this rule is needed - similar to 5.2.3 last rule
 [?flight, :aircraftNotCloseToSectorBoundary, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -240,15 +239,16 @@
 
 # When the aircraft is planned:
 [?flight, :plannedAircraftApproachingToSectorBoundary, ?sector] :-
-    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output,
+    [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :aircraftApproachingToSectorBoundary, ?sector].
 
 # When the aircraft is not planned:
 [?flight, :notPlannedAircraftApproachingToSectorBoundary, ?sector] :-
-    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output,
+    NOT [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :aircraftApproachingToSectorBoundary, ?sector].
 
-[?flight, :aircraftNotApproacingToSectorBoundary, ?sector] :-
+# TODO: Check if this rule is needed - similar to 5.2.3 last rule
+[?flight, :aircraftNotApproachingToSectorBoundary, ?sector] :-
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
@@ -258,21 +258,23 @@
 
 # 5.2.3. Check that aircraft’s altitude is within the altitude band of the Sector
 # When the aircraft is planned:
-[?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-
-    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output,
+[?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-     # [DONE]
+    [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :withinSectorVertically, ?sector].
 
 # When the aircraft is not planned:
-[?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-
-    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output,
+[?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector] :-    # [DONE]
+    NOT [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :withinSectorVertically, ?sector].
 
-[?flight, :aircraftAltitudeNotWithinSectorBandAltitude, ?sector] :-
-    [?aixmFeatures, :contains, ?airspace],
-    [?airspace, ax:geometryComponent, ?sector],
-    [?flight, :currentElement, ?currElement], # Some dummy binding to make the rule valid (using NOT needs positive case)
-    NOT [?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector],
-    NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
+# Does this rule mean that the aircraft is not within the altitude band of the sector? 
+# If so, we alredy have this rule, why using "planned" in this context?
+# [?flight, :aircraftAltitudeNotWithinSectorBandAltitude, ?sector] :-
+#     [?aixmFeatures, :contains, ?airspace],
+#     [?airspace, ax:geometryComponent, ?sector], # Dummy binding to make the rule valid (using "NOT" needs positive case)
+#     [?flight, :currentElement, ?currElement], # Dummy binding to make the rule valid (using "NOT" needs positive case)
+#     NOT [?flight, :plannedAircraftAltitudeWithinSectorBandAltitude, ?sector],
+#     NOT [?flight, :notPlannedAircraftAltitudeWithinSectorBandAltitude, ?sector].
 
 
 # 5.2.4. Check that aircraft’s altitude is approaching the Sector altitude
@@ -359,10 +361,10 @@
     [?airspace, ax:geometryComponent, ?sector],
     NOT [?flight, :withinSectorVertically, ?sector].
 
-[?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector] :-
-    [?flight, :isAircraftPlanned, 1],   # Task 5.3.2 output
+[?flight, :plannedAircraftIsApproachingSectorAltitude, ?sector] :-   # [DONE]
+    [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :approachingSectorAltitude, ?sector].
 
-[?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector] :-
-    [?flight, :isAircraftPlanned, 0],   # Task 5.3.2 output
+[?flight, :notPlannedAircraftIsApproachingSectorAltitude, ?sector] :-   # [DONE]
+    NOT [?flight, :aircraftIsPlanned, ?sector],
     [?flight, :approachingSectorAltitude, ?sector].
