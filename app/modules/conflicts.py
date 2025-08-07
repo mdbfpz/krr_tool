@@ -6,10 +6,10 @@ class ConflictDetection:
         """
         Extracts data from the data repository for conflict detection (CD).
         Gathers current position, flight level, predicted trajectory, cruise level,
-        waypoints, speed, and airport information for each flight at the given timestamp.
+        waypoints, speed, airport and within_sector information for each flight at the given timestamp.
         """
         state_data = data_repository.get(timestamp, {})
-        cd_data = {timestamp: {}} # TODO: change to list because there will be many flights used for CD
+        cd_data = {timestamp: []}
 
         for flight_key, flight_data in state_data.items():
             # Ensure essential keys exist before accessing
@@ -22,6 +22,9 @@ class ConflictDetection:
             if not isinstance(rtg, dict):
                 return
 
+            # TODO: tražimo podskup prediktane trajektorije od trenutnog timestampa (zadanog kroz input) pa nadalje.
+            ####### To je potrebno za sve avione, nekad će timestamp input biti početak trajetorije za neki avion, 
+            ####### a za ostale ćemo raditi odrezivanje liste prediktane trajektorije.
             if "predicted" not in rtg or ("predicted" in rtg and not isinstance(rtg["predicted"], dict)):
                 continue # TODO: popraviti: u stvarnosti ne možemo ignorirati avione nego radimo CD za sve
             predicted_points = rtg["predicted"].get("element", [])
@@ -86,7 +89,9 @@ class ConflictDetection:
             alt_arrival = arrival.get("alternateAerodromeAlternate", {})
             alt_arrival_indicator = alt_arrival.get("locationIndicator") if isinstance(alt_arrival, dict) else None
 
-            cd_data[timestamp] = {
+            within_sector = flight.get("withinSector", None)
+
+            cd_data[timestamp].append({
                 "callsign": flight_key,
                 "current_pos": current_pos,
                 "current_fl": current_fl,
@@ -98,8 +103,9 @@ class ConflictDetection:
                 "cleared_waypoints": cleared_waypoints,
                 "departure_aerodrome_indicator": departure_indicator,
                 "arrival_aerodrome_indicator": arrival_indicator,
-                "arrival_aerodrome_alternate_indicator": alt_arrival_indicator
-            }
+                "arrival_aerodrome_alternate_indicator": alt_arrival_indicator,
+                "within_sector": within_sector
+            })
 
         return cd_data
 
@@ -120,6 +126,7 @@ class ConflictDetection:
         if conflicts:
             self.detections[timestamp] = conflicts"""
         return cd_data
+    
 
 class ConflictResolution:
     def __init__(self):

@@ -89,6 +89,7 @@ class Processor:
             # Use repo last state and pass info to the CD module
             timestamp = self.rdf_converter.last_timestamp
             out = self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
+            
             # This block is for Javier to work with the CD data
             """if len(next(iter(out.values()))) != 0:
                 cd_data.append(out)

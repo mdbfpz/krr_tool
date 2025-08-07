@@ -471,7 +471,7 @@ class RDFConverter:
                     self._process_flight(flight_uri, key_data["Flight"])
                     self._process_tolerance_azimuth(flight_uri, key_data["Flight"])
                     self._process_distance_to_cleared_point(flight_uri, key_data["Flight"])
-                    self._create_flight_sector_connection(flight_uri, key_data["Flight"])
+                    self._process_within_sector(flight_uri, key_data["Flight"])
                     self._calculate_distance_to_sector(flight_uri, key_data["Flight"])
                     self._check_aircraft_is_planned(flight_uri, key_data["Flight"])
                     self._distance_to_intersection_point(flight_uri, key_data["Flight"])
@@ -734,6 +734,49 @@ class RDFConverter:
         # Add cruisingLevel if available
         if cruising_level:
             predicted_data["cruisingLevel"] = cruising_level
+
+    def _update_within_sector(self, last_timestamp, flight_key):
+        """..."""
+
+        flight_entry = self.data_repository.get(last_timestamp, {}).get(flight_key, {})
+        if "Flight" not in flight_entry:
+            return
+
+        flight_data = flight_entry["Flight"]
+        current_point_lat, current_point_lon = self._get_current_point_coords(flight_data)
+        
+        if current_point_lat is None or current_point_lon is None:
+            return
+        """  
+        # Koristimo cache za brže pristupanje
+        if not hasattr(self, 'sector_points_cache'):
+            self.sector_points_cache = {} """
+        
+        for sector_name in self.aixm_data_repo["sectors"].keys():
+            # Ako cache nije napunjen za ovaj sektor, napravi ga
+            """ if sector_name not in self.sector_points_cache:
+                sector_data = self.aixm_data_repo["sectors"][sector_name]
+                points_list = []
+                for point_data in sector_data["addedVolumes"]["points"].values():
+                    points_list.append((point_data["lat"], point_data["lon"]))
+                self.sector_points_cache[sector_name] = points_list """
+            
+            points_list = self.sector_points_cache[sector_name]
+            
+            if points_list and self.geodesic_service.check_if_point_in_polygon(
+                current_point_lat, current_point_lon, points_list):
+                flight_data["withinSector"] = sector_name
+                break  # Prekidamo jer smo našli sektor
+
+    def _update_advanced_datalog_methods(self):
+        """..."""
+
+        last_state = self.data_repository.get(self.last_timestamp, {})
+        for flight_key, flight_data in last_state.items():
+            if "Flight" not in flight_data:
+                continue
+            self._update_within_sector(self.last_timestamp, flight_key)
+            # TODO: add other advanced datalog methods here
         
     def _update_data_repository_events(self, json_record):
         """
@@ -1027,6 +1070,7 @@ class RDFConverter:
 
     def _get_current_point_coords(self, data):
         """Helper metoda za dohvaćanje trenutnih koordinata"""
+
         if "current" not in data["routeTrajectoryGroup"]:
             return None, None
         
@@ -1040,35 +1084,12 @@ class RDFConverter:
             current_point.get("element", {}).get("point4D", {})["position"]["pos"]["lon"]
         )
     
-    def _create_flight_sector_connection(self, flight_uri, data):
-        current_point_lat, current_point_lon = self._get_current_point_coords(data)
-        
-        if current_point_lat is None or current_point_lon is None:
-            return
-        """  
-        # Koristimo cache za brže pristupanje
-        if not hasattr(self, 'sector_points_cache'):
-            self.sector_points_cache = {} """
-        
-        for sector_name in self.aixm_data_repo["sectors"].keys():
-            # Ako cache nije napunjen za ovaj sektor, napravi ga
-            """ if sector_name not in self.sector_points_cache:
-                sector_data = self.aixm_data_repo["sectors"][sector_name]
-                points_list = []
-                for point_data in sector_data["addedVolumes"]["points"].values():
-                    points_list.append((point_data["lat"], point_data["lon"]))
-                self.sector_points_cache[sector_name] = points_list """
-            
-            points_list = self.sector_points_cache[sector_name]
-            
-            if points_list and self.geodesic_service.check_if_point_in_polygon(
-                current_point_lat, current_point_lon, points_list):
-                data["withinSector"] = sector_name
-                airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
-                self.graph.add((flight_uri, BASE.withinSectorHorizontally, airspace_volume_uri))
-                break  # Prekidamo jer smo našli sektor
+    def _process_within_sector(self, flight_uri, flight_data):
+        sector_name = flight_data.get("withinSector", None)
+        if sector_name:
+            airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
+            self.graph.add((flight_uri, BASE.withinSectorHorizontally, airspace_volume_uri))
 
-                
     #calculate_distance_to_sector
     def _calculate_distance_to_sector(self, flight_uri, data):
         if "withinSector" not in data:
@@ -1164,7 +1185,7 @@ class RDFConverter:
         current_point_lat, current_point_lon = self._get_current_point_coords(data)        
         if current_point_lat is None or current_point_lon is None:
             return   
-        print(data.keys())
+        # print(data.keys())
         exit_position = data.get("enRoute", {}).get("exitPoint", {}).get("pos", {})         
         exit_lat, exit_lon = exit_position["pos"]["lat"], exit_position["pos"]["lon"]                      
         dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,exit_lat,exit_lon)
@@ -1445,9 +1466,12 @@ class RDFConverter:
                     self._process_runways(runway) """
         
         self._aixm_data_to_rdf()      
+
+
     #########################################################################################################
     ##########################################     MAIN METHODS     #########################################
     #########################################################################################################
+
 
     def convert_event_data(self, json_record):
         """Convert non-FIXM data to RDF graph."""
@@ -1477,15 +1501,16 @@ class RDFConverter:
             if "flight_plan" in data_record.keys():
                 self.convert_fixm_data(data_record)
                 # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
-            elif "directToPoint" in data_record.keys():
+            elif "directToPoint" in data_record.keys(): # TODO: ovo će možda biti u sklopu FIXM-a ili kao event data (slino kao track)
                 self._process_direct_to_point(data_record)
             # 2. case - Event data
             else:
                 self.convert_event_data(data_record)
                 # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
-        
+
+            self._update_advanced_datalog_methods()
+
             timestamp_data = {self.last_timestamp: self.data_repository[self.last_timestamp]}
-            # print(f"Converted data record:", timestamp_data)
             # Convert the repository to RDF triples
             self._repository_to_rdf(timestamp_data)
         else:
