@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC GLEX__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: GLEX__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Aug 05 2013                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Aug 05 2013                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 023.69 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 045.13                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    1A10             LO  250 300 80          250 320 85  80 300 250            0   0   0  GLEX__ /
+CD    1A10             AV  250 300 80          250 320 85  80 300 250            0   0   0  GLEX__ /
+CD    1A10             HI  250 300 80          250 320 85  80 300 250            0   0   0  GLEX__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

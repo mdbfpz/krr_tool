@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC Q9____.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: Q9____.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 16 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 16 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.22 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 004.76                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    9A               LO  120 120 35          150 150 35  35 170 170            0   0   0  Q9____ /
+CD    9A               AV  120 120 35          150 150 35  35 170 170            0   0   0  Q9____ /
+CD    9A               HI  120 120 35          150 150 35  35 170 170            0   0   0  Q9____ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC PAY1__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: PAY1__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: May 02 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: May 02 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.31 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 003.94                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    31T1             LO  140 135 35          215 205 41  46 240 240            0   0   0  PAY1__ /
+CD    31T1             AV  140 135 35          215 205 41  46 240 240            0   0   0  PAY1__ /
+CD    31T1             HI  140 135 35          215 205 41  46 240 240            0   0   0  PAY1__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

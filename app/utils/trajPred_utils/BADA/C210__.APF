@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C210__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C210__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Mar 06 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 06 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 000.98 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.72                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    210M             LO   93  87 18          148 135 25  33 155 155            0   0   0  C210__ /
+CD    210M             AV   93  87 18          148 135 25  33 155 155            0   0   0  C210__ /
+CD    210M             HI   93  87 18          148 135 25  33 155 155            0   0   0  C210__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

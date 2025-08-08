@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC A10___.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: A10___.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Nov 08 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Nov 08 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 012.70 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 023.13                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    DI0              LO  200 185 52          215 215 56  67 175 175            0   0   0  A10___ /
+CD    DI0              AV  200 185 52          215 215 56  67 175 175            0   0   0  A10___ /
+CD    DI0              HI  200 185 52          215 215 56  67 175 175            0   0   0  A10___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

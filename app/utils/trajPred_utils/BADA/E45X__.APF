@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC E45X__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: E45X__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Jul 18 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Jul 18 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 012.59 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 024.10                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    XR               LO  240 290 60          240 290 78  80 250 240            0   0   0  E45X__ /
+CD    XR               AV  240 290 60          240 290 78  80 250 240            0   0   0  E45X__ /
+CD    XR               HI  240 290 60          240 290 78  80 250 240            0   0   0  E45X__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC E300__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: E300__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 16 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 16 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 000.66 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 000.95                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    300L             LO   98  98 21          150 150 29  29 140 140            0   0   0  E300__ /
+CD    300L             AV   98  98 21          150 150 29  29 140 140            0   0   0  E300__ /
+CD    300L             HI   98  98 21          150 150 29  29 140 140            0   0   0  E300__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

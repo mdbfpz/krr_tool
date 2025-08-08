@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC HA4T__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: HA4T__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Mar 16 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 16 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 010.65 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 017.91                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    4000             LO  280 280 76          300 300 78  82 300 300            0   0   0  HA4T__ /
+CD    4000             AV  280 280 76          300 300 78  82 300 300            0   0   0  HA4T__ /
+CD    4000             HI  280 280 76          300 300 78  82 300 300            0   0   0  HA4T__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

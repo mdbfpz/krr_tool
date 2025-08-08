@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC GLF2__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: GLF2__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Aug 27 2018                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Aug 27 2018                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 016.86 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 029.71                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    680              LO  250 300 75          250 320 82  80 300 250            0   0   0  GLF2__ /
+CD    680              AV  250 300 75          250 320 82  80 300 250            0   0   0  GLF2__ /
+CD    680              HI  250 300 75          250 320 82  80 300 250            0   0   0  GLF2__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

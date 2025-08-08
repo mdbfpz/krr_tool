@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC P28R__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: P28R__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Mar 19 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 19 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 000.81 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.24                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    201              LO   90  90 19          129 129 21  30 146 146            0   0   0  P28R__ /
+CD    201              AV   90  90 19          129 129 21  30 146 146            0   0   0  P28R__ /
+CD    201              HI   90  90 19          129 129 21  30 146 146            0   0   0  P28R__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

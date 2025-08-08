@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC L410__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: L410__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Mar 04 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 04 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 003.96 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 006.60                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    E20              LO  135 135 30          165 165 31  37 167 167            0   0   0  L410__ /
+CD    E20              AV  135 135 30          165 165 31  37 167 167            0   0   0  L410__ /
+CD    E20              HI  135 135 30          165 165 31  37 167 167            0   0   0  L410__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

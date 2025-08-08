@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC AJET__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: AJET__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Oct 13 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Oct 13 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 003.55 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 007.00                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    A                LO  280 280 73          280 280 73  73 280 280            0   0   0  AJET__ /
+CD    A                AV  280 280 73          280 280 73  73 280 280            0   0   0  AJET__ /
+CD    A                HI  280 280 73          280 280 73  73 280 280            0   0   0  AJET__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

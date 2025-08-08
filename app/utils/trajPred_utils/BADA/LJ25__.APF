@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC LJ25__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: LJ25__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Feb 26 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Feb 26 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 003.60 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 006.80                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    25D              LO  300 300 70          250 310 77  81 300 250            0   0   0  LJ25__ /
+CD    25D              AV  300 300 70          250 310 77  81 300 250            0   0   0  LJ25__ /
+CD    25D              HI  300 300 70          250 310 77  81 300 250            0   0   0  LJ25__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

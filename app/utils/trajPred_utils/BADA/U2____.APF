@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC U2____.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: U2____.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Oct 06 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Oct 06 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 006.42 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 011.00                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    2                LO  160 160 69          170 220 72  75 200 200            0   0   0  U2____ /
+CD    2                AV  160 160 69          170 220 72  75 200 200            0   0   0  U2____ /
+CD    2                HI  160 160 69          170 220 72  75 200 200            0   0   0  U2____ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

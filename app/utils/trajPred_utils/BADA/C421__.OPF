@@ -1,0 +1,61 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C421__.OPF CCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                    /
+CC               AIRCRAFT PERFORMANCE OPERATIONAL FILE                /
+CC                                                                    /
+CC                                                                    /
+CC      File_name: C421__.OPF                                         /
+CC                                                                    /
+CC      Creation_date: Nov 28 2016                                    /
+CC                                                                    /
+CC      Modification_date: Mar 14 2019                                /
+CC                                                                    /
+CC                                                                    /
+CC====== Actype ======================================================/
+CD   C421__         2 engines    Piston                    L          /
+CC  Cessna 421C with GTSIO-520-N engines                  wake        /
+CC                                                                    /
+CC====== Mass (t) ====================================================/
+CC    reference      minimum      maximum     max payload  mass grad  /
+CD     .30840E+01   .21050E+01   .33790E+01   .94900E+00   .66347E+01 /
+CC====== Flight envelope =============================================/
+CC     VMO(KCAS)       MMO        Max.Alt       Hmax       temp grad  /
+CD     .23800E+03   .64000E+00   .30000E+05   .28328E+05   -.9385E+02 /
+CC====== Aerodynamics ================================================/
+CC Wing Area and Buffet coefficients (SIM)                            /
+CCndrst Surf(m2)     Clbo(M=0)       k          CM16                  /
+CD 5   .19980E+02   .00000E+00   .00000E+00   .00000E+00              /
+CC   Configuration characteristics                                    /
+CC n Phase  Name    Vstall(KCAS)    CD0          CD2        unused    /
+CD 1 CR   Clean     .79000E+02   .30000E-01   .78000E-01   .00000E+00 /
+CD 2 IC   Clean     .79000E+02   .00000E+00   .00000E+00   .00000E+00 /
+CD 3 TO   Clean     .79000E+02   .00000E+00   .00000E+00   .00000E+00 /
+CD 4 AP   Flap15    .76000E+02   .00000E+00   .00000E+00   .00000E+00 /
+CD 5 LD   Flap45    .71000E+02   .00000E+00   .00000E+00   .00000E+00 /
+CC   Spoiler                                                          /
+CD 1      RET                                                         /
+CD 2      EXT                                 .00000E+00   .00000E+00 /
+CC   Gear                                                             /
+CD 1      UP                                                          /
+CD 2      DOWN                   .00000E+00   .00000E+00   .00000E+00 /
+CC   Brakes                                                           /
+CD 1      OFF                                                         /
+CD 2      ON                                  .00000E+00   .00000E+00 /
+CC====== Engine Thrust ===============================================/
+CC         Max climb thrust coefficients (SIM)                        /
+CD     .64503E+04   .51625E+05   .30000E+06   .00000E+00   .86043E-02 /
+CC     Desc(low)    Desc(high)   Desc level   Desc(app)     Desc(ld)  /
+CD     .31352E+00   .35076E+00   .18593E+05   .17768E+00   .16162E+00 /
+CC     Desc CAS     Desc Mach     unused       unused       unused    /
+CD     .18000E+03   .49000E+00   .00000E+00   .00000E+00   .00000E+00 /
+CC====== Fuel Consumption ============================================/
+CC   Thrust Specific Fuel Consumption Coefficients                    /
+CD     .38084E+01   .00000E+00                                        /
+CC   Descent Fuel Flow Coefficients                                   /
+CD     .14426E+01   .00000E+00                                        /
+CC   Cruise Corr.    unused       unused       unused       unused    /
+CD     .45591E+00   .00000E+00   .00000E+00   .00000E+00   .00000E+00 /
+CC====== Ground ======================================================/
+CC        TOL          LDL        span         length       unused    /
+CD     .70800E+03   .69900E+03   .12530E+02   .11090E+02   .00000E+00 /
+CC====================================================================/
+FI                                                                    /

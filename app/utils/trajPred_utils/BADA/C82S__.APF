@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C82S__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C82S__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 30 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 30 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 000.91 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.40                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    T182T            LO   95  95 21          128 123 25  29 127 127            0   0   0  C82S__ /
+CD    T182T            AV   95  95 21          128 123 25  29 127 127            0   0   0  C82S__ /
+CD    T182T            HI   95  95 21          128 123 25  29 127 127            0   0   0  C82S__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

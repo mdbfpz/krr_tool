@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC S22T__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: S22T__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Nov 25 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Nov 25 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.06 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.63                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    22T              LO  120 120 30          145 135 30  38 178 178            0   0   0  S22T__ /
+CD    22T              AV  120 120 30          145 135 30  38 178 178            0   0   0  S22T__ /
+CD    22T              HI  120 120 30          145 135 30  38 178 178            0   0   0  S22T__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

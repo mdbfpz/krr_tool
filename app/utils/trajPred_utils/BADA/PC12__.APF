@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC PC12__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: PC12__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Jul 28 2014                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Jul 28 2014                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.48 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 004.50                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    45               LO  163 153 32          210 200 41  48 240 240            0   0   0  PC12__ /
+CD    45               AV  163 153 32          210 200 41  48 240 240            0   0   0  PC12__ /
+CD    45               HI  163 153 32          210 200 41  48 240 240            0   0   0  PC12__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

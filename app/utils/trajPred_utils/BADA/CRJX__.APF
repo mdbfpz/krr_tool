@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC CRJX__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: CRJX__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: May 03 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: May 03 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 023.18 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 041.64                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    1000             LO  250 290 74          250 290 78  74 290 250            0   0   0  CRJX__ /
+CD    1000             AV  250 290 74          250 290 78  74 290 250            0   0   0  CRJX__ /
+CD    1000             HI  250 290 74          250 290 78  74 290 250            0   0   0  CRJX__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////
