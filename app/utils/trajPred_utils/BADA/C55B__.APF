@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C55B__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C55B__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 28 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 28 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 004.25 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 006.71                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    Bravo            LO  210 190 64          250 275 68  70 250 250            0   0   0  C55B__ /
+CD    Bravo            AV  210 190 64          250 275 68  70 250 250            0   0   0  C55B__ /
+CD    Bravo            HI  210 190 64          250 275 68  70 250 250            0   0   0  C55B__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

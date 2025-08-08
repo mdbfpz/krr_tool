@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC E75S__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: E75S__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Jun 14 2017                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Jun 14 2017                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 021.89 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 040.37                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    IGW              LO  240 290 70          240 290 74  77 310 250            0   0   0  E75S__ /
+CD    IGW              AV  240 290 70          240 290 74  77 310 250            0   0   0  E75S__ /
+CD    IGW              HI  240 290 70          240 290 74  77 310 250            0   0   0  E75S__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

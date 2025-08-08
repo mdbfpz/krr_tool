@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC F406__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: F406__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Nov 17 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Nov 17 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.28 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 004.24                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    -                LO  112 112 31          180 180 36  49 180 180            0   0   0  F406__ /
+CD    -                AV  112 112 31          180 180 36  49 180 180            0   0   0  F406__ /
+CD    -                HI  112 112 31          180 180 36  49 180 180            0   0   0  F406__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

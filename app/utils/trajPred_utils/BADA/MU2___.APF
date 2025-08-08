@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC MU2___.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: MU2___.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 30 2002                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Dec 09 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 003.47 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 005.25                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    2B               LO  150 145 34          250 240 48  56 200 200            0   0   0  MU2___ /
+CD    2B               AV  150 145 34          250 240 48  56 200 200            0   0   0  MU2___ /
+CD    2B               HI  150 145 34          250 240 48  56 200 200            0   0   0  MU2___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

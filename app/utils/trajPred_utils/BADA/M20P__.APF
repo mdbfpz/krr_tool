@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC M20P__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: M20P__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 09 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 09 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.02 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.52                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    M20R             LO  105 105 24          160 160 29  34 150 150            0   0   0  M20P__ /
+CD    M20R             AV  105 105 24          160 160 29  34 150 150            0   0   0  M20P__ /
+CD    M20R             HI  105 105 24          160 160 29  34 150 150            0   0   0  M20P__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

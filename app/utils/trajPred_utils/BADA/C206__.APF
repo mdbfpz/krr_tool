@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C206__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C206__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Mar 07 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 07 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.02 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.63                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    206H             LO   82  78 17          120 110 21  28 135 135            0   0   0  C206__ /
+CD    206H             AV   82  78 17          120 110 21  28 135 135            0   0   0  C206__ /
+CD    206H             HI   82  78 17          120 110 21  28 135 135            0   0   0  C206__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

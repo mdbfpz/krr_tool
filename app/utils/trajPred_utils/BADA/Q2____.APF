@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC Q2____.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: Q2____.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 16 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 16 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 000.12 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 000.20                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    2A               LO   60  60 12           70  70 14  12  60  60            0   0   0  Q2____ /
+CD    2A               AV   60  60 12           70  70 14  12  60  60            0   0   0  Q2____ /
+CD    2A               HI   60  60 12           70  70 14  12  60  60            0   0   0  Q2____ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

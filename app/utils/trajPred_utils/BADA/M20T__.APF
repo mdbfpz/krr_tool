@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC M20T__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: M20T__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 10 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 10 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.06 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 001.52                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    M20TN            LO  104 104 26          180 180 37  42 170 170            0   0   0  M20T__ /
+CD    M20TN            AV  104 104 26          180 180 37  42 170 170            0   0   0  M20T__ /
+CD    M20TN            HI  104 104 26          180 180 37  42 170 170            0   0   0  M20T__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

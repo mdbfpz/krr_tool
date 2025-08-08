@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC E135__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: E135__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Oct 03 2008                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Mar 28 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 011.50 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 019.99                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    LR               LO  240 270 63          240 290 75  78 250 240            0   0   0  E135__ /
+CD    LR               AV  240 270 63          240 290 75  78 250 240            0   0   0  E135__ /
+CD    LR               HI  240 270 63          240 290 75  78 250 240            0   0   0  E135__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

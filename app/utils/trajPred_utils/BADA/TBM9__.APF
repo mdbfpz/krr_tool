@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC TBM9__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: TBM9__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Jan 22 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Jan 22 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.07 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 003.35                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    930              LO  124 124 35          230 220 54  64 230 230            0   0   0  TBM9__ /
+CD    930              AV  124 124 35          230 220 54  64 230 230            0   0   0  TBM9__ /
+CD    930              HI  124 124 35          230 220 54  64 230 230            0   0   0  TBM9__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC PAY2__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: PAY2__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 30 2002                                                                 /
+CC                                                                                                 /
+CC      Modification_date: May 02 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 002.48 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 004.29                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    31T2             LO  139 139 35          235 230 44  47 218 218            0   0   0  PAY2__ /
+CD    31T2             AV  139 139 35          235 230 44  47 218 218            0   0   0  PAY2__ /
+CD    31T2             HI  139 139 35          235 230 44  47 218 218            0   0   0  PAY2__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC SF50__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: SF50__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 24 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 24 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.61 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 002.72                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    50               LO  172 155 36          220 220 50  50 220 220            0   0   0  SF50__ /
+CD    50               AV  172 155 36          220 220 50  50 220 220            0   0   0  SF50__ /
+CD    50               HI  172 155 36          220 220 50  50 220 220            0   0   0  SF50__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

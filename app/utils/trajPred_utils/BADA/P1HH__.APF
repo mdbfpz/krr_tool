@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC P1HH__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: P1HH__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 03 2019                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 03 2019                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 003.49 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 006.14                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    HH               LO  160 160 50          200 200 56  67 260 260            0   0   0  P1HH__ /
+CD    HH               AV  160 160 50          200 200 56  67 260 260            0   0   0  P1HH__ /
+CD    HH               HI  160 160 50          200 200 56  67 260 260            0   0   0  P1HH__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

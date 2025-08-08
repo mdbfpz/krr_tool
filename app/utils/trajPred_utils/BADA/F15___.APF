@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC F15___.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: F15___.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Oct 27 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Oct 27 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 017.01 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 036.74                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    DI0              LO  350 350 90          360 360 90  90 300 300            0   0   0  F15___ /
+CD    DI0              AV  350 350 90          360 360 90  90 300 300            0   0   0  F15___ /
+CD    DI0              HI  350 350 90          360 360 90  90 300 300            0   0   0  F15___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

@@ -1,0 +1,89 @@
+
+
+
+u nacelu se ovakve simulacijske stvari daju paralelizirat
+
+
+     1      2      5     10     15     20     25     30    minute 
+ 1  0.00s  0.02s  0.04s  0.07s  0.12s  0.16s  0.19s  0.23s 
+ 2  0.02s  0.03s  0.08s  0.16s  0.24s  0.31s  0.38s  0.50s
+ 5  0.05s  0.09s  0.20s  0.42s  0.58s  0.82s  1.10s  1.22s
+10  0.11s  0.18s  0.40s  0.85s  1.18s  1.60s  1.96s  2.32s
+15  0.15s  0.30s  0.62s  1.22s  2.00s  2.39s  3.06s  3.60s
+20  0.20s  0.35s  0.85s  1.66s  2.59s  3.79s  4.30s  4.75s
+25  0.32s  0.50s  1.05s  2.01s  2.98s  4.02s  4.85s  6.27s
+nAviona
+
+
+
+
+
+cprofile ispis:
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        1    0.000    0.000    0.358    0.358 <string>:1(<module>)
+     1798    0.003    0.000    0.004    0.000 CDA.py:1047(FuelConsumption)
+     1798    0.001    0.000    0.001    0.000 CDA.py:108(TAStoMach)
+     1798    0.001    0.000    0.002    0.000 CDA.py:1093(MathtoNavAngle)
+     3596    0.019    0.000    0.019    0.000 CDA.py:1112(cart2compass)
+     3596    0.028    0.000    0.028    0.000 CDA.py:1127(ACdrift)
+     1798    0.001    0.000    0.001    0.000 CDA.py:1152(km2deg)
+     1798    0.030    0.000    0.030    0.000 CDA.py:1163(reckon)
+     1798    0.013    0.000    0.068    0.000 CDA.py:1196(ACStateUpdate)
+     1798    0.006    0.000    0.006    0.000 CDA.py:125(CrossAlt)
+     1798    0.001    0.000    0.001    0.000 CDA.py:158(CLModeSet)
+     1798    0.001    0.000    0.001    0.000 CDA.py:188(ConfigModeSet)
+     5394    0.011    0.000    0.011    0.000 CDA.py:218(CAStoTAS)
+     2997    0.004    0.000    0.004    0.000 CDA.py:235(SpeedforMass)
+     1798    0.005    0.000    0.007    0.000 CDA.py:24(distance)
+     4431    0.005    0.000    0.005    0.000 CDA.py:245(MachtoTAS)
+     1798    0.000    0.000    0.000    0.000 CDA.py:258(MinimumSpeed)
+     1473    0.016    0.000    0.017    0.000 CDA.py:267(JetLowSpeedBuffeting)
+     1798    0.013    0.000    0.052    0.000 CDA.py:305(DesiredTASf)
+     1798    0.004    0.000    0.005    0.000 CDA.py:520(energysf)
+     1798    0.001    0.000    0.001    0.000 CDA.py:581(DragCoefficient)
+     1798    0.001    0.000    0.002    0.000 CDA.py:590(ACDragCoef)
+     1798    0.003    0.000    0.003    0.000 CDA.py:606(ThrustMaxClimb)
+     1798    0.001    0.000    0.001    0.000 CDA.py:635(ThrustInDescent)
+     1798    0.000    0.000    0.000    0.000 CDA.py:662(ThrustMaxCruise)
+     1798    0.001    0.000    0.001    0.000 CDA.py:668(MaximumAltitude)
+     1798    0.002    0.000    0.002    0.000 CDA.py:689(ReducedClimbPowerCoeff)
+     1798    0.003    0.000    0.003    0.000 CDA.py:7(LiftCoefficient)
+     1798    0.007    0.000    0.025    0.000 CDA.py:721(ThrustSet)
+     1798    0.025    0.000    0.041    0.000 CDA.py:788(PitchSet)
+     1798    0.001    0.000    0.002    0.000 CDA.py:857(NavAngleToMathAngle)
+     1798    0.016    0.000    0.016    0.000 CDA.py:879(azimuth)
+     1798    0.002    0.000    0.002    0.000 CDA.py:89(TAStoCAS)
+     1798    0.006    0.000    0.006    0.000 CDA.py:941(matlab_round)
+     1798    0.027    0.000    0.061    0.000 CDA.py:944(BankSet)
+     3596    0.008    0.000    0.008    0.000 _methods.py:90(_clip)
+     1798    0.005    0.000    0.006    0.000 atmosphere.py:16(AtmosphereAtHp)
+     1798    0.000    0.000    0.000    0.000 atmosphere.py:46(AirDensity)
+     3596    0.001    0.000    0.001    0.000 fromnumeric.py:2096(_clip_dispatcher)
+     3596    0.003    0.000    0.018    0.000 fromnumeric.py:2100(clip)
+     3596    0.002    0.000    0.015    0.000 fromnumeric.py:53(_wrapfunc)
+        1    0.000    0.000    0.358    0.358 main.py:502(wrapper)
+     1798    0.003    0.000    0.004    0.000 trajectorygen.py:11(deg2km)
+     1798    0.001    0.000    0.001    0.000 trajectorygen.py:27(ACCModeSet)
+     1798    0.004    0.000    0.004    0.000 trajectorygen.py:53(tand)
+        1    0.036    0.036    0.358    0.358 trajectorygen.py:60(trajectorygen_Weather_aware)
+    33814    0.004    0.000    0.004    0.000 {built-in method builtins.abs}
+        1    0.000    0.000    0.358    0.358 {built-in method builtins.exec}
+     3596    0.001    0.000    0.001    0.000 {built-in method builtins.getattr}
+    25163    0.003    0.000    0.003    0.000 {built-in method builtins.isinstance}
+     1798    0.000    0.000    0.000    0.000 {built-in method builtins.len}
+      703    0.000    0.000    0.000    0.000 {built-in method builtins.max}
+    10464    0.003    0.000    0.003    0.000 {built-in method builtins.min}
+     3596    0.013    0.000    0.013    0.000 {built-in method builtins.round}
+     1798    0.000    0.000    0.000    0.000 {built-in method math.atan2}
+     3596    0.000    0.000    0.000    0.000 {built-in method math.cos}
+     3596    0.001    0.000    0.001    0.000 {built-in method math.sin}
+     3596    0.000    0.000    0.000    0.000 {built-in method math.sqrt}
+        1    0.000    0.000    0.000    0.000 {built-in method numpy.arange}
+     1798    0.001    0.000    0.001    0.000 {built-in method numpy.asarray}
+     8356    0.001    0.000    0.001    0.000 {method 'append' of 'list' objects}
+     3596    0.005    0.000    0.012    0.000 {method 'clip' of 'numpy.generic' objects}
+        1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
+     7192    0.001    0.000    0.001    0.000 {method 'lower' of 'str' objects}
+      847    0.000    0.000    0.000    0.000 {method 'upper' of 'str' objects}
+
+      

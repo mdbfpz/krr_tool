@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C27J__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C27J__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Nov 08 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Nov 08 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 017.50 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 031.80                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    J                LO  170 170 47          220 200 48  55 220 220            0   0   0  C27J__ /
+CD    J                AV  170 170 47          220 200 48  55 220 220            0   0   0  C27J__ /
+CD    J                HI  170 170 47          220 200 48  55 220 220            0   0   0  C27J__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

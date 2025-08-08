@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC E550__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: E550__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Apr 14 2015                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Apr 14 2015                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 010.75 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 017.20                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    L500             LO  250 300 70          250 300 78  78 300 250            0   0   0  E550__ /
+CD    L500             AV  250 300 70          250 300 78  78 300 250            0   0   0  E550__ /
+CD    L500             HI  250 300 70          250 300 78  78 300 250            0   0   0  E550__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

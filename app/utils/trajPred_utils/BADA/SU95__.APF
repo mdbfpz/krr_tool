@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC SU95__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: SU95__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Aug 13 2014                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Aug 13 2014                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 027.75 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 045.88                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    95B              LO  250 280 78          250 280 78  78 280 250            0   0   0  SU95__ /
+CD    95B              AV  250 280 78          250 280 78  78 280 250            0   0   0  SU95__ /
+CD    95B              HI  250 280 78          250 280 78  78 280 250            0   0   0  SU95__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////

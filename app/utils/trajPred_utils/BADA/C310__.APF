@@ -1,0 +1,25 @@
+CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC C310__.APF CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC/
+CC                                                                                                 /
+CC                 AIRLINES PROCEDURES FILE                                                        /
+CC                                                                                                 /
+CC      File_name: C310__.APF                                                                      /
+CC                                                                                                 /
+CC      Creation_date: Nov 15 2016                                                                 /
+CC                                                                                                 /
+CC      Modification_date: Nov 15 2016                                                             /
+CC                                                                                                 /
+CC                                                                                                 /
+CC                                                                                                 /
+CC   LO= 001.51 to ---.--  /  AV= ---.-- to ---.--  /  HI= ---.-- to 002.49                        /
+CC                                                                                                 /
+CC=================================================================================================/
+CC  COM CO    Company name ------climb-------  --cruise--  -----descent------  --approach-  model- /
+CC                    mass  lo  hi              lo  hi         hi  lo            (unused)          /
+CC    version engines  ma  cas cas mc xxxx xx  cas cas mc  mc cas cas xxxx xx  xxx xxx xxx  opf___ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CD  *** **    Default Company                                                                      /
+CD    310R             LO   99  92 20          159 149 26  38 170 170            0   0   0  C310__ /
+CD    310R             AV   99  92 20          159 149 26  38 170 170            0   0   0  C310__ /
+CD    310R             HI   99  92 20          159 149 26  38 170 170            0   0   0  C310__ /
+CC===:=======:=======::==::===:===:==:====:==::===:===:==::==:===:===:====:==::===:===:===::======:/
+CC/////////////////////////////////////////////THE END/////////////////////////////////////////////
