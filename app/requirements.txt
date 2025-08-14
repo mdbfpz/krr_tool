@@ -6,3 +6,4 @@ geographiclib
 shapely
 matplotlib
 pyproj
+geopy

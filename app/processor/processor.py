@@ -76,7 +76,7 @@ class Processor:
     async def convert_and_enqueue(self):
         """Convert data to RDF and add it to the RDFox database queue."""
 
-        cd_data = []  # List to store conflict detection data for Javier testing only
+        # cd_data = []  # List to store conflict detection data for Javier testing only
         while True:
             fetched_data = await self.converter_queue.get_from_queue()
             # print("Got from queue: ", fetched_data["data_type"], "\n", fetched_data["data"] )
@@ -88,7 +88,7 @@ class Processor:
 
             # Use repo last state and pass info to the CD module
             timestamp = self.rdf_converter.last_timestamp
-            out = self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
+            self.conflict_detection.detect(self.rdf_converter.data_repository, timestamp)
             
             # This block is for Javier to work with the CD data
             """if len(next(iter(out.values()))) != 0:
