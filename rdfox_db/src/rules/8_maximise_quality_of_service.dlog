@@ -38,7 +38,6 @@
 
 #5.8.2 Determine military airspace availability
 # TODO: vidjet s Ivanom - imamo slične podatke u AIXMu
-# TODO: Missing - activation status
 [?flight, :westMilitaryAirspace, ?airspace] :-
     [?airspace, ax:geometryComponent, ?sector],
     [?flight, :withinSector, ?sector],
@@ -64,7 +63,6 @@
         AS ?westMilitaryAreaActiveIndicator
     ).
 
-# TODO: Missing - activation status
 [?flight, :isEastMilitaryAreaActive,?eastMilitaryAreaActiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
@@ -78,7 +76,6 @@
         AS ?eastMilitaryAreaActiveIndicator
     ).
 
-# TODO: Missing - activation status
 [?flight, :isWestMilitaryAreaInactive,?westMilitaryAreaInactiveIndicator] :-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],
@@ -92,7 +89,6 @@
         AS ?westMilitaryAreaInactiveIndicator
     ).
 
-# TODO: Missing - activation status
 [?flight, :isEastMilitaryAreaInactive,?eastMilitaryAreaInactiveIndicator] :-
     [?flight, :eastMilitaryAirspace, ?airspace],
     [?airspace, ax:activation, ?airspaceActivation],

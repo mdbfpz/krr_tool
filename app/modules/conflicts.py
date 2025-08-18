@@ -466,8 +466,9 @@ class ConflictDetection:
                 last_predicted_points, found_timestamp = self._find_most_recent_predicted_trajectory(data_repository, flight_key)
                 if last_predicted_points:
                     predicted_points = self._filter_most_recent_predicted_trajectory(last_predicted_points, found_timestamp, timestamp)
-                    # print("Original trajectory:", last_predicted_points)
-                    # print("Filtered trajectory:", predicted_points)
+                    print("FLight key: ", flight_key, "timestamp: ", timestamp)
+                    print("Original trajectory len: ", len(last_predicted_points))
+                    print("Filtered trajectory len: ", len(predicted_points))
                     if not predicted_points:
                         pass
                         # TODO: run our own trajectory prediction algorithm, since the most recent predicted trajectory is outdated
@@ -1053,7 +1054,7 @@ class ConflictDetection:
                 'conflict_pairs': conflict_pairs
             }
 
-            print("Detections: ", self.detections[timestamp])  # Debug print
+            # print("Detections: ", self.detections[timestamp])  # Debug print
             return self.detections[timestamp]
         
         print(f"No conflicts detected at {timestamp}.")

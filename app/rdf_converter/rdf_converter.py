@@ -119,8 +119,19 @@ class RDFConverter:
                             self._add_literal(level_uri, sub_pred, subval_int, datatype=XSD.integer)
                         except ValueError:
                             self._add_literal(level_uri, sub_pred, subval)  # keep as string
+
+                    elif subkey == "altitude":
+                        # Convert altitude to flight level
+                        if isinstance(subval, (int, float)):
+                            fl_value = subval * self.to_fl_const
+                        else:
+                            subval_int = int(subval)
+                            fl_value = subval_int * self.to_fl_const
+                        sub_pred = URIRef(f"{fb_namespace.flightLevel}")
+                        self._add_literal(level_uri, sub_pred, fl_value, datatype=XSD.integer)
                     else:
                         self._add_literal(level_uri, sub_pred, subval)
+
             else:
                 # Single value
                 if isinstance(value, str):
@@ -360,32 +371,36 @@ class RDFConverter:
         self.graph.add((uri     , FIXM.enRoute , enRoute_uri))
         self.graph.add((enRoute_uri , RDF.type     , FIXM.enRoute))
 
-        flight_level_value = value.get("exitPoint", {}).get("flightLevel")
+        flight_level_value = value.get("exitPoint", {}).get("flightLevel", None)
         position_value = value.get("exitPoint", {}).get("pos", {})
-        exit_time_value = value.get("exitPoint", {}).get("exitTime")
-        current_mode_acode_value = value.get("currentModeACode")
+        exit_time_value = value.get("exitPoint", {}).get("exitTime", None)
+        current_mode_acode_value = value.get("currentModeACode", None)
         
         #exit point
         exit_point_uri = URIRef(f"{enRoute_uri}_exitPoint")
         self.graph.add((enRoute_uri, FIXM.boundaryCrossingCoordination, exit_point_uri))
         self.graph.add((exit_point_uri, RDF.type, FIXM.BoundaryCrossing))
-        #flight level
-        #next line is necessary because process level accepts this type of structure
-        flight_level_value = {"flightLevel":flight_level_value}
-        self._process_level(exit_point_uri, flight_level_value, FIXM, FB)
         
+        #flight level
+        if flight_level_value:
+            #next line is necessary because process level accepts this type of structure
+            flight_level_value = {"flightLevel": flight_level_value}
+            self._process_level(exit_point_uri, flight_level_value, FIXM, FB)
+            
         #process pos
-        self._process_position(exit_point_uri,position_value, FIXM, FB)
+        if position_value:
+            self._process_position(exit_point_uri, position_value, FIXM, FB)
     
         #current mode acode
-        self.graph.add((enRoute_uri, FIXM.currentModeACode, Literal(current_mode_acode_value, datatype=XSD.string)))
-        """ current_mode_acode_uri = URIRef(f"{enRoute_uri}_currentModeACode")
-        self.graph.add((current_mode_acode_uri, RDF.type, Literal(current_mode_acode_value,)))
-        """
+        if current_mode_acode_value:
+            self.graph.add((enRoute_uri, FIXM.currentModeACode, Literal(current_mode_acode_value, datatype=XSD.string)))
+            """ current_mode_acode_uri = URIRef(f"{enRoute_uri}_currentModeACode")
+            self.graph.add((current_mode_acode_uri, RDF.type, Literal(current_mode_acode_value,)))
+            """
+
         #crossing time
-        self.graph.add((exit_point_uri, FIXM.crossingTime, Literal(exit_time_value, datatype=XSD.dateTime)))
-        
-        
+        if exit_time_value:
+            self.graph.add((exit_point_uri, FIXM.crossingTime, Literal(exit_time_value, datatype=XSD.dateTime)))
     
     def _process_non_route_data(self, uri, key, value):
         if key == "enRoute":
@@ -1078,7 +1093,7 @@ class RDFConverter:
         # We might receive empty current branch -> evaluates to empty string, or no branch at all
         if current_point in [None, ""]:
             return None, None
-            
+                
         return (
             current_point.get("element", {}).get("point4D", {})["position"]["pos"]["lat"], 
             current_point.get("element", {}).get("point4D", {})["position"]["pos"]["lon"]
@@ -1181,16 +1196,19 @@ class RDFConverter:
                             Literal(dist, datatype=XSD.float)))
         
         return
+    
     def _distance_to_exit_point(self,flight_uri, data):
         current_point_lat, current_point_lon = self._get_current_point_coords(data)        
         if current_point_lat is None or current_point_lon is None:
             return   
+        
         # print(data.keys())
-        exit_position = data.get("enRoute", {}).get("exitPoint", {}).get("pos", {})         
-        exit_lat, exit_lon = exit_position["pos"]["lat"], exit_position["pos"]["lon"]                      
-        dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,exit_lat,exit_lon)
-        self.graph.add((flight_uri, FIXM.distanceToExitPoint, 
-                            Literal(dist, datatype=XSD.float)))
+        exit_position = data.get("enRoute", {}).get("exitPoint", {}).get("pos", {})
+        if exit_position:       
+            exit_lat, exit_lon = exit_position["pos"]["lat"], exit_position["pos"]["lon"]                      
+            dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,exit_lat,exit_lon)
+            self.graph.add((flight_uri, FIXM.distanceToExitPoint, 
+                                Literal(dist, datatype=XSD.float)))
         
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
@@ -1304,7 +1322,10 @@ class RDFConverter:
             },
             "sectorType": None,
             "secotrUUID": None,
-            "airspaceVolumeUUID": None
+            "airspaceVolumeUUID": None,
+            "airspaceActivation": {
+                "status": "ACTIVE"  # Default status, TODO: might be updated later via json events
+            }
         }
         
         sectors[sector_name]["sectorType"] = sector_type
@@ -1347,7 +1368,6 @@ class RDFConverter:
                     }
                     point_counter += 1
         
-        
         if not hasattr(self, 'sector_points_cache'):
             self.sector_points_cache = {}
         
@@ -1356,10 +1376,7 @@ class RDFConverter:
             points_list.append((point_data["lat"], point_data["lon"]))
         self.sector_points_cache[sector_name] = points_list
         
-        
-    
-    
-    def _process_airportHeliports(self,airportHeliport):        
+    def _process_airportHeliports(self, airportHeliport):        
         airportName = airportHeliport['designator']
         self.aixm_data_repo["airportHeliports"][airportName] = {
             "uuid": airportHeliport.get("uuid", {}).get("uuid"),
@@ -1369,6 +1386,11 @@ class RDFConverter:
             "position": {
                 "lat": airportHeliport.get("position", {}).get("latitude", {}).get("degrees"),
                 "lon": airportHeliport.get("position", {}).get("longitude", {}).get("degrees")
+            },
+            # Default availability values, not necessary to change in the scope of the AWARE project
+            "availability": {
+                "operationalStatus": "NORMAL",
+                "warning": "NO_WARNING"
             }
         }
         
@@ -1376,17 +1398,32 @@ class RDFConverter:
         main_aixm_uri = AIXM["AixmFeatures"]
         self.graph.add((main_aixm_uri, RDF.type, AIXM.Features))
         #print(data["airportHeliports"])
-        for key,value in self.aixm_data_repo["airportHeliports"].items():
+        for key, value in self.aixm_data_repo["airportHeliports"].items():
             airport_heliport_uri = URIRef(AIXM[f"airportHeliport_{key}"])
             self.graph.add((main_aixm_uri, BASE.contains, airport_heliport_uri))
             self.graph.add((airport_heliport_uri, RDF.type, AIXM.AirportHeliport))
-            #missing info for airportHeliport availability 
+            self.graph.add((airport_heliport_uri, AIXM.designator, Literal(key)))   # airportHeliport designator/name
+            
+            availability_uri = URIRef(f"{airport_heliport_uri}_availability")
+            self.graph.add((airport_heliport_uri, AIXM.availability, availability_uri))
+            self.graph.add((availability_uri, RDF.type, AIXM.Availability))
+            operational_status = value["availability"]["operationalStatus"]
+            warning = value["availability"]["warning"]
+            self.graph.add((availability_uri, AIXM.operationalStatus, Literal(operational_status)))
+            self.graph.add((availability_uri, AIXM.warning, Literal(warning)))
+
         #process sectors
-        for key,value in self.aixm_data_repo["sectors"].items():
+        for key, value in self.aixm_data_repo["sectors"].items():
             sector_uri = URIRef(AIXM[f"airspace_{key}"])
             self.graph.add((main_aixm_uri, BASE.contains, sector_uri))
             self.graph.add((sector_uri, RDF.type, AIXM.Airspace))
             
+            airspace_activation_uri = URIRef(f"{sector_uri}_activation")
+            self.graph.add((sector_uri, AIXM.activation, airspace_activation_uri))
+            self.graph.add((airspace_activation_uri, RDF.type, AIXM.Activation))
+            status_value = value["airspaceActivation"]["status"]
+            self.graph.add((airspace_activation_uri, AIXM.status, Literal(status_value)))
+
             airspace_volume_uri = URIRef(f"{sector_uri}_airspaceVolume")
             self.graph.add((sector_uri, AIXM.geometryComponent, airspace_volume_uri))
             self.graph.add((airspace_volume_uri, RDF.type, AIXM.AirspaceVolume))
@@ -1419,10 +1456,8 @@ class RDFConverter:
                 self.graph.add((surface_uri, AIXM.point, point_uri))
                 self.graph.add((point_uri, AIXM.lat, Literal(lat_value, datatype=XSD.integer)))
                 self.graph.add((point_uri, AIXM.lon, Literal(lon_value, datatype=XSD.integer)))
-     
-    
                
-    def _process_aixm_data(self,data):
+    def _process_aixm_data(self, data):
         """
         Only processing of airportHeliports and airspaces (sectors) is taken in consideration for our pipeline.
         """
@@ -1432,7 +1467,6 @@ class RDFConverter:
             if key == "waypoints":
                 waypoints = actual_data["waypoints"]
                 
-                            
                 """
                 Processing of point data types is currently not needed!
                 if "navaids" in waypoints:
@@ -1444,7 +1478,6 @@ class RDFConverter:
                         self._process_point_data(desPoint, "desPoint")
                 
                 self._create_uuid_latlon_map(waypoints["designatedPoints"], waypoints["navaids"]) """
-                
                 
                 if "airportHeliports" in waypoints:
                     airport_heliport_data = waypoints["airportHeliports"]  
@@ -1506,8 +1539,7 @@ class RDFConverter:
             # 2. case - Event data
             else:
                 self.convert_event_data(data_record)
-                # TODO: check what happens if there are two same timestamps for xml and json, will they overwrite each other?
-
+                
             self._update_advanced_datalog_methods()
 
             timestamp_data = {self.last_timestamp: self.data_repository[self.last_timestamp]}

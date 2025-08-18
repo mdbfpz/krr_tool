@@ -19,9 +19,8 @@
 
 
 #5.10.2 Check situation at destination airport
-# TODO: Missing - operational status
-[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-   
-    [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
+[?airportHeliport, :notifyOpStatus, ?airportOpStatusIndicator] :-    # [DONE]
+    [?airportHeliport, ax:availability, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:operationalStatus, ?operationalStatus],    
     BIND(
         IF(
@@ -32,9 +31,8 @@
         AS ?airportOpStatusIndicator
     ).
 
-# TODO: Missing - airport availability
-[?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-
-    [?airportHeliport, ax:avalaibility, ?airportHeliportAvailability],
+[?airportHeliport, :notifyAirportWarning, ?airportWarningIndicator] :-    # [DONE]
+    [?airportHeliport, ax:availability, ?airportHeliportAvailability],
     [?airportHeliportAvailability, ax:warning, ?warning],    
     BIND(
         IF(
@@ -45,39 +43,31 @@
         AS ?airportWarningIndicator
     ).                                    
 
-#spoji flight s airportheliport
-
-# TODO: može li biti isti head za 2 raličita pravila?
-# TODO: MISSING locationIndicatorICAO?
-[?flight, :destinationAirportHeliport, ?airportHeliport] :-
+# Spojiti flight s airportheliport
+[?flight, :destinationAirportHeliport, ?airportHeliport] :-     # [DONE]
     [?flight, fx:arrival, ?arrival],
     [?arrival, fx:destinationAerodrome, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator], # TODO: treba li ići u "fb"? treba!
-    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
+    [?aerodrome, fb:locationIndicator, ?locationIndicator], 
+    [?airportHeliport, ax:designator, ?locationIndicator].
 
-# TODO: MISSING locationIndicatorICAO?
-[?flight, :departureAirportHeliport, ?airportHeliport] :-
+[?flight, :departureAirportHeliport, ?airportHeliport] :-    # [DONE]
     [?flight, fx:departure, ?departure],
     [?departure, fx:departureAerodrome, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator],
-    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
-
+    [?aerodrome, fb:locationIndicator, ?locationIndicator],
+    [?airportHeliport, ax:designator, ?locationIndicator].
 
 #5.10.3 check situation at alternate airport
-#spojiti flight/alternateAerodrome s airportHeliport
-# TODO: MISSING locationIndicatorICAO?
-[?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-
+[?flight, :alternateDestinationAirportHeliport, ?airportHeliport] :-   # [DONE]
     [?flight, fx:arrival, ?arrival],
     [?arrival, fx:destinationAerodromeAlternate, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator],
-    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
+    [?aerodrome, fb:locationIndicator, ?locationIndicator],
+    [?airportHeliport, ax:designator, ?locationIndicator].
 
-# TODO: MISSING locationIndicatorICAO?
-[?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-
+[?flight, :alternateDepartureAirportHeliport, ?airportHeliport] :-   # [DONE]
     [?flight, fx:departure, ?departure],
     [?departure, fx:departureAerodromeAlternate, ?aerodrome],
-    [?aerodrome, fx:locationIndicator, ?locationIndicator],
-    [?airportHeliport, fx:locationIndicatorICAO, ?locationIndicator].
+    [?aerodrome, fb:locationIndicator, ?locationIndicator],
+    [?airportHeliport, ax:designator, ?locationIndicator].
 
 #5.10.4  Monitor adverse weather areas - WE WON'T USE WEATHER CONDITIONS IN AWARE!
 
@@ -130,7 +120,8 @@
 
 
 #5.10.5 Monitor restricted airspace
-# TODO: MISSING airspaceActivation, status
+# TODO: nije dobro implementirano - aixm su statički podaci. Iako se status može promijeniti, moramo nekako naznačiti vrijeme promjene
+# pa da imamo vremensku komponentu među statusom pa da možemo uspoređivati statuse.
 [?flight2, :canNewActionsBeTaken, ?noNewActionsIndicator] :- 
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -143,17 +134,18 @@
     [?ident1, fb:aircraftIdentification, ?flightID],
     [?ident2, fb:aircraftIdentification, ?flightID],
 
-    [?flight1, :withinSector, ?sector1],
-    [?airspace1, ax:geometryComponent, ?sector1],
-    [?airspace1, ax:activation, ?airspaceActivation1],
-    [?airspaceActivation1, ax:status, ?status1],
-    [?flight2, :withinSector, ?sector2],
-    [?airspace2, ax:geometryComponent, ?sector2],
-    [?airspace2, ax:activation, ?airspaceActivation2],
-    [?airspaceActivation2, ax:status, ?status2],
+    [?airspace, ax:geometryComponent, ?sector],
+    [?airspace, ax:activation, ?airspaceActivation],
+
+    [?flight1, :withinSector, ?sector],
+    [?airspaceActivation, ax:status, ?status1],
+
+    [?flight2, :withinSector, ?sector],
+    [?airspaceActivation, ax:status, ?status2],
+
     BIND(
         IF(
-            ?airspace1 = ?airspace2 && ?airspaceActivation1 = ?airspaceActivation2 && ?sector1 = ?sector2 && ?status1 = ?status2,
+            ?status1 = ?status2,
             0,
             1
         )
