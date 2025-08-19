@@ -118,7 +118,7 @@
 
 #5.6.4 Detect if planned trajectory passes through restricted airspace
 # TODO: MISSING speed
-#trebam military sector west i east
+#trebam military sector west i east, TODO: refaktorirati ovo samo na jedan generički military koji kupa oba slučaja east/west
 [?flight, :plannedTrajectoryPassesThroughWestMilitaryAirspace, ?plannedTrajectoryWestRestrAirspaceIndicator]:-
     [?flight, :westMilitaryAirspace, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],

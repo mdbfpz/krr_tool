@@ -8,27 +8,16 @@
 [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator] :-
     #tu nam je potreban izracun flagova u pipelineu - računaju se azimuti između parova tocaka za svaki sektor zasebno
     #pravim se da u east i west flag imam rezultate
-    [?flight, :eastMilitarySectorFlag, ?eastFlag],
-    [?flight, :westMilitarySectorFlag, ?westFlag],
+    [?flight, :militarySectorFlag, ?militaryFlag],  # TODO - implementirati u pipelineu
     #trebam output drugog pravila
-    # pitanje je je li moguce koristiti if i triplete unutar binda, zato mijenjam na expressione
-    [?flight, :isEastMilitaryAreaActive, ?eastMilitaryActiveIndicator],
-    [?flight, :isWestMilitaryAreaActive, ?westMilitaryActiveIndicator],
 
-    [?flight, :isEastMilitaryAreaInactive, ?eastMilitaryInactiveIndicator],
-    [?flight, :isWestMilitaryAreaInactive, ?westMilitaryInactiveIndicator],
+    # pitanje je je li moguce koristiti if i triplete unutar binda, zato mijenjam na expressione
+    [?restrictedArea, :isRestrictedAreaActive, ?isActive],
+    [?restrictedArea, :isRestrictedAreaInactive, ?isInactive],
+
     BIND(
         IF(
-            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 1) ||
-    
-            #u drugom uvjetu imam provjeru za west 
-            ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 1) && (?westFlag = 0) ||
-        
-            #u trecem uvjetu imam provjeru za east i west         
-            ?eastMilitaryActiveIndicator = 0 && ?eastMilitaryInactiveIndicator = 1 && ?westMilitaryActiveIndicator = 0 && ?westMilitaryInactiveIndicator = 1 && (?eastFlag = 0) && (?westFlag = 0) ||
-        
-            #zadnji uvjet        
-            (?eastFlag = 1) && (?westFlag = 1),
+            (?isActive = 0 && ?isInactive = 1 && ?militaryFlag = 0) || ?militaryFlag = 1,
             1,
             0
         )
@@ -37,22 +26,10 @@
    
 
 #5.8.2 Determine military airspace availability
-# TODO: vidjet s Ivanom - imamo slične podatke u AIXMu
-[?flight, :westMilitaryAirspace, ?airspace] :-
-    [?airspace, ax:geometryComponent, ?sector],
-    [?flight, :withinSector, ?sector],
-    [?airspace, ax:localType, "MILITARY OPERATING AREA"],
-    [?airspace, ax:name, "LS-T/TRA_WEST"].
-
-[?flight, :eastMilitaryAirspace, ?airspace] :-
-    [?airspace, ax:geometryComponent, ?sector],
-    [?flight, :withinSector, ?sector],
-    [?airspace, ax:localType, "MILITARY OPERATING AREA"],
-    [?airspace, ax:name, "LS-T/TRA_EAST"].
-
-[?flight, :isWestMilitaryAreaActive,?westMilitaryAreaActiveIndicator] :-
-    [?flight, :westMilitaryAirspace, ?airspace],
-    [?airspace, ax:activation, ?airspaceActivation],
+[?restrictedArea, :isRestrictedAreaActive, ?indicator] :-    # [DONE]
+    [?restrictedArea, ax:type, "AIRSPACE_TYPE_RESTRICTED_AREA"],
+    [?restrictedArea, ax:controlType, "OPERATIONS_TYPE_MILITARY_ONLY"],
+    [?restrictedArea, ax:activation, ?airspaceActivation],
     [?airspaceActivation, ax:status, ?activationStatus],
     BIND(
         IF(
@@ -60,25 +37,13 @@
             1,
             0
         )
-        AS ?westMilitaryAreaActiveIndicator
+        AS ?indicator
     ).
 
-[?flight, :isEastMilitaryAreaActive,?eastMilitaryAreaActiveIndicator] :-
-    [?flight, :eastMilitaryAirspace, ?airspace],
-    [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, ?activationStatus],
-    BIND(
-        IF(
-            ?activationStatus = "ACTIVE",
-            1,
-            0
-        )
-        AS ?eastMilitaryAreaActiveIndicator
-    ).
-
-[?flight, :isWestMilitaryAreaInactive,?westMilitaryAreaInactiveIndicator] :-
-    [?flight, :westMilitaryAirspace, ?airspace],
-    [?airspace, ax:activation, ?airspaceActivation],
+[?restrictedArea, :isRestrictedAreaInactive, ?indicator] :-   # [DONE]
+    [?restrictedArea, ax:type, "AIRSPACE_TYPE_RESTRICTED_AREA"],
+    [?restrictedArea, ax:controlType, "OPERATIONS_TYPE_MILITARY_ONLY"],
+    [?restrictedArea, ax:activation, ?airspaceActivation],
     [?airspaceActivation, ax:status, ?activationStatus],
     BIND(
         IF(
@@ -86,50 +51,25 @@
             1,
             0
         )
-        AS ?westMilitaryAreaInactiveIndicator
+        AS ?indicator
     ).
 
-[?flight, :isEastMilitaryAreaInactive,?eastMilitaryAreaInactiveIndicator] :-
-    [?flight, :eastMilitaryAirspace, ?airspace],
-    [?airspace, ax:activation, ?airspaceActivation],
-    [?airspaceActivation, ax:status, ?activationStatus],
+[?restrictedArea, :restrictedAirspaceUsage, ?usage] :-   # [DONE]
+    [?restrictedArea, :isRestrictedAreaActive, ?isActive],
+    [?restrictedArea, :isRestrictedAreaInactive, ?isInactive],
     BIND(
         IF(
-            ?activationStatus = "INACTIVE",
-            1,
-            0
+            ?isActive = 1,
+            "Aircraft can't use previously reserved military airspace.",
+            IF(
+                ?isInactive = 1,
+                "Aircraft can now use previously reserved military airspace.",
+                "Aircraft can conditionally use previously reserved military airspace (possible coordination with military required)."
+            )
         )
-        AS ?eastMilitaryAreaInactiveIndicator
+        AS ?usage
     ).
 
-#ovo dodavanje west/east usagea mozda i ne treba
-[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
-    [?flight, :isWestMilitaryAreaActive, 1],
-    BIND("Aircraft can't use previously reserved military airspace." as ?westUsage).
-
-[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
-    [?flight, :isWestMilitaryAreaActive, 0],
-    [?flight, :isWestMilitaryAreaInactive, 1],
-    BIND("Aircraft can now use previously reserved military airspace." as ?westUsage).
-
-[?flight, :westMilitaryAirspaceUsage, ?westUsage] :-
-    [?flight, :isWestMilitaryAreaActive, 0],
-    [?flight, :isWestMilitaryAreaInactive, 0],
-    BIND("Aircraft can conditionally use previously reserved military airspace (possible coordination with military required)." as ?westUsage).
-
-[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
-    [?flight, :isEastMilitaryAreaActive, 1],
-    BIND("Aircraft can't use previously reserved military airspace." as ?eastUsage).
-
-[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
-    [?flight, :isEastMilitaryAreaActive, 0],
-    [?flight, :isEastMilitaryAreaInactive, 1],
-    BIND("Aircraft can now use previously reserved military airspace." as ?eastUsage).
-
-[?flight, :eastMilitaryAirspaceUsage, ?eastUsage] :-
-    [?flight, :isEastMilitaryAreaActive, 0],
-    [?flight, :isEastMilitaryAreaInactive, 0],
-    BIND("Aircraft can conditionally use previously reserved military airspace (possible coordination with military required)." as ?eastUsage).
 
 #5.8.3 Check suggestion for shortened RBT --> nije implementiran u javi
 # Ivan Tukaric kaže da vjerojatno nećemo imati ovo pravilo

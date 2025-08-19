@@ -1302,6 +1302,7 @@ class RDFConverter:
     def _create_sectors_structure(self, airspace):
         sector_name = airspace["designator"]
         sector_type = airspace["type"]
+        sector_control_type = airspace.get("controlType", "UNKNOWN")
         airspace_uuid = airspace["uuid"]["uuid"]
         
         sectors = self.aixm_data_repo["sectors"]
@@ -1329,6 +1330,7 @@ class RDFConverter:
         }
         
         sectors[sector_name]["sectorType"] = sector_type
+        sectors[sector_name]["controlType"] = sector_control_type
         sectors[sector_name]["secotrUUID"] = airspace_uuid
         airspaceVolume_uuid = airspace["airspaceVolume"]["uuid"]["uuid"]
         sectors[sector_name]["airspaceVolumeUUID"] = airspaceVolume_uuid
@@ -1417,6 +1419,10 @@ class RDFConverter:
             sector_uri = URIRef(AIXM[f"airspace_{key}"])
             self.graph.add((main_aixm_uri, BASE.contains, sector_uri))
             self.graph.add((sector_uri, RDF.type, AIXM.Airspace))
+
+            self.graph.add((sector_uri, AIXM.designator, Literal(key)))
+            self.graph.add((sector_uri, AIXM.type, Literal(value["sectorType"])))
+            self.graph.add((sector_uri, AIXM.controlType, Literal(value["controlType"])))
             
             airspace_activation_uri = URIRef(f"{sector_uri}_activation")
             self.graph.add((sector_uri, AIXM.activation, airspace_activation_uri))
