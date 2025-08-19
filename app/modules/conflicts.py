@@ -265,12 +265,19 @@ class ConflictPreprocessor:
             callsign = rec.get("callsign")
             # predicted points may be in rec['predicted_points'] or rec['predicted_points'] as JSON string
             raw_pred = rec.get("predicted_points")
+            # No predicted points, cannot process
+            if not raw_pred:
+                return
+            
+            # print("Processing flight:", callsign, "at timestamp:", ts)
             pred_lats, pred_lons, pred_fl, pred_heads = self._parse_predicted_points(raw_pred)
 
-            # If the routeTrajectoryGroup had 'predicted' as dict and included element/time info,
-            # you may have 'pred_times' in rec; else None
-            raw_pred_times = rec.get("pred_times") or rec.get("times")  # accept both keys
-            pred_times = self._parse_pred_times(raw_pred_times)
+            # raw_pred_times = rec.get("predicted_times")
+            # print("Raw predicted times:", len(raw_pred_times))
+            # pred_times = self._parse_pred_times(raw_pred_times)
+            # print("Len of parsed predicted times:", len(pred_times))
+            pred_times = rec.get("predicted_times") # Already processed in _extract_repo_cd_data
+            # print("Predicted times len:", len(pred_times))
 
             # If this flight contains a separate "found_timestamp" for that predicted trajectory,
             # it can be passed in rec or inferred. We'll try rec.get('found_timestamp') else ts.
@@ -372,9 +379,10 @@ class ConflictPreprocessor:
         rows = self.preprocess_for_timestamp(timestamp_key)
         # Optionally dedupe already done in preprocess_for_timestamp
         # Align/trim list fields
-        if list_keys:
+        if rows and list_keys:
             rows = self.align_and_trim_rows(rows, list_keys, max_len=align_max_len)
-        return rows
+            return rows
+        return
 
 
 
@@ -435,7 +443,35 @@ class ConflictDetection:
         if start_idx < 0 or start_idx >= len(last_predicted_points):
             return []
 
-        return last_predicted_points[start_idx:]   
+        return last_predicted_points[start_idx:]
+
+    
+    def _generate_times_from_trajectory(self, predicted_points, timestamp):
+        """
+        Generates a list of timestamps for each predicted point based on the initial timestamp.
+        Assumes predicted_points is a list of dicts.
+        
+        Args:
+            predicted_points (list): List of dicts, one per predicted point.
+            timestamp (str or datetime): Initial timestamp (ISO string or datetime).
+        
+        Returns:
+            list[datetime]: List of timestamps, one for each predicted point.
+        """
+        if not predicted_points:
+            return []
+
+        # Ensure timestamp is a datetime object
+        if isinstance(timestamp, str):
+            timestamp = datetime.fromisoformat(timestamp)
+        
+        timestamp = timestamp.replace(microsecond=0)  # Round to seconds
+
+        # Generate timestamps with 1-second intervals
+        trajectory_len = len(predicted_points)
+        times = [timestamp + timedelta(seconds=i) for i in range(1, trajectory_len + 1)]
+
+        return times
 
     def _extract_repo_cd_data(self, data_repository, state_data, timestamp):
         """
@@ -466,9 +502,9 @@ class ConflictDetection:
                 last_predicted_points, found_timestamp = self._find_most_recent_predicted_trajectory(data_repository, flight_key)
                 if last_predicted_points:
                     predicted_points = self._filter_most_recent_predicted_trajectory(last_predicted_points, found_timestamp, timestamp)
-                    print("FLight key: ", flight_key, "timestamp: ", timestamp)
-                    print("Original trajectory len: ", len(last_predicted_points))
-                    print("Filtered trajectory len: ", len(predicted_points))
+                    # print("FLight key: ", flight_key, "timestamp: ", timestamp)
+                    # print("Original trajectory len: ", len(last_predicted_points))
+                    # print("Filtered trajectory len: ", len(predicted_points))
                     if not predicted_points:
                         pass
                         # TODO: run our own trajectory prediction algorithm, since the most recent predicted trajectory is outdated
@@ -478,6 +514,8 @@ class ConflictDetection:
             else:
                 predicted_points = rtg["predicted"].get("element", [])
                 # print("Keeping whole trajectory: ", predicted_points)
+
+            predicted_times = self._generate_times_from_trajectory(predicted_points, timestamp)
 
             current_branch = rtg.get("current", {})
             if isinstance(current_branch, dict):
@@ -541,6 +579,7 @@ class ConflictDetection:
                 "current_fl": current_fl,
                 "current_velocity": current_velocity,
                 "predicted_points": predicted_points,
+                "predicted_times": predicted_times,
                 "cruise_level_cleared": cruise_level_cleared,
                 "cruise_level_desired": cruise_level_desired,
                 "exit_point": exit_point,
@@ -557,13 +596,9 @@ class ConflictDetection:
     # Utility functions
     # ---------------------------
     
-    def convert_to_timestamp(self, time_obj):
-        """
-        Converts any time object (str, Timestamp, datetime) to naive datetime (no timezone).
-        """
-        import pandas as pd
-        from datetime import datetime
-        
+    """def convert_to_timestamp(self, time_obj):
+        # Converts any time object (str, Timestamp, datetime) to naive datetime (no timezone).
+               
         if pd.isna(time_obj):
             return None
         try:
@@ -577,7 +612,35 @@ class ConflictDetection:
             return time_obj.tz_localize(None) if time_obj.tzinfo else time_obj
         except Exception as e:
             print(f"Error in convert_to_timestamp: {e}")
+            return None"""
+
+    def convert_to_timestamp(self, time_obj):
+        """
+        Converts any time object (str, datetime, int, float) to naive datetime (no timezone).
+        """
+        if time_obj is None:
             return None
+
+        try:
+            # Handle NaN safely (for floats)
+            if isinstance(time_obj, float) and math.isnan(time_obj):
+                return None
+
+            if isinstance(time_obj, str):
+                time_obj = parser.parse(time_obj)
+            elif isinstance(time_obj, (int, float)):  # treat as UNIX timestamp
+                time_obj = datetime.fromtimestamp(time_obj)
+            elif not isinstance(time_obj, datetime):
+                # Unknown type
+                return None
+
+            # Ensure naive datetime (strip timezone if present)
+            return time_obj.replace(tzinfo=None) if time_obj.tzinfo else time_obj
+
+        except Exception as e:
+            print(f"Error in convert_to_timestamp: {e}")
+            return None
+
 
     def calculate_intermediate_point(self, lat1, lon1, lat2, lon2):
         """
@@ -597,7 +660,7 @@ class ConflictDetection:
 
         return np.degrees(lat_mid), np.degrees(lon_mid)
 
-    def format_time(self, x):
+    """def format_time(self, x):
         try:
             import pandas as pd
             if pd.isna(x):
@@ -607,7 +670,19 @@ class ConflictDetection:
                 return ts.strftime('%H:%M:%S')
             return None
         except Exception:
+            return None"""
+    
+    def format_time(self, x):
+        try:
+            if x is None:
+                return None
+            ts = self.convert_to_timestamp(x)
+            if ts is not None:
+                return ts.strftime('%H:%M:%S')
             return None
+        except Exception:
+            return None
+
 
     def calculate_cumulative_distances(self, latitudes, longitudes, index_min_dis):
         """
@@ -643,11 +718,15 @@ class ConflictDetection:
 
         for ac1, ac2 in pairs:
             row_ac1 = {f"{k}_1": v for k, v in ac_map[ac1].items()}
+            # print("ac1 data:", len(row_ac1["pred_lats_1"]), len(row_ac1["pred_lons_1"]), len(row_ac1["pred_fl_1"]), len(row_ac1["pred_times_1"]))
             row_ac2 = {f"{k}_2": v for k, v in ac_map[ac2].items()}
+            # print("ac2 data:", len(row_ac2["pred_lats_2"]), len(row_ac2["pred_lons_2"]), len(row_ac2["pred_fl_2"]), len(row_ac2["pred_times_2"]))
             combined = {**row_ac1, **row_ac2}
             combined['Aircraft Pair'] = (ac1, ac2)
             results.append(combined)
         
+        # for pair in results:
+            # print("Aircraft pair generated:", pair['Aircraft Pair'])
         return results
 
     def separation_with_time_matching(self, pairs):
@@ -672,22 +751,37 @@ class ConflictDetection:
             combined_sep = []
 
             lat1 = row['pred_lats_1']
+            # print("Length of lat1:", len(lat1))
             lon1 = row['pred_lons_1']
+            # print("Length of lon1:", len(lon1))
             fl1 = row['pred_fl_1']
-            times1 = [self.convert_to_timestamp(t).replace(microsecond=0) for t in row['pred_times_1']]
+            # print("Length of fl1:", len(fl1))
+            # print("Length of raw times1:", len(row['pred_times_1']))
+            # times1 = [self.convert_to_timestamp(t).replace(microsecond=0) for t in row['pred_times_1']]
+            times1 = row['pred_times_1']  # Already processed in _extract_repo_cd_data
+            # print("Length of times1:", len(times1))
 
             lat2 = row['pred_lats_2']
+            # print("Length of lat2:", len(lat2))
             lon2 = row['pred_lons_2']
+            # print("Length of lon2:", len(lon2))
             fl2 = row['pred_fl_2']
-            times2 = [self.convert_to_timestamp(t).replace(microsecond=0) for t in row['pred_times_2']]
+            # print("Length of fl2:", len(row['pred_fl_2']))
+            # print("Length of raw times2:", len(row['pred_times_2']))
+            # times2 = [self.convert_to_timestamp(t).replace(microsecond=0) for t in row['pred_times_2']]
+            times2 = row['pred_times_2']  # Already processed in _extract_repo_cd_data
+            # print("Length of times2:", len(times2))
 
             for i, t1 in enumerate(times1):
                 try:
                     j = times2.index(t1)
                 except ValueError:
+                    print("Time", t1, "not found in times2 for pair:", row['Aircraft Pair'])
                     continue
                 d_horiz = haversine((lat1[i], lon1[i]), (lat2[j], lon2[j]))
+                # print("Horizontal distance at time", t1, ":", d_horiz)
                 d_vert = fl1[i] - fl2[j]
+                # print("Vertical distance at time", t1, ":", d_vert)
                 horiz_sep.append((d_horiz, t1))
                 vert_sep.append((d_vert, t1))
                 combined_sep.append((d_horiz, d_vert, t1))
@@ -696,6 +790,7 @@ class ConflictDetection:
             row['vertical_separation'] = vert_sep
             row['separation'] = combined_sep
 
+            # print("Separation data added to pairs:", row["horizontal_separation"], row["vertical_separation"], row["separation"])
         return pairs
 
     def process_conflicts_and_SI(self, pairs):
@@ -722,6 +817,7 @@ class ConflictDetection:
             row['SI'] = 1 if si_condition else 0
             row['Conflict'] = 1 if conflict_condition else 0
         
+        # print("Processed conflicts and SI flags:", pairs)
         return pairs
 
     def process_separations_MinSep_and_tcpa_ONLY_SI(self, pairs):
@@ -794,11 +890,14 @@ class ConflictDetection:
                 continue
             
             try:
-                tcpa = self.convert_to_timestamp(row['tcpa'])
+                # tcpa = self.convert_to_timestamp(row['tcpa'])
+                tcpa = row["tcpa"]
                 if tcpa is None:
                     raise ValueError("Invalid TCPA")
-                times_1 = [self.convert_to_timestamp(t) for t in row['pred_times_1']]
-                times_2 = [self.convert_to_timestamp(t) for t in row['pred_times_2']]
+                # times_1 = [self.convert_to_timestamp(t) for t in row['pred_times_1']]
+                # times_2 = [self.convert_to_timestamp(t) for t in row['pred_times_2']]
+                times_1 = row['pred_times_1']
+                times_2 = row['pred_times_2']
 
                 index_2 = min(range(len(times_2)), key=lambda i: abs(times_2[i] - tcpa))
                 try:
@@ -892,7 +991,7 @@ class ConflictDetection:
         for row in unique_si_pairs:
             for key in ['cod_flightlevel_1', 'ind_cruise_level_1', 'cod_flightlevel_2', 'ind_cruise_level_2']:
                 if key in row and row[key] is not None:
-                    row[key] = int(row[key])
+                    row[key] = int(row[key]["flightLevel"])
         
         return unique_si_pairs
 
@@ -1017,6 +1116,10 @@ class ConflictDetection:
                 timestamp, list_keys=['pred_lats','pred_lons','pred_fl','pred_times']
             )
 
+            if not sample:
+                print(f"Skipping conflict detection, data not gathered yet for timestamp {timestamp}.")
+                return
+
             # Step 3: Generate bidirectional aircraft pairs with suffixed keys (_1, _2)
             pairs = self.generate_aircraft_pairs_bidirectional(sample)
 
@@ -1049,12 +1152,18 @@ class ConflictDetection:
 
             # Store and return results (store in detections dict per timestamp)
             self.detections[timestamp] = {
-                'all_pairs': pairs,
+                # 'all_pairs': pairs,
                 'si_pairs': si_pairs,
                 'conflict_pairs': conflict_pairs
             }
+            
+            # Testing purposes
+            info = ['Aircraft Pair', 'horizontal_separation', 'vertical_separation', 'separation', 'SI', 'Conflict', 'conditioned_separation', 'combined_separation', 'min_combined_sep', 'tcpa', 'min_sep', 'position_cpa_1st_aircraft', 'position_cpa_2nd_aircraft', 'position_cpa_intermediate', 'tcpa_hms', 'time_to_cpa_hms_1', 'time_to_cpa_hms_2', 'index_cpa_1st_aircraft', 'index_cpa_2nd_aircraft', 'distance_to_cpa_1st_aircraft', 'distance_to_cpa_2nd_aircraft', 'Status_initial_1', 'Status_initial_2', 'Status_CPA_1', 'Status_CPA_2']
+            for item in conflict_pairs:
+                for key in item:
+                    if key in info:
+                        print(key, ": ", item[key])
 
-            # print("Detections: ", self.detections[timestamp])  # Debug print
             return self.detections[timestamp]
         
         print(f"No conflicts detected at {timestamp}.")
