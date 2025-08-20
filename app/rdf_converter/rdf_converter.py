@@ -1,9 +1,11 @@
+from datetime import datetime
 from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD 
 from app.utils.utils import GeodesicService
 import xml.etree.ElementTree as ET
 import copy
 import json
+import numpy as np
 
 # Define namespaces
 BASE = Namespace("https://aware-sesar.eu/")
@@ -483,14 +485,15 @@ class RDFConverter:
                 self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
                 self.graph.add((flight_uri, RDF.type, FIXM.Flight))
                 if "Flight" in key_data:
-                    self._process_flight(flight_uri, key_data["Flight"])
-                    self._process_tolerance_azimuth(flight_uri, key_data["Flight"])
-                    self._process_distance_to_cleared_point(flight_uri, key_data["Flight"])
-                    self._process_within_sector(flight_uri, key_data["Flight"])
-                    self._calculate_distance_to_sector(flight_uri, key_data["Flight"])
-                    self._check_aircraft_is_planned(flight_uri, key_data["Flight"])
-                    self._distance_to_intersection_point(flight_uri, key_data["Flight"])
-                    self._distance_to_exit_point(flight_uri, key_data["Flight"])
+                    flight_data = key_data["Flight"]
+                    self._process_flight(flight_uri, flight_data)
+                    self._process_tolerance_azimuth(flight_uri, flight_data)
+                    self._process_distance_to_cleared_point(flight_uri, flight_data)
+                    self._process_within_sector(flight_uri, flight_data)
+                    self._calculate_distance_to_sector(flight_uri, flight_data)
+                    self._check_aircraft_is_planned(flight_uri, flight_data)
+                    self._distance_to_intersection_point(flight_uri, flight_data)
+                    self._distance_to_exit_point(flight_uri, flight_data)
 
             elif key == "HMI":
                 # Process HMI data
@@ -1554,9 +1557,77 @@ class RDFConverter:
         else:
             raise ValueError("Unsupported data record type. Use 'json'.")
     
-    def update_cd_findings(self, detections, timestamp):
-        pass
+    def _process_cd_findings(self, flight_uri, conflict_data):
+        """Process conflict data per flight and add to the graph."""
+        conflict_uri = URIRef(f"{flight_uri}_conflict")
+        self.graph.add((flight_uri, BASE.conflict, conflict_uri))
+        print("test: ", conflict_data)
+        position_uri = URIRef(f"{conflict_uri}_position")
+        self.graph.add((conflict_uri, FIXM.position, position_uri))
 
+        for key, value in conflict_data.items():
+            if key in ["pos", "midpoint_pos"]:
+                lat, lon, altitude, time = value
+                pos_uri = URIRef(f"{position_uri}_{key}")
+                self.graph.add((position_uri, FB[f"{key}"], pos_uri))
+                self.graph.add((pos_uri, FB.lat, Literal(lat, datatype=XSD.decimal)))
+                self.graph.add((pos_uri, FB.lon, Literal(lon, datatype=XSD.decimal)))
+                self.graph.add((pos_uri, FB.altitude, Literal(altitude, datatype=XSD.decimal)))
+                self.graph.add((pos_uri, FB.time, Literal(time, datatype=XSD.dateTime)))
+
+            else:
+                datatype = XSD.string
+                if isinstance(value, int):
+                    datatype = XSD.integer
+                elif isinstance(value, float) or isinstance(value, np.floating):
+                    datatype = XSD.decimal
+                elif isinstance(value, datetime):
+                    datatype = XSD.dateTime
+                    value = value.isoformat()
+
+                self.graph.add((conflict_uri, BASE[f"{key}"], Literal(value, datatype=datatype)))
+
+    def process_cd_findings_wrapper(self, timestamp):
+        last_repo_state = self.data_repository[timestamp]
+        timestamp_snake_case = self._safe_local_name(timestamp)
+        for key, key_data in last_repo_state.items():
+            if key.startswith("flight_"):
+                flight_uri = URIRef(FIXM[f"{key}_{timestamp_snake_case}"])
+                if "conflicts" in key_data:
+                    conflict_data = key_data["conflicts"]
+                    self._process_cd_findings(flight_uri, conflict_data)
+
+    def update_cd_findings(self, detections, timestamp):
+        conflicts = detections[timestamp]["conflicts"]
+        for conflict in conflicts:
+            flight_1, flight_2 = conflict["Aircraft Pair"]
+            conflict_indicator = conflict["Conflict"]
+            flight_1_pos = conflict["position_cpa_1st_aircraft"]
+            flight_2_pos = conflict["position_cpa_2nd_aircraft"]
+            midpoint_pos = conflict["position_cpa_intermediate"]
+            flight_1_time_to_md = conflict["time_to_cpa_sec_1"]
+            flight_2_time_to_md = conflict["time_to_cpa_sec_2"]
+            flight_1_dist_to_md = conflict["distance_to_cpa_1st_aircraft"]
+            flight_2_dist_to_md = conflict["distance_to_cpa_2nd_aircraft"]
+
+            flight_1_branch = self.data_repository[timestamp][flight_1]
+            flight_1_branch["conflicts"] = {}
+            flight_1_branch["conflicts"]["related_flight"] = flight_2
+            flight_1_branch["conflicts"]["conflict_indicator"] = conflict_indicator
+            flight_1_branch["conflicts"]["pos"] = flight_1_pos
+            flight_1_branch["conflicts"]["midpoint_pos"] = midpoint_pos
+            flight_1_branch["conflicts"]["time_to_md"] = flight_1_time_to_md
+            flight_1_branch["conflicts"]["dist_to_md"] = flight_1_dist_to_md
+
+            flight_2_branch = self.data_repository[timestamp][flight_2]
+            flight_2_branch["conflicts"] = {}
+            flight_2_branch["conflicts"]["related_flight"] = flight_1
+            flight_2_branch["conflicts"]["conflict_indicator"] = conflict_indicator
+            flight_2_branch["conflicts"]["pos"] = flight_2_pos
+            flight_2_branch["conflicts"]["midpoint_pos"] = midpoint_pos
+            flight_2_branch["conflicts"]["time_to_md"] = flight_2_time_to_md
+            flight_2_branch["conflicts"]["dist_to_md"] = flight_2_dist_to_md
+        
     def serialize(self, format="turtle"):
         """Serialize the RDF graph to a string/turtle format."""
         return self.graph.serialize(format=format)

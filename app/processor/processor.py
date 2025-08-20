@@ -99,7 +99,9 @@ class Processor:
                     json.dump({"data": cd_data}, f, indent=2)"""
 
             # Update the last repo state with the CD findings
-            self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
+            if self.conflict_detection.detections:
+                self.rdf_converter.update_cd_findings(self.conflict_detection.detections, timestamp)
+                self.rdf_converter.process_cd_findings_wrapper(timestamp)
             
             # print("Repo: ", self.rdf_converter.data_repository)
             turtle_data = self.rdf_converter.serialize()

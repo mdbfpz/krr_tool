@@ -595,24 +595,6 @@ class ConflictDetection:
     # ---------------------------
     # Utility functions
     # ---------------------------
-    
-    """def convert_to_timestamp(self, time_obj):
-        # Converts any time object (str, Timestamp, datetime) to naive datetime (no timezone).
-               
-        if pd.isna(time_obj):
-            return None
-        try:
-            if isinstance(time_obj, str):
-                time_obj = parser.parse(time_obj)
-            elif isinstance(time_obj, (pd.Timestamp, datetime)):
-                time_obj = pd.to_datetime(time_obj)
-            elif isinstance(time_obj, (int, float)):
-                time_obj = pd.to_datetime(time_obj, unit='s')
-
-            return time_obj.tz_localize(None) if time_obj.tzinfo else time_obj
-        except Exception as e:
-            print(f"Error in convert_to_timestamp: {e}")
-            return None"""
 
     def convert_to_timestamp(self, time_obj):
         """
@@ -640,6 +622,12 @@ class ConflictDetection:
         except Exception as e:
             print(f"Error in convert_to_timestamp: {e}")
             return None
+    
+    def _hms_to_seconds(self, hms: str) -> int:
+        # Parse as a time object
+        t = datetime.strptime(hms, "%H:%M:%S").time()
+        td = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
+        return int(td.total_seconds())
 
 
     def calculate_intermediate_point(self, lat1, lon1, lat2, lon2):
@@ -1091,8 +1079,21 @@ class ConflictDetection:
                         row[col] = int(row[col])
                     except (ValueError, TypeError):
                         pass  # keep original if conversion fails
+
+            # Filter only needed conflict information for the graph
+            row_filtered = {
+                "Aircraft Pair": row["Aircraft Pair"], 
+                "Conflict": row["Conflict"],
+                "position_cpa_1st_aircraft": row["position_cpa_1st_aircraft"],
+                "position_cpa_2nd_aircraft": row["position_cpa_2nd_aircraft"],
+                "position_cpa_intermediate": row["position_cpa_intermediate"],
+                "time_to_cpa_sec_1": self._hms_to_seconds(row["time_to_cpa_hms_1"]),
+                "time_to_cpa_sec_2": self._hms_to_seconds(row["time_to_cpa_hms_2"]),
+                "distance_to_cpa_1st_aircraft": row["distance_to_cpa_1st_aircraft"],
+                "distance_to_cpa_2nd_aircraft": row["distance_to_cpa_2nd_aircraft"],
+            }
             
-            unique_conflicts.append(row)
+            unique_conflicts.append(row_filtered)
 
         return unique_conflicts
 
@@ -1148,22 +1149,14 @@ class ConflictDetection:
             si_pairs = self.add_status_ONLY_SI(si_pairs)
 
             # Step 12: Extract unique conflict pairs (filter duplicates by unordered pair keys, Conflict==1)
-            conflict_pairs = self.process_conflict_pairs(pairs)
+            conflicts = self.process_conflict_pairs(pairs)
 
             # Store and return results (store in detections dict per timestamp)
             self.detections[timestamp] = {
-                # 'all_pairs': pairs,
-                'si_pairs': si_pairs,
-                'conflict_pairs': conflict_pairs
+                'conflicts': conflicts
             }
             
-            # Testing purposes
-            info = ['Aircraft Pair', 'horizontal_separation', 'vertical_separation', 'separation', 'SI', 'Conflict', 'conditioned_separation', 'combined_separation', 'min_combined_sep', 'tcpa', 'min_sep', 'position_cpa_1st_aircraft', 'position_cpa_2nd_aircraft', 'position_cpa_intermediate', 'tcpa_hms', 'time_to_cpa_hms_1', 'time_to_cpa_hms_2', 'index_cpa_1st_aircraft', 'index_cpa_2nd_aircraft', 'distance_to_cpa_1st_aircraft', 'distance_to_cpa_2nd_aircraft', 'Status_initial_1', 'Status_initial_2', 'Status_CPA_1', 'Status_CPA_2']
-            for item in conflict_pairs:
-                for key in item:
-                    if key in info:
-                        print(key, ": ", item[key])
-
+            print("Conflicts: ", conflicts)
             return self.detections[timestamp]
         
         print(f"No conflicts detected at {timestamp}.")
