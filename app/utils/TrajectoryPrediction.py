@@ -6,9 +6,9 @@ import re
 import os
 import pprint
 import json
-from trajPred_utils.trajectorygen import *
-from trajPred_utils.trajectorygen_utils import *
-from trajPred_utils.atmosphere import *
+from .trajPred_utils.trajectorygen import *
+from .trajPred_utils.trajectorygen_utils import *
+from .trajPred_utils.atmosphere import *
 """
 from trajGen.trajPred_utils.trajectorygen import *
 from trajGen.trajPred_utils.trajectorygen_utils import *
@@ -16,7 +16,20 @@ from trajGen.trajPred_utils.atmosphere import *
 """
 import time
 import cProfile
- 
+
+
+"""
+mogu imat npr funkcije u ovoj klasi koje su slicne sa
+load_mat_files al da čita s rdfoxa
+preko tih datarepo dictionarya neceg
+
+i vidit kaj onda s BADU podacima i kolko da ih ucitam i tak
+kolko su informacije sinkronizirane po tipovima aviona i tak
+
+mislim da sve podatke koje su prije bile iz .mat
+mogu dobit iz rdfoxa za badu valjda opet bude badu nekakav samo ga
+onda treba uskladit s ovim podacima
+"""
 
 class TrajectoryPrediction:
 
@@ -25,7 +38,7 @@ class TrajectoryPrediction:
         # Učitavanje podataka
         script_dir = os.path.dirname(os.path.abspath(__file__))
 
-        ACsynonyms, airportList, FFP = load_mat_files() 
+        ACsynonyms, FFP = load_mat_files() 
 
         # Simulation parameters
         Wind = [0, 0, 0]
@@ -165,7 +178,7 @@ class TrajectoryPrediction:
                         singleACarchive, singleFlightACstate, singleFlightACcontrol, singleWPTi, singleFlightACmode = trajectorygen_Weather_aware(
                             singleFlightACstate, singleFlightACcontrol, Wind, singleFlightACmode, dT, SimulationTime, WPTi, flight_data, 
                             FlightPath, opsdata, apfdata, GP, const, singleACarchive, 
-                            desired_time, endtime, airportList, desired_time
+                            endtime, desired_time
                         )
                     
                     
@@ -179,7 +192,7 @@ class TrajectoryPrediction:
                         singleACarchive, singleFlightACstate, singleFlightACcontrol, singleWPTi, singleFlightACmode = trajectorygen_Weather_aware(
                             singleFlightACstate, singleFlightACcontrol, Wind, singleFlightACmode, dT, SimulationTime, WPTi, flight_data, 
                             FlightPath, opsdata, apfdata, GP, const, singleACarchive, 
-                            desired_time, endtime, airportList, desired_time
+                            endtime, desired_time
                         )
                     #print("time spent inside simulation ", time.time()-sim_start_time)
                     ACstate[flight_name] = singleFlightACstate   
