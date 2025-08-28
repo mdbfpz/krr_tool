@@ -426,7 +426,7 @@ class ConflictDetection:
         if isinstance(current_timestamp, str):
             current_timestamp = datetime.fromisoformat(current_timestamp) if current_timestamp else None
 
-        # Round to seconds
+        # Truncate to whole seconds by setting microseconds to zero
         found_timestamp = found_timestamp.replace(microsecond=0)
         if current_timestamp:
             current_timestamp = current_timestamp.replace(microsecond=0)
