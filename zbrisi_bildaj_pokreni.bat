@@ -1,4 +1,7 @@
 @echo off
+echo Stopping any running containers...
+docker compose down
+
 REM Remove the RDFox v00001 directory if it exists
 SET "folder=rdfox_db\src\data\v00001"
 IF EXIST "%folder%" (
