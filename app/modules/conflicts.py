@@ -577,7 +577,7 @@ class ConflictDetection:
                 "callsign": flight_key,
                 "current_pos": current_pos,
                 "current_fl": current_fl,
-                "current_velocity": current_velocity,
+                "current_velocity": current_velocity,   # TODO: this should be speed
                 "predicted_points": predicted_points,
                 "predicted_times": predicted_times,
                 "cruise_level_cleared": cruise_level_cleared,

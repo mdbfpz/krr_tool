@@ -149,7 +149,6 @@
 
 
 # 5.2.2. Check that aircraft is approaching Sector boundary
-# TODO: MISSING coordination status
 [?flight2, :aircraftApproachingToSectorBoundary, ?sector] :-
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  

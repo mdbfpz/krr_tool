@@ -17,66 +17,8 @@
 # ?cpaPosition :longitude ?long.
 # ?cpaPosition :altitude ?alt.
 
-# We need to import statistics root where each branch represents a flight. 
-# Also those flights will have a connection with the flights in each timestamp. 
-# ?statistics :statsFlight ?flight.
-# ?flight fx:aircraftIdentification, ?flightID.
-# ?flight :altStd ?altStd.
-# ?flight :altMean ?altMean.
-# ?flight :latMax ?latMax.
-# ?flight :latMin ?latMin.
-# ?flight :lonMax ?lonMax.
-# ?flight :lonMin ?lonMin.
-# ...
-
-
-# TODO: do we need to make this symmetric relation - add [?flight2, :diverging, ?flight1]?
-# TODO: through the pipeline, add: 
-# [?flight1, :distanceBetween, ?flights12], [?flight2, :distanceBetween, ?flights12], [?flights12, :distanceValue, ?value]
-# where both flights are in the same timestamp
-
-# [?currFlight1, :diverging, ?currFlight2] :-
-    # Identify consecutive timestamps
-    # [?prevT, :next, ?currT],  
-
-    # [?prevT, fx:flight, ?prevFlight1],
-    # [?prevT, fx:flight, ?prevFlight2],
-    # [?currT, fx:flight, ?currFlight1],
-    # [?currT, fx:flight, ?currFlight2],
-
-    # [?prevFlight1, fx:aircraftIdentification, ?prevFlight1ID],
-    # [?prevFlight2, fx:aircraftIdentification, ?prevFlight2ID],
-    # [?currFlight1, fx:aircraftIdentification, ?currFlight1ID],
-    # [?currFlight2, fx:aircraftIdentification, ?currFlight2ID],
-
-    # Avoid creation of symmetric relations within this rule. To avoid unnecessary computation, 
-    # we create symmetric relations below this rule.
-    # NOT [?currFlight2, :diverging, ?currFlight1], 
-    
-    # TODO: can we check this in the previous step?(flight pairs directly without IDs)?
-    # FILTER(
-    #     ?prevFlight1ID = ?currFlight1ID && 
-    #     ?prevFlight2ID = ?currFlight2ID && 
-    #     ?prevFlight1ID != ?prevFlight2ID && 
-    #     ?currFlight1ID != ?currFlight2ID
-    # ),
-
-    # [?prevFlight1, :distanceBetween, ?prevFlights12],
-    # [?prevFlight2, :distanceBetween, ?prevFlights12],
-    # [?prevFlights12, :distanceValue, ?prevValue],
-
-    # [?currFlight1, :distanceBetween, ?currFlights12],
-    # [?currFlight2, :distanceBetween, ?currFlights12],
-    # [?currFlights12, :distanceValue, ?currValue],
-
-    # FILTER(?prevValue < ?currValue).
-
-# Make this relation symmetric
-# [?flight2, :diverging, ?flight1] :- [?flight1, :diverging, ?flight2].
-
-
 # 5.5.1. Check all aircraft pairs for conflict (ML module)
-# No need to implement this. We have a conflict detection ML module, whose outputs will be 
+# No need to implement this. We have a conflict detection module, whose outputs will be 
 # directly stored in a graph. To read this information, we just call a corresponding SPARQL 
 # query in the pipeline.
 
@@ -103,9 +45,9 @@
     [?flight1, :currentElement, ?currElement1],
     [?flight2, :currentElement, ?currElement2],
     [?currElement1, fx:point4D, ?currPoint4D1],
-    [?currPoint4D1, fx:predictedAirspeed, ?currSpeed1],
+    [?currPoint4D1, fx:predictedAirspeed, ?currSpeed1], # TODO: change to fx:groundSpeed?
     [?currElement2, fx:point4D, ?currPoint4D2],
-    [?currPoint4D2, fx:predictedAirspeed, ?currSpeed2],
+    [?currPoint4D2, fx:predictedAirspeed, ?currSpeed2], # TODO: change to fx:groundSpeed?
 
     BIND(
         ?timeToMinDist*(?currSpeed1/3600)
@@ -148,10 +90,15 @@
     NOT [?flight1, :conflictPredictionImplausible, ?flight2].
 
 
-# 5.5.3. Check which conflicts are to occur within the sector
+# 5.5.3. Check which conflicts are to occur within the sector   # [DONE]
 [?conflict, :conflictWithinSectorVertically, ?sector] :-
-    [?conflict, :position, ?cpaPosition],
-    [?cpaPosition, :conflictAltitude, ?alt],
+    [?conflict, fx:position, ?cpaPosition],
+    [?cpaPosition, fb:pos, ?cpaPos],
+    [?cpaPos, fb:altitude, ?alt],
+
+    BIND(
+        ?alt/100 AS ?altFL  # Convert Feet to FL
+    ),
 
     [?aixmFeatures, :contains, ?airspace],
     [?airspace, ax:geometryComponent, ?sector],
@@ -181,23 +128,19 @@
     ),
 
     FILTER(
-        ?alt <= ?upperValue && 
-        ?alt >= ?lowerValue
+        ?altFL <= ?upperValue && 
+        ?altFL >= ?lowerValue
     ).
 
 [?conflict, :conflictWithinSector, ?sector] :-
-    # TODO: ovo prvo implementirati u pipelineu - isto kao i za aircraft iz pipelinea (ista je funkcija)
     [?conflict, :conflictWithinSectorHorizontally, ?sector],
     [?conflict, :conflictWithinSectorVertically, ?sector].
 
 
-# 5.5.4. Rank conflicts based on urgency
+# TODO: napravit novo pravilo koje će gledati jel konflikt unutar buffera
 
-# 1. It makes no sense to implement sorting algorithim in a Datalog.
-# 2. Better solution is to implement this in the pipeline as a postprocessing step, 
-# where we can use a sorting algorithm, and classify conflicts based on urgency directly in the graph by 
-# applying datalog rule:
 
+# 5.5.4. Categorize conflicts based on urgency  # [DONE]
 [?conflict, :conflictUrgency, ?urgency] :-
     [?conflict, :conflictIndicator, 1],
     [?conflict, :timeToMD, ?timeToMD],
@@ -205,7 +148,7 @@
     BIND(?timeToMD/60 AS ?timeToMDInMinutes),
     BIND(
         IF(
-            ?timeToMDInMinutes < 1, 
+            ?timeToMDInMinutes < 2, 
             "high",
             IF(
                 ?timeToMDInMinutes <= 5,
@@ -217,231 +160,231 @@
     ).
 
 
+# TODO: rules below are not needed since we won't have this statistics data
 # 5.5.5. Check if conflict pair aircraft data matches ML conflict module metadata
-
-#TODO: these set of roules could be more efficient if there's a way to use the same rule for all sigmas?
-[?flight, :headingWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-    
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - ?altStd) mod 360 && 
-            ?currFL <= (?altMean + ?altStd) mod 360,
-            1,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :headingWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - 2*?altStd) mod 360 && 
-            ?currFL <= (?altMean + 2*?altStd) mod 360,
-            2,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :headingWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - 3*?altStd) mod 360 && 
-            ?currFL <= (?altMean + 3*?altStd) mod 360,
-            3,
-            0
-        )
-        AS ?indicator
-    ).
-
-
-[?flight, :headingOutside3SigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    [?flight, :headingWithinSigmaBand, ?indicator],
-    BIND(
-        IF(
-            ?indicator != 3,
-            1,
-            0
-        )
-        AS ?indicator
-    ).
-
-#TODO: How to say which non-heading parameter is within sigma band?
-[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - ?altStd) && ?currFL <= (?altMean + ?altStd),
-            1,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - 2*?altStd) && ?currFL <= (?altMean + 2*?altStd),
-            2,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    BIND(
-        IF(
-            ?currFL >= (?altMean - 3*?altStd) && ?currFL <= (?altMean + 3*?altStd),
-            3,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :nonHeadingParameterOutside3SigmaBand, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:level, ?currLevel],
-    [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-
-    [?flightStats, :altStd, ?altStd],
-    [?flightStats, :altMean, ?altMean],
-
-    [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator],
-    BIND(
-        IF(
-            ?indicator != 3,#ne znam ako je legalno: NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3],
-            1,
-            0
-        )
-        AS ?indicator
-    ).
-
-[?flight, :positionWithinBoundingBox, ?indicator] :-
-    [?flight, :conflict, ?conflict],
-    [?flight, fx:flightIdentification, ?ident],
-    [?ident, fb:aircraftIdentification, ?flightID],
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:position, ?currPosition],
-    [?currPosition, fb:pos, ?currPoint],
-    [?currPoint, fb:lat, ?currLat],
-    [?currPoint, fb:lon, ?currLon],
-    
-    [?statistics, :statsFlight, ?flightStats],
-    [?flightStats, fb:aircraftIdentification, ?flightID],
-    
-    [?flightStats, :latMax, ?latMax],
-    [?flightStats, :latMin, ?latMin],
-    [?flightStats, :lonMax, ?lonMax],
-    [?flightStats, :lonMin, ?lonMin],
-
-    BIND(
-        IF(
-            ?currLat >= ?latMin && ?currLat <= ?latMax && 
-            ?currLon >= ?lonMin && ?currLon <= ?lonMax,
-            1,
-            0
-        ) 
-        AS ?indicator
-    ).
+#
+# [?flight, :headingWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#     
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+#     
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+# 
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - ?altStd) mod 360 && 
+#             ?currFL <= (?altMean + ?altStd) mod 360,
+#             1,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :headingWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#     
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+# 
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+#
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - 2*?altStd) mod 360 && 
+#             ?currFL <= (?altMean + 2*?altStd) mod 360,
+#             2,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :headingWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#  
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+#
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+#
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - 3*?altStd) mod 360 && 
+#             ?currFL <= (?altMean + 3*?altStd) mod 360,
+#             3,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+#
+# [?flight, :headingOutside3SigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+#
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+#
+#     [?flight, :headingWithinSigmaBand, ?indicator],
+#     BIND(
+#         IF(
+#             ?indicator != 3,
+#             1,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# TODO: How to say which non-heading parameter is within sigma band?
+# [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#    
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+#
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+#
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - ?altStd) && ?currFL <= (?altMean + ?altStd),
+#             1,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#     
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+# 
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+# 
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - 2*?altStd) && ?currFL <= (?altMean + 2*?altStd),
+#             2,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],
+#     
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+# 
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+# 
+#     BIND(
+#         IF(
+#             ?currFL >= (?altMean - 3*?altStd) && ?currFL <= (?altMean + 3*?altStd),
+#             3,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :nonHeadingParameterOutside3SigmaBand, ?indicator] :-
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:level, ?currLevel],
+#     [?currLevel, fb:flightLevel, ?currFL],  #TODO: treba li ovo?
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+# 
+#     [?flightStats, :altStd, ?altStd],
+#     [?flightStats, :altMean, ?altMean],
+# 
+#     [?flight, :nonHeadingParameterWithinSigmaBand, ?indicator],
+#     BIND(
+#         IF(
+#             ?indicator != 3,#ne znam ako je legalno: NOT [?flight, :nonHeadingParameterWithinSigmaBand, 3],
+#             1,
+#             0
+#         )
+#         AS ?indicator
+#     ).
+#
+# [?flight, :positionWithinBoundingBox, ?indicator] :-    # TODO ne treba
+#     [?flight, :conflict, ?conflict],
+#     [?flight, fx:flightIdentification, ?ident],
+#     [?ident, fb:aircraftIdentification, ?flightID],
+#     [?flight, :currentElement, ?currElement],
+#     [?currElement, fx:point4D, ?currPoint4D],
+#     [?currPoint4D, fx:position, ?currPosition],
+#     [?currPosition, fb:pos, ?currPoint],
+#     [?currPoint, fb:lat, ?currLat],
+#     [?currPoint, fb:lon, ?currLon],
+#     
+#     [?statistics, :statsFlight, ?flightStats],
+#     [?flightStats, fb:aircraftIdentification, ?flightID],
+#     
+#     [?flightStats, :latMax, ?latMax],
+#     [?flightStats, :latMin, ?latMin],
+#     [?flightStats, :lonMax, ?lonMax],
+#     [?flightStats, :lonMin, ?lonMin],
+# 
+#     BIND(
+#         IF(
+#             ?currLat >= ?latMin && ?currLat <= ?latMax && 
+#             ?currLon >= ?lonMin && ?currLon <= ?lonMax,
+#             1,
+#             0
+#         ) 
+#         AS ?indicator
+#     ).

@@ -1566,7 +1566,7 @@ class RDFConverter:
         self.graph.add((conflict_uri, FIXM.position, position_uri))
 
         for key, value in conflict_data.items():
-            if key in ["pos", "midpoint_pos"]:
+            if key in ["pos", "midpointPos"]:
                 lat, lon, altitude, time = value
                 pos_uri = URIRef(f"{position_uri}_{key}")
                 self.graph.add((position_uri, FB[f"{key}"], pos_uri))
@@ -1612,21 +1612,21 @@ class RDFConverter:
 
             flight_1_branch = self.data_repository[timestamp][flight_1]
             flight_1_branch["conflicts"] = {}
-            flight_1_branch["conflicts"]["related_flight"] = flight_2
-            flight_1_branch["conflicts"]["conflict_indicator"] = conflict_indicator
+            flight_1_branch["conflicts"]["relatedFlight"] = flight_2
+            flight_1_branch["conflicts"]["conflictIndicator"] = conflict_indicator
             flight_1_branch["conflicts"]["pos"] = flight_1_pos
-            flight_1_branch["conflicts"]["midpoint_pos"] = midpoint_pos
-            flight_1_branch["conflicts"]["time_to_md"] = flight_1_time_to_md
-            flight_1_branch["conflicts"]["dist_to_md"] = flight_1_dist_to_md
+            flight_1_branch["conflicts"]["midpointPos"] = midpoint_pos
+            flight_1_branch["conflicts"]["timeToMD"] = flight_1_time_to_md
+            flight_1_branch["conflicts"]["distanceToMD"] = flight_1_dist_to_md
 
             flight_2_branch = self.data_repository[timestamp][flight_2]
             flight_2_branch["conflicts"] = {}
-            flight_2_branch["conflicts"]["related_flight"] = flight_1
-            flight_2_branch["conflicts"]["conflict_indicator"] = conflict_indicator
+            flight_2_branch["conflicts"]["relatedFlight"] = flight_1
+            flight_2_branch["conflicts"]["conflictIndicator"] = conflict_indicator
             flight_2_branch["conflicts"]["pos"] = flight_2_pos
-            flight_2_branch["conflicts"]["midpoint_pos"] = midpoint_pos
-            flight_2_branch["conflicts"]["time_to_md"] = flight_2_time_to_md
-            flight_2_branch["conflicts"]["dist_to_md"] = flight_2_dist_to_md
+            flight_2_branch["conflicts"]["midpointPos"] = midpoint_pos
+            flight_2_branch["conflicts"]["timeToMD"] = flight_2_time_to_md
+            flight_2_branch["conflicts"]["distanceToMD"] = flight_2_dist_to_md
         
     def serialize(self, format="turtle"):
         """Serialize the RDF graph to a string/turtle format."""

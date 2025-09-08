@@ -689,7 +689,7 @@
 
 # TODO: Implement the following in the pipeline:
 # When direct-to point is received, check if this point is on the route and it is not the next point on the route.
-# This means that the a/c can skip the next point on the route and go directly to some other point.
+# This means that the a/c can skip the next point on the route and go directly to received direct-to point.
 # Add a triple that indicates that the received point is direct-to point:
 # [?agreedElement, :isDirectTo, 1].
 

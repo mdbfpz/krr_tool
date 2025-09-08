@@ -6,23 +6,21 @@
 
 # Helper rules
 # TODO: MISSING routeChange
-[?flight, :qosCandidate, ?indicator] :-
-    [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator], # TODO: provjeriti ovo, zar ne treba provjera za točku rute je li kandidat, a ne samo indikator?
 
-    # Is there a Requested Flight Level (RFL) which hasn't been given, i.e. higher than current FL
-    [?flight, :currentElement, ?currElement],
-    [?currElement, fx:routeChange, ?currRouteChange],
-    [?currRouteChange, fx:level, ?currCruisingLevelChange],
-    [?currCruisingLevelChange, fb:flightLevel, ?changeFL],  #TODO: treba li ovo?
-    [?flight, :hasToClimbFL, ?hasToClimbFLIndicator],
+# TODO: Trebamo gledat what-if ako dignemo avion na određeni FL, hoće li doći do konflikta. 
+# IMPLEMENTIRATI U PIPELINEu (raspisati prvo sve uvjete)
+[?flight, :qosCandidate, ?indicator] :-
+    [?flight, :isCandidateForDirectTo, ?candidateForDirectToIndicator],
+    [?flight, :whatIfModulePlausible, ?whatIfIndicator],
     BIND(
         IF(
-            ?candidateForDirectToIndicator = 1 || ?hasToClimbFLIndicator = 1,
+            ?candidateForDirectToIndicator = 1 && ?whatIfIndicator = 1,
             1,
             0
         )
         AS ?indicator
-    ).
+    ). # TODO: implement this in the pipeline - this means genearated trajectory won't lead to any conflict
+
 
 # Check that aircraft is approaching sector boundary
 # -- this is already implemented in monitoring tasks (5.2.2), but for not assumed A/C's
@@ -228,18 +226,6 @@
     [?flight, :aircraftWillReachExitPointOnRequiredFL, 1].
 
 
-# 8. CONFLICT DETECTION
-# TODO: Compare this with the diagram when it is finished
-[?flight, :activeTask, "conflict_detection"] :-
-    # A/C is in conflict - detected by the Conflict detection module
-    [?flight, :conflict, ?conflict],
-
-    # Check the time
-    [?conflict, :timeToMD, ?timeToMinDist],
-    BIND(5 AS ?timeThreshold), # Time in minutes
-    FILTER(?timeToMinDist > 5).
-
-
 # 9. CONFLICT RESOLUTION
 # TODO: Compare this with the diagram when it is finished
 [?flight, :activeTask, "conflict_resolution"] :-
@@ -249,7 +235,8 @@
     # Check the time
     [?conflict, :timeToMD, ?timeToMinDist],
     BIND(5 AS ?timeThreshold), # Time in minutes
-    FILTER(?timeToMinDist < 5).
+    BIND(?timeToMinDist/60 AS ?timeToMinDistInMin), # Convert to minutes
+    FILTER(?timeToMinDistInMin < 5).
 
 
 # 10. NON-CONFORMANCE RESOLUTION
