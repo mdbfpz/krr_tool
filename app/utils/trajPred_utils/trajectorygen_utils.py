@@ -346,17 +346,12 @@ def load_mat_files():
     ACsynonyms_path = os.path.join(script_dir, ACsynonyms_filename)
     ACsynonyms = sio.loadmat(ACsynonyms_path)['ACsynonyms']
 
-    APlist_filename = "AirportList.mat"
-    APlist_path = os.path.join(script_dir, APlist_filename)
-    APlist = sio.loadmat(APlist_path)['APlist']
-    airportList = [ap[0] for ap in APlist.squeeze()]
-
     FFP_filename = "flight_pos.mat"
     # Full path to the .mat file
     FFP_path = os.path.join(script_dir, FFP_filename)
     FFP = get_FFS_data(FFP_path)
     #print(FFP)
-    return ACsynonyms, airportList, FFP
+    return ACsynonyms, FFP
 
 
 

@@ -60,11 +60,12 @@ def tand(degrees):
 def trajectorygen_Weather_aware(
     ACstate, ACcontrol, Wind, ACmode, dT, SimulationTime, WPTi, FFP,
     waypoints, opsdata, apfdata, GP, const, ACarchive,
-    Loctime, endtime, APlist, desired_time
+    endtime, desired_time, APlist=None
 ):
     """
     Generira putanju zrakoplova na temelju ulaznih parametara.
     """
+    Loctime = desired_time
 
     # 1. Ako je maksimalna visina svih točaka rute < 160, vraća prazan arhiv
     if max([wp['z'] for wp in waypoints]) < 160:
@@ -79,6 +80,7 @@ def trajectorygen_Weather_aware(
     ldg = 0
     cda = 0
 
+    """
     # 2. Provjera je li zadnja točka rute aerodrom iz liste
 
     APlist_clean = []
@@ -91,7 +93,7 @@ def trajectorygen_Weather_aware(
                 APlist_clean.append(str(item.item()))  # extract the single value
 
 
-    """ if len(FFP["waypoints"]) > 0:
+    if len(FFP["waypoints"]) > 0:
         if FFP["waypoints"][-1]["name"] in APlist_clean:
             # Nije implementirano: CDA
             #print(f"accontrol[2] /////////////////////////7 ==== {ACcontrol[2]}")
