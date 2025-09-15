@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from rdflib import Graph, URIRef, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, XSD 
 from app.utils.utils import GeodesicService
@@ -40,7 +40,7 @@ class RDFConverter:
         self.uuid_callsign_map = {}  # key = flight plan UUID; value = callsign
         self.last_timestamp = None  # Store the last processed timestamp
 
-        self.clearance_keys = ["heading"]
+        self.clearance_keys = ["heading", "level", "speed", "verticalRate"]
 
         self.aircraft_id = ""  # Default aircraft ID
         self.id_counter = {}  # Counter for generating unique IDs for each type
@@ -108,44 +108,59 @@ class RDFConverter:
         self.graph.add((parent_uri, fx_namespace.level, level_uri))
         self.graph.add((level_uri, RDF.type, fx_namespace.Level))
 
-        for key, value in level_data.items():            
-            pred = URIRef(f"{fb_namespace}{key}")
-
-            if isinstance(value, dict):
-                # Nested structure, like {'uom': 'FL', 'flightLevel': '370'}
-                for subkey, subval in value.items():
-                    sub_pred = URIRef(f"{fb_namespace}{subkey}")
-                    if subkey == "flightLevel" and isinstance(subval, str):
-                        try:
-                            subval_int = int(subval)
-                            self._add_literal(level_uri, sub_pred, subval_int, datatype=XSD.integer)
-                        except ValueError:
-                            self._add_literal(level_uri, sub_pred, subval)  # keep as string
-
-                    elif subkey == "altitude":
-                        # Convert altitude to flight level
-                        if isinstance(subval, (int, float)):
-                            fl_value = subval * self.to_fl_const
-                        else:
-                            subval_int = int(subval)
-                            fl_value = subval_int * self.to_fl_const
-                        sub_pred = URIRef(f"{fb_namespace.flightLevel}")
-                        self._add_literal(level_uri, sub_pred, fl_value, datatype=XSD.integer)
-                    else:
-                        self._add_literal(level_uri, sub_pred, subval)
-
+        if not isinstance(level_data, dict):
+            pred = URIRef(f"{fb_namespace}flightLevel")
+            # Single value
+            if isinstance(level_data, str):
+                try:
+                    value_int = int(level_data)
+                    self._add_literal(level_uri, pred, value_int, datatype=XSD.integer)
+                except ValueError:
+                    self._add_literal(level_uri, pred, level_data)  # keep as string
+            elif isinstance(level_data, int):
+                self._add_literal(level_uri, pred, level_data, datatype=XSD.integer)
             else:
-                # Single value
-                if isinstance(value, str):
-                    try:
-                        value_int = int(value)
-                        self._add_literal(level_uri, pred, value_int, datatype=XSD.integer)
-                    except ValueError:
-                        self._add_literal(level_uri, pred, value)  # keep as string
-                elif isinstance(value, int):
-                    self._add_literal(level_uri, pred, value, datatype=XSD.integer)
+                self._add_literal(level_uri, pred, level_data)
+        else:
+            # Process each key-value pair in the level_data dictionary
+            for key, value in level_data.items():            
+                pred = URIRef(f"{fb_namespace}{key}")
+
+                if isinstance(value, dict):
+                    # Nested structure, like {'uom': 'FL', 'flightLevel': '370'}
+                    for subkey, subval in value.items():
+                        sub_pred = URIRef(f"{fb_namespace}{subkey}")
+                        if subkey == "flightLevel" and isinstance(subval, str):
+                            try:
+                                subval_int = int(subval)
+                                self._add_literal(level_uri, sub_pred, subval_int, datatype=XSD.integer)
+                            except ValueError:
+                                self._add_literal(level_uri, sub_pred, subval)  # keep as string
+
+                        elif subkey == "altitude":
+                            # Convert altitude to flight level
+                            if isinstance(subval, (int, float)):
+                                fl_value = subval * self.to_fl_const
+                            else:
+                                subval_int = int(subval)
+                                fl_value = subval_int * self.to_fl_const
+                            sub_pred = URIRef(f"{fb_namespace.flightLevel}")
+                            self._add_literal(level_uri, sub_pred, fl_value, datatype=XSD.integer)
+                        else:
+                            self._add_literal(level_uri, sub_pred, subval)
+
                 else:
-                    self._add_literal(level_uri, pred, value)
+                    # Single value
+                    if isinstance(value, str):
+                        try:
+                            value_int = int(value)
+                            self._add_literal(level_uri, pred, value_int, datatype=XSD.integer)
+                        except ValueError:
+                            self._add_literal(level_uri, pred, value)  # keep as string
+                    elif isinstance(value, int):
+                        self._add_literal(level_uri, pred, value, datatype=XSD.integer)
+                    else:
+                        self._add_literal(level_uri, pred, value)
 
     def _process_time(self, parent_uri, time_data, fx_namespace, fb_namespace):
         """
@@ -162,14 +177,38 @@ class RDFConverter:
             predicate = URIRef(f"{fb_namespace}{key}")
             self._add_literal(time_uri, predicate, value, datatype=XSD.dateTime) # dateTime
 
-    def _process_vertical_rate(self, parent_uri, vertical_rate):
-        """
-        Create RDF triples for a vertical rate object.
-        - Output structure: parent -> verticalRate
-        """
+    def _process_speed(self, point4d_uri, value):
+        # Clearance case - agreed branch
+        if isinstance(value, dict):
+            speed_value, received_at = value["value"], value["received_at"]
+            self._add_literal(point4d_uri, BASE.speed, speed_value, datatype=XSD.decimal)
+            self._add_literal(point4d_uri, BASE.receivedAt, received_at, datatype=XSD.dateTime)
         
-        # Add the vertical rate value
-        self._add_literal(parent_uri, BASE.verticalRate, vertical_rate, datatype=XSD.decimal)
+        # Current speed
+        else:
+            self._add_literal(point4d_uri, BASE.speed, value, datatype=XSD.decimal)
+    
+    def _process_heading(self, point4d_uri, value):
+        # Clearance case - agreed branch
+        if isinstance(value, dict):
+            heading_val, received_at = value["value"], value["received_at"]
+            self._add_literal(point4d_uri, BASE.heading, heading_val, datatype=XSD.decimal)
+            self._add_literal(point4d_uri, BASE.receivedAt, received_at, datatype=XSD.dateTime)
+        
+        # Current heading
+        else:
+            self._add_literal(point4d_uri, BASE.heading, value, datatype=XSD.decimal)
+
+    def _process_vertical_rate(self, point4d_uri, value):        
+        # Clearance case - agreed branch
+        if isinstance(value, dict):
+            vertical_rate_value, received_at = value["value"], value["received_at"]
+            self._add_literal(point4d_uri, BASE.verticalRate, vertical_rate_value, datatype=XSD.decimal)
+            self._add_literal(point4d_uri, BASE.receivedAt, received_at, datatype=XSD.dateTime)
+        
+        # Current vertical rate
+        else:
+            self._add_literal(point4d_uri, BASE.verticalRate, value, datatype=XSD.decimal)
 
     def _process_hmi_position(self, flight_uri, uri, key, value, namespace):
         """
@@ -224,22 +263,33 @@ class RDFConverter:
             else:
                 self._add_literal(alert_uri, URIRef(HMI[key]), value)
 
-    def _process_velocity_vector(self, point4d_uri, velocity_data):
-        """Process velocity data and add to the graph."""
+    # TODO: remove this - we don't need velocity
+    """def _process_velocity_vector(self, point4d_uri, velocity_data):
+        # Process velocity data and add to the graph.
         velocity_uri = URIRef(f"{point4d_uri}_predictedAirspeed")
         self.graph.add((velocity_uri, RDF.type, FIXM.predictedAirspeed))
         self.graph.add((point4d_uri, FIXM.predictedAirspeed, velocity_uri))
         self._add_literal(velocity_uri, FIXM.Vx, velocity_data.get("VxMs"), datatype=XSD.decimal)   # TODO: this is not FIXM
-        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("VyMs"), datatype=XSD.decimal)   # TODO: this is not FIXM
+        self._add_literal(velocity_uri, FIXM.Vy, velocity_data.get("VyMs"), datatype=XSD.decimal)   # TODO: this is not FIXM"""
 
-    def _process_clearance(self, point4d_uri, point4d_data):
-        """Process clearance info and add to the graph."""
+    # TODO: not needed because of self.clearance_keys already covered separately in _process_point4d
+    """def _process_clearance(self, point4d_uri, point4d_data):
+        # Process clearance info and add to the graph.
         for key, value in point4d_data.items():
-            if key in self.clearance_keys: # TODO: add other clearance types
+            if key in self.clearance_keys:
                 clearance_uri = URIRef(f"{point4d_uri}_{key}")
                 self.graph.add((clearance_uri, RDF.type, URIRef(FIXM[key])))
                 self.graph.add((point4d_uri, URIRef(FIXM[key]), clearance_uri))
-                self._add_literal(clearance_uri, URIRef(FB[key]), value)
+                self._add_literal(clearance_uri, URIRef(FB[key]), value)"""
+    
+    def _process_clearance_just_received(self, flight_key, clearance_type, just_received):
+        """Process just received clearance and add this info to the graph."""
+        timestamp_snake_case = self._safe_local_name(self.last_timestamp)
+        flight_uri = URIRef(FIXM[f"{flight_key}_{timestamp_snake_case}"])
+        clearance_type = clearance_type[0].upper() + clearance_type[1:] # Capitalize first letter only, don't force lowercase for rest
+        predicate = URIRef(BASE[f"is{clearance_type}ClearanceJustReceived"])
+        value = int(just_received)  # Convert boolean to integer (1 for True, 0 for False)
+        self._add_literal(flight_uri, predicate, value, datatype=XSD.integer)
 
     def _process_point4d(self, element_uri, point4d_data):
         """Process point4D data and add to the graph."""
@@ -256,9 +306,12 @@ class RDFConverter:
 
             elif key == "time":
                 self._process_time(point4d_uri, value, FIXM, FB)
-
-            elif key == "velocity":
-                self._process_velocity_vector(point4d_uri, value)
+            
+            elif key == "speed":
+                self._process_speed(point4d_uri, value)
+            
+            elif key == "heading":
+                self._process_heading(point4d_uri, value)
 
             elif key == "verticalRate":
                 self._process_vertical_rate(point4d_uri, value)
@@ -269,9 +322,10 @@ class RDFConverter:
             elif key == "calculatedAltitudeM":
                 self._add_literal(point4d_uri, FB.calculatedAltitude, value, datatype=XSD.decimal)
             
-            else:
+            # TODO: not needed if self.clearance_keys is covered above
+            """else:
                 # For all other keys, process as clearance or custom property
-                self._process_clearance(point4d_uri, {key: value})
+                self._process_clearance(point4d_uri, {key: value})"""
     
     def _process_branch(self, route_trajectory_group_uri, branch_key, branch_data):
         branch_uri = URIRef(f"{route_trajectory_group_uri}_{branch_key}")
@@ -313,7 +367,6 @@ class RDFConverter:
             fligh_level_uom = flight_level_dict.get("uom")
             flight_level_value = flight_level_dict.get("flightLevel")
 
-
             #routeInformation
             route_info_uri = URIRef(f"{branch_uri}_routeInformation")
             self.graph.add((branch_uri     , FIXM.routeInformation , route_info_uri))
@@ -331,7 +384,6 @@ class RDFConverter:
             #finally add value of cruising flight level
             self.graph.add((flight_lvl_uri , FB.uom    , Literal(fligh_level_uom))) 
             self.graph.add((flight_lvl_uri , FB.flightLevel    , Literal(flight_level_value))) 
-            
             
             point4d = element.get("point4D", {})
             self._process_point4d(element_uri, point4d)
@@ -539,7 +591,7 @@ class RDFConverter:
 
     def _update_asd_event_repo(self, json_record):
         data_record = json_record.get("asd_event", {})
-        timestamp = data_record.get("timestamp")  # TODO: which timestamp should we use here? asd_event or the one from the main record?
+        timestamp = json_record.get("timestamp")  # TODO: which timestamp should we use here? asd_event or the one from the main record?
 
         # 1. Handle clearance 
         clearance = data_record.get("clearance")
@@ -553,7 +605,7 @@ class RDFConverter:
                 clearance_value = clearance.get("clearance")
 
                 if callsign and clearance_type and clearance_value:
-                    # Navigate safely to "agreed" list
+                    # Navigate to "agreed" list
                     route_group = self.data_repository \
                         .setdefault(timestamp, {}) \
                         .setdefault(flight_key, {}) \
@@ -569,16 +621,22 @@ class RDFConverter:
                         # If the list is empty, add a new element structure
                         agreed_list.append({"element": {"point4D": {}}})
 
-                    # Use first element in the list for now
+                    # Use first element in the list
                     first_element = agreed_list[0].get("element", {})
                     point4d = first_element.setdefault("point4D", {})
 
                     # Update clearance
-                    # TODO: Make sure this updates exactly a directory/subdirectory it refers to
-                    point4d[clearance_type] = clearance_value
-
-                    # Write back the updated element in case it was not present before
-                    agreed_list[0]["element"] = first_element
+                    if clearance_type == "level":
+                        point4d[clearance_type] = {
+                            "received_at": timestamp,
+                            "value": int(clearance_value)
+                        }
+                    else:
+                        point4d[clearance_type] = {
+                            "received_at": timestamp,
+                            "value": float(clearance_value)
+                        }
+                    # print("point4d after clearance update:", point4d)
 
         # 2. Determine if there's a flight-related HMI event
         track_number = (
@@ -639,7 +697,9 @@ class RDFConverter:
 
         # Get track numbers and their corresponding callsigns
         track_numbers = [data_record[key] for key in data_record if "trackNumber" in key]
-        related_callsigns = [self.track_number_callsign_map[track_num] for track_num in track_numbers]
+        related_callsigns = [
+            self.track_number_callsign_map[track_num] for track_num in track_numbers
+        ]
 
         # Ensure alert structure exists in the repository
         alert_group = self.data_repository \
@@ -680,8 +740,9 @@ class RDFConverter:
                     }
                 }
 
+        # TODO: remove this - we don't need velocity
         # Velocity
-        velocity = data_record.get("velocity")
+        """velocity = data_record.get("velocity")
         if velocity:
             vx = velocity.get("VxMs")
             vy = velocity.get("VyMs")
@@ -690,7 +751,7 @@ class RDFConverter:
                 if vx is not None:
                     point4d["velocity"]["VxMs"] = vx
                 if vy is not None:
-                    point4d["velocity"]["VyMs"] = vy
+                    point4d["velocity"]["VyMs"] = vy"""
         
         # Vertical rate
         vertical_rate = data_record.get("calculatedRateOfClimbFtmin", None)
@@ -709,6 +770,16 @@ class RDFConverter:
 
         if level:
             point4d["level"] = level
+
+        # Speed
+        speed = data_record.get("TAS", None)
+        if speed is not None:
+            point4d["speed"] = speed
+
+        # Heading
+        heading = data_record.get("MHG", None)
+        if heading is not None:
+            point4d["heading"] = heading
 
         # Final repo update
         route_group = self.data_repository \
@@ -753,6 +824,69 @@ class RDFConverter:
         if cruising_level:
             predicted_data["cruisingLevel"] = cruising_level
 
+
+    from datetime import datetime, timedelta
+
+    def _get_recent_clearances(self, flight_key: str, window_seconds: int = 7) -> dict:
+        """
+        Check if 'level', 'heading', 'verticalRate' or 'speed' clearance 
+        was received in the last 7 seconds based on the 'received_at' field
+        stored inside each clearance.
+
+        Returns a dict like:
+            {"level": True/False, "heading": True/False, "speed": True/False, "verticalRate": True/False}
+        """
+        result = {k: False for k in self.clearance_keys}
+
+        if not self.data_repository:
+            return result
+
+        timestamps = sorted(self.data_repository.keys())
+        if not timestamps:
+            return result
+
+        # latest timestamp in repository
+        try:
+            latest_ts = datetime.fromisoformat(timestamps[-1])
+        except Exception:
+            return result
+
+        flights = self.data_repository.get(timestamps[-1], {})
+        flight_data = flights.get(flight_key, {}).get("Flight", {})
+        agreed = flight_data.get("routeTrajectoryGroup", {}).get("agreed", {})
+
+        if not agreed or not isinstance(agreed, list):
+            return result
+
+        clearances = agreed[0].get("element", {}).get("point4D", {})
+        if not clearances:
+            return result
+
+        # check each clearance type
+        for clearance_type in self.clearance_keys:
+            c_data = clearances.get(clearance_type)
+            if not c_data or not isinstance(c_data, dict):
+                continue
+
+            received_at = c_data.get("received_at")
+            if not received_at:
+                continue
+
+            try:
+                received_ts = datetime.fromisoformat(received_at)
+                if latest_ts - received_ts < timedelta(seconds=window_seconds):
+                    result[clearance_type] = True
+            except Exception:
+                continue
+
+        return result
+
+    def _process_clearances(self, flight_key: str):
+        recent_clearances = self._get_recent_clearances(flight_key)
+
+        for clearance_type, just_received in recent_clearances.items():
+            self._process_clearance_just_received(flight_key, clearance_type, just_received)
+
     def _update_within_sector(self, last_timestamp, flight_key):
         """..."""
 
@@ -793,6 +927,7 @@ class RDFConverter:
         for flight_key, flight_data in last_state.items():
             if "Flight" not in flight_data:
                 continue
+            self._process_clearances(flight_key)
             self._update_within_sector(self.last_timestamp, flight_key)
             # TODO: add other advanced datalog methods here
         
@@ -814,10 +949,11 @@ class RDFConverter:
                 - timestamp_repository (dict): Nested dictionary organized by timestamp and flight/HMI data.
         """
         # Extract timestamp from appropriate location in record
-        if "asd_event" in json_record:
+        """if "asd_event" in json_record:
             timestamp = json_record.get("asd_event").get("timestamp")
         else:
-            timestamp = json_record.get("timestamp")
+            timestamp = json_record.get("timestamp")"""
+        timestamp = json_record.get("timestamp")
 
         # Copy previous repo state to the current timestamp
         self._create_new_repo_state(timestamp)
@@ -1057,6 +1193,7 @@ class RDFConverter:
             if current_point is not None:
                 current_point_lat, current_point_lon = current_point["position"]["pos"]["lat"], current_point["position"]["pos"]["lon"]
 
+        print("test_ ", data["routeTrajectoryGroup"])
         cleared_point = data["routeTrajectoryGroup"]["agreed"][0].get("element", {}).get("point4D", {})
         if cleared_point is not None:
             cleared_point_lat, cleared_point_lon = cleared_point["position"]["pos"]["lat"], cleared_point["position"]["pos"]["lon"] 

@@ -333,8 +333,7 @@
 
 
 # 5.1.6. Check that aircraft is maintaining current heading (different than cleared heading)
-#TODO: Missing - heading
-[?flight2, :isMaintainingCurrentHeading, ?indicator] :-
+[?flight2, :isMaintainingCurrentHeading, ?indicator] :-     # [DONE]
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
     # Bind flights at each timestamp
@@ -350,11 +349,9 @@
     [?flight2, :currentElement, ?currElement],
     # Extract previous and current headings
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:extension, ?prevPointExtension],
-    [?prevPointExtension, :heading, ?prevHeading],
+    [?prevPoint4D, :heading, ?prevHeading],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:extension, ?currPointExtension],
-    [?currPointExtension, :heading, ?currHeading],
+    [?currPoint4D, :heading, ?currHeading],
 
     BIND(
         IF(
@@ -372,7 +369,7 @@
     [?flight, :isAtClearedHeading, ?clearedHeadIndicator],
     BIND(
         IF(
-            ?currHeadIndicator = 1 && ?clearedHeadIndicator = 1,	# Why radius=3?
+            ?currHeadIndicator = 1 && ?clearedHeadIndicator = 1,
             1,
             0
         )
@@ -392,7 +389,7 @@
 [?flight, :noATCOSpeedRestriction, 0] :-
     [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed].
+    [?agreedPoint4D, :speed, ?clearedSpeed].
 
 # Case 2: Cleared speed does not exist
 #TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
@@ -401,7 +398,7 @@
     [?flight, :agreedElement, ?agreedElement],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
     NOT EXISTS ?clearedSpeed IN (
-        [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed]
+        [?agreedPoint4D, :speed, ?clearedSpeed]
     ).
 
 #TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
@@ -451,11 +448,11 @@
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared speeds
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?prevPoint4D, :speed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, :speed, ?clearedSpeed],
 
     BIND(
         IF(
@@ -488,11 +485,11 @@
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared speeds
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?prevPoint4D, :speed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, :speed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
@@ -537,11 +534,11 @@
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared speeds
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?prevPoint4D, :speed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, :speed, ?clearedSpeed],
 
     BIND(
         IF(
@@ -574,11 +571,11 @@
     [?flight2, :agreedElement, ?agreedElement],
     # Extract previous, current and cleared speeds
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?prevPoint4D, :speed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, :speed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
@@ -612,9 +609,9 @@
     [?flight, :agreedElement, ?agreedElement],
     # Extract current and cleared speeds
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
     [?agreedElement, fx:point4D, ?agreedPoint4D],
-    [?agreedPoint4D, fx:predictedAirspeed, ?clearedSpeed],
+    [?agreedPoint4D, :speed, ?clearedSpeed],
     [?agreedPoint4D, fx:extension, ?clearedSpeedBound],
     [?clearedSpeedBound, :clearedBoundType, ?boundType],
 
@@ -637,9 +634,7 @@
 
 
 # 5.1.9 Check that aircraft is maintaining current speed (different than cleared speed)
-#TODO: Missing - any speed info in flight plans (no branch has this info, not even currentElement -> we need to use track info
-#to access this information)
-[?flight2, :isMaintainingCurrentSpeed, ?indicator] :-
+[?flight2, :isMaintainingCurrentSpeed, ?indicator] :-   # [DONE]
     [?flight, :isSpeedClearenceJustReceived, 0],
     # Identify consecutive timestamps
     [?prevT, :next, ?currT],  
@@ -656,9 +651,9 @@
     [?flight2, :currentElement, ?currElement],
     # Extract previous and current speeds
     [?prevElement, fx:point4D, ?prevPoint4D],
-    [?prevPoint4D, fx:predictedAirspeed, ?prevSpeed],
+    [?prevPoint4D, :speed, ?prevSpeed],
     [?currElement, fx:point4D, ?currPoint4D],
-    [?currPoint4D, fx:predictedAirspeed, ?currSpeed],
+    [?currPoint4D, :speed, ?currSpeed],
 
     BIND(
         IF(

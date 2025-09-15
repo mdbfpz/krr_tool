@@ -303,7 +303,7 @@ class ConflictPreprocessor:
                 "callsign": callsign,
                 "current_pos": rec.get("current_pos"),
                 "current_fl": rec.get("current_fl"),
-                "current_velocity": rec.get("current_velocity"),
+                "current_speed": rec.get("current_speed"),  # TODO: check if CD uses this or calculates on its own
                 "cod_flightlevel": cod_flightlevel,
                 "ind_cruise_level": ind_cruise_level,
                 "exit_point": rec.get("exit_point"),
@@ -522,9 +522,9 @@ class ConflictDetection:
                 current_point = current_branch.get("element", {}).get("point4D", {})
                 current_pos = current_point.get("position", {}).get("pos")
                 current_fl = current_point.get("level", {}).get("flightLevel")
-                current_velocity = current_point.get("velocity", {})
+                current_speed = current_point.get("speed", {})
             else:
-                current_pos = current_fl = current_velocity = None
+                current_pos = current_fl = current_speed = None
 
             cleared_branch = rtg.get("agreed", [])
             if not isinstance(cleared_branch, list):
@@ -577,7 +577,7 @@ class ConflictDetection:
                 "callsign": flight_key,
                 "current_pos": current_pos,
                 "current_fl": current_fl,
-                "current_velocity": current_velocity,   # TODO: this should be speed
+                "current_speed": current_speed,
                 "predicted_points": predicted_points,
                 "predicted_times": predicted_times,
                 "cruise_level_cleared": cruise_level_cleared,
