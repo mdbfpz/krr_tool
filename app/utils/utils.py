@@ -776,16 +776,17 @@ class GeodesicService:
         return exit_point_data
     
     @staticmethod        
-    def military_sector_intersection(trajectory, current_position, coords,direct_to_point):
+    def military_sector_intersection( current_lon,current_lat, coords,direct_to_point,exit_point_lat, exit_point_lon):
         """
         Calculates the value of flag variable used in Task 8.1 for detecting direct-to points
         """
-        if direct_to_point == (0, 0):
-            direct_to_lat,direct_to_lon = GeodesicService.find_exit_point(trajectory, coords, current_position)[0]
+        if direct_to_point == None:
+           
+            direct_to_lat,direct_to_lon = exit_point_lat, exit_point_lon 
         else:    
             direct_to_lat,direct_to_lon = direct_to_point[1],direct_to_point[0] 
             
-        current_lon,current_lat  = current_position[1], current_position[0]
+        
         azi = Geodesic.WGS84.Inverse(current_lat, current_lon, direct_to_lat, direct_to_lon)["azi1"]
         flag = 1
         for i in range(0, len(coords), 1):

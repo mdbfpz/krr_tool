@@ -467,7 +467,8 @@ class RDFConverter:
                 self._process_non_route_data(sub_uri, sub_key, sub_value)
         else:
             # If value is a literal, add it directly
-            self._add_literal(uri, URIRef(FB[key]), value)
+            if key != "withinSector":
+                self._add_literal(uri, URIRef(FB[key]), value)
 
     def _process_flight(self, flight_uri, flight_data):
         """Process flight data and add to the graph."""
@@ -536,7 +537,7 @@ class RDFConverter:
                 flight_uri = URIRef(FIXM[f"{key}_{timestamp_snake_case}"])
                 self.graph.add((timestamp_uri, FIXM.flight, flight_uri))
                 self.graph.add((flight_uri, RDF.type, FIXM.Flight))
-                if "Flight" in key_data:
+                if "Flight" in key_data:                   
                     flight_data = key_data["Flight"]
                     self._process_flight(flight_uri, flight_data)
                     self._process_tolerance_azimuth(flight_uri, flight_data)
@@ -546,6 +547,8 @@ class RDFConverter:
                     self._check_aircraft_is_planned(flight_uri, flight_data)
                     self._distance_to_intersection_point(flight_uri, flight_data)
                     self._distance_to_exit_point(flight_uri, flight_data)
+                    self._military_sector_processing(flight_uri,flight_data)
+                    #print(json.dumps(self.data_repository, indent=4))
 
             elif key == "HMI":
                 # Process HMI data
@@ -1240,8 +1243,10 @@ class RDFConverter:
         )
     
     def _process_within_sector(self, flight_uri, flight_data):
+        print("usao u proces within sector")
         sector_name = flight_data.get("withinSector", None)
         if sector_name:
+            print(sector_name)
             airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
             self.graph.add((flight_uri, BASE.withinSectorHorizontally, airspace_volume_uri))
 
@@ -1349,7 +1354,34 @@ class RDFConverter:
             dist = self.geodesic_service.geodesic_distance(current_point_lat,current_point_lon,exit_lat,exit_lon)
             self.graph.add((flight_uri, FIXM.distanceToExitPoint, 
                                 Literal(dist, datatype=XSD.float)))
+            
+    def _military_sector_processing(self,flight_uri, data):
+        sectors = self.aixm_data_repo["sectors"]
+        sector_name = data.get("withinSector")
+        if not sector_name:
+            return 
         
+        
+        sector = sectors.get(sector_name)
+        if not sector or sector.get("controlType") != "OPERATIONS_TYPE_MILITARY_ONLY":
+            return
+        
+        sector_coords = self.sector_points_cache[sector_name]
+        current_point_lat, current_point_lon = self._get_current_point_coords(data)        
+        if current_point_lat is None or current_point_lon is None:
+            return   
+        
+        # print(data.keys())
+        exit_position = data.get("enRoute", {}).get("exitPoint", {}).get("pos", {})
+        if not exit_position: 
+            return      
+        exit_lat, exit_lon = exit_position["pos"]["lat"], exit_position["pos"]["lon"]  
+            
+        flag_value = self.geodesic_service.military_sector_intersection(current_point_lat,current_point_lon,sector_coords,None,exit_lat,exit_lon)
+        #print(f"povratna vrijednost iz military sector processinga je {flag_value}")      
+        
+        self.graph.add((flight_uri, FIXM.militarySectorFlag, 
+                                Literal(flag_value, datatype=XSD.integer)))
     #########################################################################################################
     ##########################################     AIXM METHODS     #########################################
     #########################################################################################################
@@ -1701,7 +1733,7 @@ class RDFConverter:
         print("test: ", conflict_data)
         position_uri = URIRef(f"{conflict_uri}_position")
         self.graph.add((conflict_uri, FIXM.position, position_uri))
-
+         
         for key, value in conflict_data.items():
             if key in ["pos", "midpointPos"]:
                 lat, lon, altitude, time = value
@@ -1711,7 +1743,13 @@ class RDFConverter:
                 self.graph.add((pos_uri, FB.lon, Literal(lon, datatype=XSD.decimal)))
                 self.graph.add((pos_uri, FB.altitude, Literal(altitude, datatype=XSD.decimal)))
                 self.graph.add((pos_uri, FB.time, Literal(time, datatype=XSD.dateTime)))
-
+                for sector_name in self.aixm_data_repo["sectors"].keys():                                    
+                    points_list = self.sector_points_cache[sector_name]                    
+                    if points_list and self.geodesic_service.check_if_point_in_polygon(
+                        lat, lon, points_list):
+                        #print(f"pronašao sector u kojem je konflikt {sector_name}")
+                        airspace_volume_uri = AIXM[f"airspace_{sector_name}_airspaceVolume"]
+                        self.graph.add((conflict_uri, BASE.conflictWithinSectorHorizontally, airspace_volume_uri))
             else:
                 datatype = XSD.string
                 if isinstance(value, int):
@@ -1731,7 +1769,7 @@ class RDFConverter:
             if key.startswith("flight_"):
                 flight_uri = URIRef(FIXM[f"{key}_{timestamp_snake_case}"])
                 if "conflicts" in key_data:
-                    conflict_data = key_data["conflicts"]
+                    conflict_data = key_data["conflicts"]                    
                     self._process_cd_findings(flight_uri, conflict_data)
 
     def update_cd_findings(self, detections, timestamp):
