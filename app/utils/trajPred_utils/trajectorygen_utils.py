@@ -338,7 +338,7 @@ def read_OPF_file(opsfilename):
     return opsdata
 
 
-def load_mat_files():
+def load_ACsynonyms():
     script_dir = os.path.dirname(os.path.abspath(__file__))
     # Define the .mat filename (change this to your actual file name)
     ACsynonyms_filename = "ACsynonyms.mat"
@@ -346,13 +346,13 @@ def load_mat_files():
     ACsynonyms_path = os.path.join(script_dir, ACsynonyms_filename)
     ACsynonyms = sio.loadmat(ACsynonyms_path)['ACsynonyms']
 
+    return ACsynonyms
+
+
+def load_FFS_data():
     FFP_filename = "flight_pos.mat"
     # Full path to the .mat file
     FFP_path = os.path.join(script_dir, FFP_filename)
     FFP = get_FFS_data(FFP_path)
     #print(FFP)
-    return ACsynonyms, FFP
-
-
-
 

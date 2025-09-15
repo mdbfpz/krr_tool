@@ -7,6 +7,7 @@ import math
 import numpy as np
 from dateutil import parser
 from geopy.distance import geodesic
+from app.utils.TrajectoryPrediction import TrajectoryPrediction
 
 class ConflictPreprocessor:
     """
@@ -494,6 +495,17 @@ class ConflictDetection:
                 return
 
             predicted_points = []
+
+            current_branch = rtg.get("current", {})
+            if isinstance(current_branch, dict):
+                current_point = current_branch.get("element", {}).get("point4D", {})
+                current_pos = current_point.get("position", {}).get("pos")
+                current_fl = current_point.get("level", {}).get("flightLevel")
+                current_speed = current_point.get("speed", {})
+            else:
+                current_pos = current_fl = current_speed = None
+
+            cleared_branch = rtg.get("agreed", [])
             
             # Tražimo podskup prediktane trajektorije od trenutnog timestampa (zadanog kroz input) pa nadalje.
             # To je potrebno za sve avione, nekad će timestamp input biti početak trajetorije za neki avion, 
@@ -506,7 +518,12 @@ class ConflictDetection:
                     # print("Original trajectory len: ", len(last_predicted_points))
                     # print("Filtered trajectory len: ", len(predicted_points))
                     if not predicted_points:
-                        pass
+                        TrajectoryPrediction = TrajectoryPrediction(current_pos.get("lat"), current_pos.get("lon"),\
+                                                                    current_speed.get("VxMs"), current_speed.get("VyMs"),\
+                                                                     flight.get("aircraft", {}).get("aircraftType", {}).get("icaoAircraftTypeDesignator"),\
+                                                                      cleared_branch.get("element"),
+                                                                       current_fl)
+                        
                         # TODO: run our own trajectory prediction algorithm, since the most recent predicted trajectory is outdated
                 else:
                     pass
@@ -517,16 +534,7 @@ class ConflictDetection:
 
             predicted_times = self._generate_times_from_trajectory(predicted_points, timestamp)
 
-            current_branch = rtg.get("current", {})
-            if isinstance(current_branch, dict):
-                current_point = current_branch.get("element", {}).get("point4D", {})
-                current_pos = current_point.get("position", {}).get("pos")
-                current_fl = current_point.get("level", {}).get("flightLevel")
-                current_speed = current_point.get("speed", {})
-            else:
-                current_pos = current_fl = current_speed = None
-
-            cleared_branch = rtg.get("agreed", [])
+            
             if not isinstance(cleared_branch, list):
                 return
             cleared_waypoints = [
@@ -1097,6 +1105,57 @@ class ConflictDetection:
 
         return unique_conflicts
 
+    def process_pairs_parallel(self, pairs):
+        """
+        Parallel processing of aircraft pairs through the entire pipeline.
+        Splits pairs into chunks and processes each chunk in parallel.
+        """
+        import multiprocessing
+        from concurrent.futures import ThreadPoolExecutor  # Changed to ThreadPoolExecutor
+        
+        if len(pairs) <= 10:  # Small dataset - don't parallelize
+            return self._process_pairs_sequential(pairs)
+        
+        # Calculate optimal chunk size
+        num_cores = multiprocessing.cpu_count()
+        chunk_size = max(1, len(pairs) // num_cores)
+        
+        # Split pairs into chunks
+        chunks = [pairs[i:i+chunk_size] for i in range(0, len(pairs), chunk_size)]
+        
+        # Process chunks in parallel using threads (better for method calls)
+        with ThreadPoolExecutor(max_workers=num_cores) as executor:
+            processed_chunks = list(executor.map(self._process_pairs_sequential, chunks))
+        
+        # Flatten results back into single list
+        all_processed_pairs = []
+        for chunk in processed_chunks:
+            all_processed_pairs.extend(chunk)
+        
+        return all_processed_pairs
+    
+    def _process_pairs_sequential(self, pairs_chunk):
+        """
+        Sequential processing of a chunk of pairs through steps 4-8.
+        This method processes one chunk of pairs through the entire pipeline.
+        """
+        # Step 4: Calculate separations where predicted times match
+        pairs_chunk = self.separation_with_time_matching(pairs_chunk)
+
+        # Step 5: Determine SI and Conflict flags based on separations
+        pairs_chunk = self.process_conflicts_and_SI(pairs_chunk)
+
+        # Step 6: Calculate combined separations, MinSep, TCPA (only where SI==1)
+        pairs_chunk = self.process_separations_MinSep_and_tcpa_ONLY_SI(pairs_chunk)
+
+        # Step 7: Calculate CPA positions, indexes, and times (only where SI==1)
+        pairs_chunk = self.process_cpa_and_times_ONLY_SI(pairs_chunk)
+
+        # Step 8: Calculate distance to CPA for each aircraft (only where SI==1)
+        pairs_chunk = self.calculate_distance_to_cpa_ONLY_SI(pairs_chunk)
+        
+        return pairs_chunk
+
     
     def detect(self, data_repository, timestamp):
         """
@@ -1124,20 +1183,8 @@ class ConflictDetection:
             # Step 3: Generate bidirectional aircraft pairs with suffixed keys (_1, _2)
             pairs = self.generate_aircraft_pairs_bidirectional(sample)
 
-            # Step 4: Calculate separations where predicted times match
-            pairs = self.separation_with_time_matching(pairs)
-
-            # Step 5: Determine SI and Conflict flags based on separations
-            pairs = self.process_conflicts_and_SI(pairs)
-
-            # Step 6: Calculate combined separations, MinSep, TCPA (only where SI==1)
-            pairs = self.process_separations_MinSep_and_tcpa_ONLY_SI(pairs)
-
-            # Step 7: Calculate CPA positions, indexes, and times (only where SI==1)
-            pairs = self.process_cpa_and_times_ONLY_SI(pairs)
-
-            # Step 8: Calculate distance to CPA for each aircraft (only where SI==1)
-            pairs = self.calculate_distance_to_cpa_ONLY_SI(pairs)
+            # PARALLELIZED PIPELINE: Steps 4-8 can run on chunks in parallel
+            pairs = self.process_pairs_parallel(pairs)
 
             # Step 9: Extract unique SI pairs (filter duplicates by unordered pair keys)
             si_pairs = self.process_SI_pairs(pairs)
