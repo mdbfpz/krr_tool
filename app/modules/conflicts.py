@@ -600,7 +600,7 @@ class ConflictDetection:
 
         return cd_data
     
-    # ---------------------------
+# ---------------------------
     # Utility functions
     # ---------------------------
 
@@ -699,14 +699,15 @@ class ConflictDetection:
     # CD algorithm functions
     # ---------------------------
     
-    def generate_aircraft_pairs_bidirectional(self, sample):
+    def generate_aircraft_pairs_unique(self, sample):
         """
-        Generates all pairs (A,B) and (B,A) excluding (A,A) from sample.
+        Generates all unique pairs (A,B), where lexicographically A < B,
+        excluding (B,A), (A,A) and (B,B) from sample.
         Each pair is a combined dict with suffixed keys.
         Returns list of dicts representing pairs.
         """
         callsigns = [ac['callsign'] for ac in sample]
-        pairs = [(a1, a2) for a1 in callsigns for a2 in callsigns if a1 != a2]
+        pairs = [(a1, a2) for a1 in callsigns for a2 in callsigns if a1 < a2]#u if dodat and a1 < a2 umjesto a1 != a2 i sve je rjeseno?
         results = []
         
         # Create a dict from callsign to aircraft data for fast lookup
@@ -969,27 +970,18 @@ class ConflictDetection:
 
     def process_SI_pairs(self, pairs):
         """
-        Filters pairs where SI == 1 and removes duplicates by unordered pairs.
+        Filters pairs where SI == 1.
         """
         # Filter pairs with SI==1
         si_pairs = [row for row in pairs if row.get('SI', 0) == 1]
-
-        # Remove duplicates based on sorted aircraft pair callsigns
-        seen = set()
-        unique_si_pairs = []
-        for row in si_pairs:
-            pair_key = tuple(sorted(row['Aircraft Pair']))
-            if pair_key not in seen:
-                seen.add(pair_key)
-                unique_si_pairs.append(row)
         
         # Convert flight level fields to int if they exist
-        for row in unique_si_pairs:
+        for row in si_pairs:
             for key in ['cod_flightlevel_1', 'ind_cruise_level_1', 'cod_flightlevel_2', 'ind_cruise_level_2']:
                 if key in row and row[key] is not None:
                     row[key] = int(row[key]["flightLevel"])
         
-        return unique_si_pairs
+        return si_pairs
 
     def add_initial_status(self, pairs):
         """
@@ -1055,8 +1047,7 @@ class ConflictDetection:
 
     def process_conflict_pairs(self, pairs):
         """
-        Filter only conflict cases (Conflict == 1), remove duplicates by unordered callsign pair,
-        and ensure numeric flight levels are integers.
+        Filter only conflict cases (Conflict == 1) and ensure numeric flight levels are integers.
         
         Args:
             pairs (list of dict): Each dict has keys like 'Conflict', 'callsign_1', 'callsign_2', 
@@ -1065,19 +1056,11 @@ class ConflictDetection:
         Returns:
             list of dict: Filtered conflict pairs with numeric flight level fields.
         """
-        seen_pairs = set()
-        unique_conflicts = []
+        conflicts = []
 
         for row in pairs:
             if row.get('Conflict') != 1:
                 continue  # skip if not a conflict
-            
-            # Create an unordered key for the aircraft pair
-            pair_key = tuple(sorted([row.get('callsign_1'), row.get('callsign_2')]))
-            if pair_key in seen_pairs:
-                continue  # skip duplicates
-            
-            seen_pairs.add(pair_key)
 
             # Convert numeric fields to int (if possible)
             for col in ['cod_flightlevel_1', 'ind_cruise_level_1',
@@ -1101,60 +1084,9 @@ class ConflictDetection:
                 "distance_to_cpa_2nd_aircraft": row["distance_to_cpa_2nd_aircraft"],
             }
             
-            unique_conflicts.append(row_filtered)
+            conflicts.append(row_filtered)
 
-        return unique_conflicts
-
-    def process_pairs_parallel(self, pairs):
-        """
-        Parallel processing of aircraft pairs through the entire pipeline.
-        Splits pairs into chunks and processes each chunk in parallel.
-        """
-        import multiprocessing
-        from concurrent.futures import ThreadPoolExecutor  # Changed to ThreadPoolExecutor
-        
-        if len(pairs) <= 10:  # Small dataset - don't parallelize
-            return self._process_pairs_sequential(pairs)
-        
-        # Calculate optimal chunk size
-        num_cores = multiprocessing.cpu_count()
-        chunk_size = max(1, len(pairs) // num_cores)
-        
-        # Split pairs into chunks
-        chunks = [pairs[i:i+chunk_size] for i in range(0, len(pairs), chunk_size)]
-        
-        # Process chunks in parallel using threads (better for method calls)
-        with ThreadPoolExecutor(max_workers=num_cores) as executor:
-            processed_chunks = list(executor.map(self._process_pairs_sequential, chunks))
-        
-        # Flatten results back into single list
-        all_processed_pairs = []
-        for chunk in processed_chunks:
-            all_processed_pairs.extend(chunk)
-        
-        return all_processed_pairs
-    
-    def _process_pairs_sequential(self, pairs_chunk):
-        """
-        Sequential processing of a chunk of pairs through steps 4-8.
-        This method processes one chunk of pairs through the entire pipeline.
-        """
-        # Step 4: Calculate separations where predicted times match
-        pairs_chunk = self.separation_with_time_matching(pairs_chunk)
-
-        # Step 5: Determine SI and Conflict flags based on separations
-        pairs_chunk = self.process_conflicts_and_SI(pairs_chunk)
-
-        # Step 6: Calculate combined separations, MinSep, TCPA (only where SI==1)
-        pairs_chunk = self.process_separations_MinSep_and_tcpa_ONLY_SI(pairs_chunk)
-
-        # Step 7: Calculate CPA positions, indexes, and times (only where SI==1)
-        pairs_chunk = self.process_cpa_and_times_ONLY_SI(pairs_chunk)
-
-        # Step 8: Calculate distance to CPA for each aircraft (only where SI==1)
-        pairs_chunk = self.calculate_distance_to_cpa_ONLY_SI(pairs_chunk)
-        
-        return pairs_chunk
+        return conflicts
 
     
     def detect(self, data_repository, timestamp):
@@ -1180,13 +1112,25 @@ class ConflictDetection:
                 print(f"Skipping conflict detection, data not gathered yet for timestamp {timestamp}.")
                 return
 
-            # Step 3: Generate bidirectional aircraft pairs with suffixed keys (_1, _2)
-            pairs = self.generate_aircraft_pairs_bidirectional(sample)
+            # Step 3: Generate unique aircraft pairs with suffixed keys (_1, _2)
+            pairs = self.generate_aircraft_pairs_unique(sample)
 
-            # PARALLELIZED PIPELINE: Steps 4-8 can run on chunks in parallel
-            pairs = self.process_pairs_parallel(pairs)
+            # Step 4: Calculate separations where predicted times match
+            pairs = self.separation_with_time_matching(pairs)
 
-            # Step 9: Extract unique SI pairs (filter duplicates by unordered pair keys)
+            # Step 5: Determine SI and Conflict flags based on separations
+            pairs = self.process_conflicts_and_SI(pairs)
+
+            # Step 6: Calculate combined separations, MinSep, TCPA (only where SI==1)
+            pairs = self.process_separations_MinSep_and_tcpa_ONLY_SI(pairs)
+
+            # Step 7: Calculate CPA positions, indexes, and times (only where SI==1)
+            pairs = self.process_cpa_and_times_ONLY_SI(pairs)
+
+            # Step 8: Calculate distance to CPA for each aircraft (only where SI==1)
+            pairs = self.calculate_distance_to_cpa_ONLY_SI(pairs)
+
+            # Step 9: Extract SI pairs (filter by SI==1)
             si_pairs = self.process_SI_pairs(pairs)
 
             # Step 10: Add initial climb/cruise/descend status based on predicted FL trajectory
@@ -1195,7 +1139,7 @@ class ConflictDetection:
             # Step 11: Add climb/cruise/descend status at CPA point (only SI pairs)
             si_pairs = self.add_status_ONLY_SI(si_pairs)
 
-            # Step 12: Extract unique conflict pairs (filter duplicates by unordered pair keys, Conflict==1)
+            # Step 12: Extract conflict pairs (filter by Conflict==1)
             conflicts = self.process_conflict_pairs(pairs)
 
             # Store and return results (store in detections dict per timestamp)
